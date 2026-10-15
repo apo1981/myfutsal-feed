@@ -1,0 +1,106 @@
+#!/bin/sh
+# Verificacion completa del feed en local (US-007a, criterio 9): estructura, paridad, esquema,
+# invariantes, workflow, smoke check y runbook. Devuelve 0 solo si todo pasa e indica por nombre
+# lo que falla. Sin red (proxy inaccesible), sin Xcode, idempotente: no modifica el repositorio.
+# Uso: scripts/verify
+set -u
+. "$(dirname "$0")/_env.sh"
+require_tools
+
+# Sin red: todo lo que intente salir falla. Solo el servidor de prueba (loopback) responde.
+export HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9
+export http_proxy=http://127.0.0.1:9 https_proxy=http://127.0.0.1:9
+export NO_PROXY=127.0.0.1,localhost no_proxy=127.0.0.1,localhost
+
+cd "$FEED" || exit 2
+APP_ROOT=$(cd .. && pwd)
+HAS_APP=0
+if [ -x "$APP_ROOT/scripts/check-contract" ] && [ -f "$APP_ROOT/.gitignore" ]; then
+    HAS_APP=1
+fi
+
+PASSED=0
+FAILED=0
+FAILED_NAMES=""
+
+# run <nombre> <comando...>: ejecuta la comprobacion y apunta el resultado.
+run() {
+    name=$1; shift
+    if output=$("$@" 2>&1); then
+        PASSED=$((PASSED + 1))
+        echo "[ OK ] $name"
+    else
+        FAILED=$((FAILED + 1))
+        FAILED_NAMES="$FAILED_NAMES $name"
+        echo "[FALLO] $name"
+        printf '%s\n' "$output" | grep -vi 'warn' | sed 's/^/        /'
+    fi
+}
+
+# Las pruebas de verify ejecutan verify sobre copias con FEED_VERIFY_NESTED=1: ahi solo se ejecutan
+# las comprobaciones del repositorio (no las pruebas unitarias), para no recursar.
+unit() {
+    if [ -n "${FEED_VERIFY_NESTED:-}" ]; then
+        echo "[OMITIDA] $1: pruebas unitarias (ejecucion anidada)"
+        return 0
+    fi
+    run "$1" run_python -m unittest discover -s "$FEED/tests" -t "$FEED/tests" -p "$2"
+}
+
+fingerprint() {
+    git -C "$FEED" status --porcelain --untracked-files=all 2>/dev/null
+    git -C "$FEED" diff 2>/dev/null | shasum -a 256
+}
+
+schema_parity() { (cd "$FEED/schema" && shasum -a 256 -c SHA256SUMS); }
+app_parity() { (cd "$APP_ROOT" && scripts/check-contract --feed "$(basename "$FEED")"); }
+validate_public() { "$FEED/scripts/validate-schema" "$FEED/public/v1/index.json" "$FEED"/public/v1/seasons/*.json; }
+
+BEFORE=$(fingerprint)
+
+if [ "$HAS_APP" = 1 ]; then
+    run 1-estructura "$FEED/scripts/check-structure" --app-root "$APP_ROOT"
+else
+    run 1-estructura "$FEED/scripts/check-structure"
+fi
+unit 1-estructura-pruebas test_structure.py
+
+run 2-paridad-sha256sums schema_parity
+if [ "$HAS_APP" = 1 ]; then
+    run 2-paridad-con-la-app app_parity
+else
+    echo "[OMITIDA] 2-paridad-con-la-app: el feed no esta dentro del repositorio de la app (se ejecuta desde la app: scripts/check-contract --feed myfutsal-feed)"
+fi
+unit 2-paridad-pruebas test_parity.py
+
+run 3-esquema-de-public validate_public
+unit 3-fixtures-del-contrato test_fixtures.py
+
+run 4-invariantes-de-public "$FEED/scripts/check-invariants"
+unit 4-invariantes-pruebas test_invariants.py
+
+run 5-workflow "$FEED/scripts/check-workflow"
+unit 5-workflow-pruebas test_workflow.py
+
+unit 6-smoke-check-pruebas test_smoke.py
+
+run 8-runbook "$FEED/scripts/check-runbook"
+unit 8-runbook-pruebas test_runbook.py
+
+unit 9-verify-pruebas test_verify.py
+
+AFTER=$(fingerprint)
+if [ "$BEFORE" = "$AFTER" ]; then
+    PASSED=$((PASSED + 1)); echo "[ OK ] 9-idempotente: el repositorio no ha cambiado"
+else
+    FAILED=$((FAILED + 1)); FAILED_NAMES="$FAILED_NAMES 9-idempotente"
+    echo "[FALLO] 9-idempotente: verify ha modificado el repositorio"
+fi
+
+echo
+if [ "$FAILED" -eq 0 ]; then
+    echo "verify: todo correcto ($PASSED comprobaciones)"
+    exit 0
+fi
+echo "verify: FALLO en $FAILED de $((PASSED + FAILED)) comprobaciones:$FAILED_NAMES" >&2
+exit 1

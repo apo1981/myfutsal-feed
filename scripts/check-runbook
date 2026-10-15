@@ -1,0 +1,6 @@
+#!/bin/sh
+# Comprueba las secciones de RUNBOOK.md y que cada scripts/... citado en sus bloques de codigo existe.
+# Uso: scripts/check-runbook [<fichero>]
+set -eu
+. "$(dirname "$0")/_env.sh"
+run_python "$FEED/scripts/runbook_check.py" --feed "$FEED" "$@"
