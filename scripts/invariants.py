@@ -23,6 +23,7 @@ EU_TRANSITION_HOUR_UTC = 1
 MARCH = 3
 OCTOBER = 10
 SUNDAY = 6
+SEASON_URL_TEMPLATE = "seasons/%s.json"
 
 
 class Violation:
@@ -168,11 +169,32 @@ def index_violations(index: Dict[str, Any], v1_dir: str) -> List[Violation]:
         found.append(Violation("temporada-vigente-inexistente", str(index.get("currentSeasonId")), "currentSeasonId no esta en seasons"))
     root = os.path.realpath(v1_dir)
     for entry in seasons:
+        identifier = str(entry.get("id"))
         target = os.path.realpath(os.path.join(v1_dir, str(entry.get("url"))))
         inside = target.startswith(root + os.sep)
         if not inside or not os.path.isfile(target):
-            found.append(Violation("url-de-temporada-inexistente", str(entry.get("id")),
+            found.append(Violation("url-de-temporada-inexistente", identifier,
                                    "seasons[].url %r no apunta a un fichero de public/v1/" % entry.get("url")))
+        found.extend(index_coherence(entry, target if inside and os.path.isfile(target) else None))
+    return found
+
+
+def index_coherence(entry: Dict[str, Any], season_file: Optional[str]) -> List[Violation]:
+    """I-3: `url` debe ser `seasons/<id>.json` y el `seasonId` del fichero debe ser el `id` del indice.
+
+    La invariante de `updatedAt` elige el fichero por `id`; si el indice apunta a otro, dejaria de aplicarse.
+    """
+    identifier = str(entry.get("id"))
+    found = []  # type: List[Violation]
+    expected_url = SEASON_URL_TEMPLATE % identifier
+    if entry.get("url") != expected_url:
+        found.append(Violation("indice-incoherente", identifier,
+                               "seasons[].url es %r y debe ser %r" % (entry.get("url"), expected_url)))
+    if season_file is not None:
+        season_id = load(season_file).get("seasonId")
+        if season_id != entry.get("id"):
+            found.append(Violation("indice-incoherente", identifier,
+                                   "el seasonId %r de %s no es el id del indice" % (season_id, entry.get("url"))))
     return found
 
 
@@ -183,6 +205,21 @@ def canonical_without_updated_at(season: Dict[str, Any]) -> str:
 
 def parse_instant(value: Any) -> datetime.datetime:
     return datetime.datetime.strptime(str(value), INSTANT_FORMAT)
+
+
+def readable_previous(path: str, log: List[str]) -> Optional[Dict[str, Any]]:
+    """B-1: una version anterior ilegible es un commit que no paso la puerta, nunca se desplego.
+
+    No hay nada que proteger frente a ella: se avisa y se omite la invariante, para no bloquear
+    el commit que la corrige ni el relanzamiento manual.
+    """
+    try:
+        previous = load(path)
+        parse_instant(previous["updatedAt"])
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        log.append("updatedAt: version anterior ilegible (commit no publicado); se omite la invariante (%s)" % type(error).__name__)
+        return None
+    return previous
 
 
 def updated_at_violation(season: Dict[str, Any], previous: Optional[Dict[str, Any]], log: List[str]) -> Optional[Violation]:
@@ -226,14 +263,18 @@ def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optiona
     if found_size:
         found.append(found_size)
     target_id = season_id or index.get("currentSeasonId")
-    for identifier, path in season_paths(v1_dir):
+    paths = season_paths(v1_dir)
+    if target_id not in [identifier for identifier, _ in paths]:
+        found.append(Violation("temporada-vigente-sin-fichero", str(target_id),
+                               "no hay seasons/%s.json: la invariante de updatedAt no se puede aplicar" % target_id))
+    for identifier, path in paths:
         season = load(path)
         found.extend(season_violations(season))
         size = size_violation(path)
         if size:
             found.append(size)
         if identifier == target_id:
-            previous = load(previous_path) if previous_path else None
+            previous = readable_previous(previous_path, log) if previous_path else None
             violation = updated_at_violation(season, previous, log)
             if violation:
                 found.append(violation)

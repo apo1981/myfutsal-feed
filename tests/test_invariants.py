@@ -178,6 +178,26 @@ class IndexAndSize(InvariantsCliTestCase):
         index = dict(support.BASE_INDEX, seasons=[{"id": SEASON_ID, "name": "x", "url": "seasons/2030-31.json"}])
         self.assert_fails(self.check(index=index), "url-de-temporada-inexistente", SEASON_ID)
 
+    def test_us007a_c4_url_that_is_not_seasons_id_json_fails_even_if_the_file_exists(self) -> None:
+        # I-3: sin esta invariante, `updatedAt` se comprobaria contra otro fichero (o no se comprobaria).
+        public = support.build_public(self.tmp, index=dict(
+            support.BASE_INDEX, currentSeasonId="temporada",
+            seasons=[{"id": "temporada", "name": "x", "url": "seasons/%s.json" % SEASON_ID}]))
+        result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", public])
+        self.assert_fails(result, "indice-incoherente", "temporada")
+        self.assertIn("seasons/temporada.json", result.stderr)
+
+    def test_us007a_c4_season_id_of_the_file_must_be_the_index_id(self) -> None:
+        result = self.check(season_with(lambda s: s.update(seasonId="2030-31")))
+        self.assert_fails(result, "indice-incoherente", SEASON_ID)
+        self.assertIn("2030-31", result.stderr)
+
+    def test_us007a_c4_current_season_without_a_file_fails_instead_of_skipping_updated_at(self) -> None:
+        index = dict(support.BASE_INDEX, currentSeasonId="2030-31",
+                     seasons=[{"id": "2030-31", "name": "x", "url": "seasons/2030-31.json"}])
+        result = self.check(index=index)
+        self.assert_fails(result, "temporada-vigente-sin-fichero", "2030-31")
+
     def test_us007a_c4_season_url_escaping_v1_fails(self) -> None:
         index = dict(support.BASE_INDEX, seasons=[{"id": SEASON_ID, "name": "x", "url": "../index.json"}])
         self.assert_fails(self.check(index=index), "url-de-temporada-inexistente", SEASON_ID)
@@ -209,6 +229,32 @@ class UpdatedAt(InvariantsCliTestCase):
         reordered = dict(reversed(list(support.BASE_SEASON.items())))
         result = self.check(reordered, previous=support.BASE_SEASON)
         self.assertEqual(result.returncode, 0, output_of(result))
+
+    def check_with_previous_text(self, text: str, season: Optional[Dict[str, Any]] = None):
+        public = support.build_public(self.tmp, season)
+        previous_path = os.path.join(self.tmp, "previous.json")
+        with open(previous_path, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        return support.run_main(invariants.main, ["--feed", self.tmp, "--public", public, "--previous", previous_path])
+
+    def test_us007a_c4_unreadable_previous_version_is_skipped_with_a_notice(self) -> None:
+        # B-1: la version anterior es de un commit que no paso la puerta; la correccion debe poder publicarse.
+        truncated = json.dumps(support.BASE_SEASON)[:-30]
+        result = self.check_with_previous_text(truncated, season_with(lambda s: match_of(s, "m-02").update(status="postponed")))
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("version anterior ilegible", result.stdout)
+        self.assertIn("se omite la invariante", result.stdout)
+
+    def test_us007a_c4_previous_version_without_a_valid_updated_at_is_skipped_with_a_notice(self) -> None:
+        for text in ("[]", "{}", json.dumps(dict(support.BASE_SEASON, updatedAt="ayer")), ""):
+            with self.subTest(text[:20]):
+                result = self.check_with_previous_text(text)
+                self.assertEqual(result.returncode, 0, output_of(result))
+                self.assertIn("version anterior ilegible", result.stdout)
+
+    def test_us007a_c4_unreadable_previous_does_not_hide_other_violations(self) -> None:
+        result = self.check_with_previous_text("{", season_with(lambda s: match_of(s, "m-02").update(awayTeamId="bbb")))
+        self.assert_fails(result, "local-igual-visitante", "m-02")
 
     def test_us007a_c4_without_previous_reports_first_publication(self) -> None:
         result = self.check()
