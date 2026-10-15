@@ -1,0 +1,8 @@
+#!/bin/sh
+# Valida ficheros del feed contra el esquema. index.json / index-*.json usan el esquema del indice;
+# el resto, el de temporada. Codigo distinto de 0 si alguno falla, y nombra cada fichero que falla.
+# Uso: scripts/validate-schema <fichero>...
+set -eu
+. "$(dirname "$0")/_env.sh"
+require_tools
+run_python "$FEED/scripts/validate_schema.py" --feed "$FEED" --tool "$TOOLS_VENV/bin/check-jsonschema" "$@"

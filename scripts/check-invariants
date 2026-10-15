@@ -1,0 +1,7 @@
+#!/bin/sh
+# Invariantes que el esquema no expresa (US-007a, criterio 4).
+# Uso: scripts/check-invariants [--public <dir>] [--season <id>] [--previous <fichero>]
+#   --previous: version anterior del documento de temporada (el script no conoce Git).
+set -eu
+. "$(dirname "$0")/_env.sh"
+run_python "$FEED/scripts/invariants.py" --feed "$FEED" "$@"

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Estructura, lista permitida, secretos, repositorio Git independiente e identidad no personal.
+# Uso: scripts/check-structure [--app-root <dir>]   (--app-root: repositorio de la app, para comprobar el .gitignore)
+set -eu
+. "$(dirname "$0")/_env.sh"
+run_python "$FEED/scripts/structure.py" structure --feed "$FEED" "$@"
