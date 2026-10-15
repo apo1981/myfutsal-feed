@@ -1,0 +1,3604 @@
+{
+  "schemaVersion": 1,
+  "seasonId": "2026-27",
+  "competitionName": "Primera División de fútbol sala (datos de ejemplo)",
+  "updatedAt": "2026-10-20T08:00:00Z",
+  "teams": [
+    {
+      "id": "bar",
+      "name": "Barça",
+      "shortName": "BAR",
+      "crestURL": null
+    },
+    {
+      "id": "elp",
+      "name": "ElPozo Murcia Costa Cálida",
+      "shortName": "ELP",
+      "crestURL": null
+    },
+    {
+      "id": "int",
+      "name": "Inter Movistar",
+      "shortName": "INT",
+      "crestURL": null
+    },
+    {
+      "id": "pal",
+      "name": "Palma Futsal",
+      "shortName": "PAL",
+      "crestURL": null
+    },
+    {
+      "id": "jim",
+      "name": "Jimbee Cartagena",
+      "shortName": "JIM",
+      "crestURL": null
+    },
+    {
+      "id": "bet",
+      "name": "Real Betis Futsal",
+      "shortName": "BET",
+      "crestURL": null
+    },
+    {
+      "id": "cor",
+      "name": "Córdoba Patrimonio de la Humanidad",
+      "shortName": "COR",
+      "crestURL": null
+    },
+    {
+      "id": "noi",
+      "name": "Noia Portus Apostoli",
+      "shortName": "NOI",
+      "crestURL": null
+    },
+    {
+      "id": "val",
+      "name": "Valdepeñas Viña Albali",
+      "shortName": "VAL",
+      "crestURL": null
+    },
+    {
+      "id": "san",
+      "name": "Industrias Santa Coloma",
+      "shortName": "SAN",
+      "crestURL": null
+    },
+    {
+      "id": "man",
+      "name": "Manzanares FS Quesos El Hidalgo",
+      "shortName": "MAN",
+      "crestURL": null
+    },
+    {
+      "id": "pen",
+      "name": "Peñíscola Rehabmedic",
+      "shortName": "PEN",
+      "crestURL": null
+    },
+    {
+      "id": "zar",
+      "name": "Ríos Renovables Zaragoza",
+      "shortName": "ZAR",
+      "crestURL": null
+    },
+    {
+      "id": "par",
+      "name": "O Parrulo Ferrol",
+      "shortName": "PAR",
+      "crestURL": null
+    },
+    {
+      "id": "xot",
+      "name": "Xota Fútbol Sala",
+      "shortName": "XOT",
+      "crestURL": null
+    },
+    {
+      "id": "jae",
+      "name": "Jaén Paraíso Interior",
+      "shortName": "JAE",
+      "crestURL": null
+    }
+  ],
+  "phases": [
+    {
+      "id": "apertura",
+      "name": "Torneo Apertura",
+      "kind": "league",
+      "order": 1,
+      "rounds": [
+        {
+          "id": "apertura-01",
+          "number": 1,
+          "name": "Jornada 1",
+          "matches": [
+            {
+              "id": "a-0101",
+              "homeTeamId": "bar",
+              "awayTeamId": "jae",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-11",
+                "time": "2026-09-11T18:30:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0102",
+              "homeTeamId": "elp",
+              "awayTeamId": "xot",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-12",
+                "time": "2026-09-12T10:30:00Z"
+              },
+              "score": {
+                "home": 4,
+                "away": 3
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0103",
+              "homeTeamId": "int",
+              "awayTeamId": "par",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-12",
+                "time": "2026-09-12T16:00:00Z"
+              },
+              "score": {
+                "home": 0,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0104",
+              "homeTeamId": "pal",
+              "awayTeamId": "zar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-12",
+                "time": "2026-09-12T17:00:00Z"
+              },
+              "score": {
+                "home": 6,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0105",
+              "homeTeamId": "jim",
+              "awayTeamId": "pen",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-12",
+                "time": "2026-09-12T18:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0106",
+              "homeTeamId": "bet",
+              "awayTeamId": "man",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-13",
+                "time": "2026-09-13T10:30:00Z"
+              },
+              "score": {
+                "home": 0,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0107",
+              "homeTeamId": "cor",
+              "awayTeamId": "san",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-13",
+                "time": "2026-09-13T15:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0108",
+              "homeTeamId": "noi",
+              "awayTeamId": "val",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-13",
+                "time": "2026-09-13T17:30:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-02",
+          "number": 2,
+          "name": "Jornada 2",
+          "matches": [
+            {
+              "id": "a-0201",
+              "homeTeamId": "xot",
+              "awayTeamId": "bar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-18",
+                "time": "2026-09-18T18:30:00Z"
+              },
+              "score": {
+                "home": 4,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0202",
+              "homeTeamId": "jae",
+              "awayTeamId": "par",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-19",
+                "time": "2026-09-19T10:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0203",
+              "homeTeamId": "elp",
+              "awayTeamId": "zar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-19",
+                "time": "2026-09-19T16:00:00Z"
+              },
+              "score": {
+                "home": 6,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0204",
+              "homeTeamId": "int",
+              "awayTeamId": "pen",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-19",
+                "time": "2026-09-19T17:00:00Z"
+              },
+              "score": {
+                "home": 0,
+                "away": 4
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0205",
+              "homeTeamId": "pal",
+              "awayTeamId": "man",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-19",
+                "time": "2026-09-19T18:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0206",
+              "homeTeamId": "jim",
+              "awayTeamId": "san",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-20",
+                "time": "2026-09-20T10:30:00Z"
+              },
+              "score": {
+                "home": 0,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0207",
+              "homeTeamId": "bet",
+              "awayTeamId": "val",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-20",
+                "time": "2026-09-20T15:30:00Z"
+              },
+              "score": {
+                "home": 4,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0208",
+              "homeTeamId": "cor",
+              "awayTeamId": "noi",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-20",
+                "time": "2026-09-20T17:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-03",
+          "number": 3,
+          "name": "Jornada 3",
+          "matches": [
+            {
+              "id": "a-0301",
+              "homeTeamId": "bar",
+              "awayTeamId": "par",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-25",
+                "time": "2026-09-25T18:30:00Z"
+              },
+              "score": {
+                "home": 6,
+                "away": 4
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0302",
+              "homeTeamId": "xot",
+              "awayTeamId": "zar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-26",
+                "time": "2026-09-26T10:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0303",
+              "homeTeamId": "jae",
+              "awayTeamId": "pen",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-26",
+                "time": "2026-09-26T16:00:00Z"
+              },
+              "score": {
+                "home": 4,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0304",
+              "homeTeamId": "elp",
+              "awayTeamId": "man",
+              "status": "cancelled",
+              "kickoff": {
+                "date": "2026-09-26",
+                "time": "2026-09-26T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": "Cancelado por la organización"
+            },
+            {
+              "id": "a-0305",
+              "homeTeamId": "int",
+              "awayTeamId": "san",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-26",
+                "time": "2026-09-26T18:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0306",
+              "homeTeamId": "pal",
+              "awayTeamId": "val",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-27",
+                "time": "2026-09-27T10:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0307",
+              "homeTeamId": "jim",
+              "awayTeamId": "noi",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-27",
+                "time": "2026-09-27T15:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0308",
+              "homeTeamId": "bet",
+              "awayTeamId": "cor",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-27",
+                "time": "2026-09-27T17:30:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-04",
+          "number": 4,
+          "name": "Jornada 4",
+          "matches": [
+            {
+              "id": "a-0401",
+              "homeTeamId": "zar",
+              "awayTeamId": "bar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-02",
+                "time": "2026-10-02T18:30:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0402",
+              "homeTeamId": "par",
+              "awayTeamId": "pen",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-03",
+                "time": "2026-10-03T10:30:00Z"
+              },
+              "score": {
+                "home": 0,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0403",
+              "homeTeamId": "xot",
+              "awayTeamId": "man",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-03",
+                "time": "2026-10-03T16:00:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0404",
+              "homeTeamId": "jae",
+              "awayTeamId": "san",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-03",
+                "time": "2026-10-03T17:00:00Z"
+              },
+              "score": {
+                "home": 6,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0405",
+              "homeTeamId": "elp",
+              "awayTeamId": "val",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-03",
+                "time": "2026-10-03T18:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0406",
+              "homeTeamId": "int",
+              "awayTeamId": "noi",
+              "status": "suspended",
+              "kickoff": {
+                "date": "2026-10-04",
+                "time": "2026-10-04T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": "Suspendido por incidencias en pista"
+            },
+            {
+              "id": "a-0407",
+              "homeTeamId": "pal",
+              "awayTeamId": "cor",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-04",
+                "time": "2026-10-04T15:30:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0408",
+              "homeTeamId": "jim",
+              "awayTeamId": "bet",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-04",
+                "time": "2026-10-04T17:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 3
+              },
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-05",
+          "number": 5,
+          "name": "Jornada 5",
+          "matches": [
+            {
+              "id": "a-0501",
+              "homeTeamId": "bar",
+              "awayTeamId": "pen",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-09",
+                "time": "2026-10-09T18:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0502",
+              "homeTeamId": "zar",
+              "awayTeamId": "man",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-10",
+                "time": "2026-10-10T10:30:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0503",
+              "homeTeamId": "par",
+              "awayTeamId": "san",
+              "status": "postponed",
+              "kickoff": {
+                "date": null,
+                "time": null
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": "Aplazado por la participación en competición europea"
+            },
+            {
+              "id": "a-0504",
+              "homeTeamId": "xot",
+              "awayTeamId": "val",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-10",
+                "time": "2026-10-10T17:00:00Z"
+              },
+              "score": {
+                "home": 5,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0505",
+              "homeTeamId": "jae",
+              "awayTeamId": "noi",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-10",
+                "time": "2026-10-10T18:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0506",
+              "homeTeamId": "elp",
+              "awayTeamId": "cor",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-11",
+                "time": "2026-10-11T10:30:00Z"
+              },
+              "score": {
+                "home": 6,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0507",
+              "homeTeamId": "int",
+              "awayTeamId": "bet",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-11",
+                "time": "2026-10-11T15:30:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 4
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0508",
+              "homeTeamId": "pal",
+              "awayTeamId": "jim",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-11",
+                "time": "2026-10-11T17:30:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-06",
+          "number": 6,
+          "name": "Jornada 6",
+          "matches": [
+            {
+              "id": "a-0601",
+              "homeTeamId": "man",
+              "awayTeamId": "bar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-16",
+                "time": "2026-10-16T18:30:00Z"
+              },
+              "score": {
+                "home": 5,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0602",
+              "homeTeamId": "pen",
+              "awayTeamId": "san",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-17",
+                "time": "2026-10-17T10:30:00Z"
+              },
+              "score": {
+                "home": 0,
+                "away": 3
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0603",
+              "homeTeamId": "zar",
+              "awayTeamId": "val",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-17",
+                "time": "2026-10-17T16:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 4
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0604",
+              "homeTeamId": "par",
+              "awayTeamId": "noi",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-17",
+                "time": "2026-10-17T17:00:00Z"
+              },
+              "score": {
+                "home": 6,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0605",
+              "homeTeamId": "xot",
+              "awayTeamId": "cor",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-17",
+                "time": "2026-10-17T18:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0606",
+              "homeTeamId": "jae",
+              "awayTeamId": "bet",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-18",
+                "time": "2026-10-18T10:30:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0607",
+              "homeTeamId": "elp",
+              "awayTeamId": "jim",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-18",
+                "time": "2026-10-18T15:30:00Z"
+              },
+              "score": {
+                "home": 5,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0608",
+              "homeTeamId": "int",
+              "awayTeamId": "pal",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-10-18",
+                "time": "2026-10-18T17:30:00Z"
+              },
+              "score": {
+                "home": 5,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-07",
+          "number": 7,
+          "name": "Jornada 7",
+          "matches": [
+            {
+              "id": "a-0701",
+              "homeTeamId": "bar",
+              "awayTeamId": "san",
+              "status": "finished",
+              "kickoff": {
+                "date": "2026-09-29",
+                "time": "2026-09-29T18:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Adelantado por la UEFA Futsal Champions League"
+            },
+            {
+              "id": "a-0702",
+              "homeTeamId": "man",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-10-31",
+                "time": "2026-10-31T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0703",
+              "homeTeamId": "pen",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-10-31",
+                "time": "2026-10-31T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0704",
+              "homeTeamId": "zar",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-10-31",
+                "time": "2026-10-31T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0705",
+              "homeTeamId": "par",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-10-31",
+                "time": "2026-10-31T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0706",
+              "homeTeamId": "xot",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-01",
+                "time": "2026-11-01T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0707",
+              "homeTeamId": "jae",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-01",
+                "time": "2026-11-01T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0708",
+              "homeTeamId": "elp",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-01",
+                "time": "2026-11-01T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-08",
+          "number": 8,
+          "name": "Jornada 8",
+          "matches": [
+            {
+              "id": "a-0801",
+              "homeTeamId": "val",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-06",
+                "time": "2026-11-06T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0802",
+              "homeTeamId": "san",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-07",
+                "time": "2026-11-07T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0803",
+              "homeTeamId": "man",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-07",
+                "time": "2026-11-07T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0804",
+              "homeTeamId": "pen",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-07",
+                "time": null
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0805",
+              "homeTeamId": "zar",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-07",
+                "time": "2026-11-07T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0806",
+              "homeTeamId": "par",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-08",
+                "time": "2026-11-08T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0807",
+              "homeTeamId": "xot",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-08",
+                "time": "2026-11-08T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0808",
+              "homeTeamId": "jae",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-08",
+                "time": "2026-11-08T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-09",
+          "number": 9,
+          "name": "Jornada 9",
+          "matches": [
+            {
+              "id": "a-0901",
+              "homeTeamId": "bar",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-13",
+                "time": "2026-11-13T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0902",
+              "homeTeamId": "val",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-14",
+                "time": "2026-11-14T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0903",
+              "homeTeamId": "san",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-14",
+                "time": "2026-11-14T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0904",
+              "homeTeamId": "man",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-14",
+                "time": "2026-11-14T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0905",
+              "homeTeamId": "pen",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-14",
+                "time": "2026-11-14T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0906",
+              "homeTeamId": "zar",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-15",
+                "time": "2026-11-15T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0907",
+              "homeTeamId": "par",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-15",
+                "time": "2026-11-15T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-0908",
+              "homeTeamId": "xot",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-15",
+                "time": "2026-11-15T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-10",
+          "number": 10,
+          "name": "Jornada 10",
+          "matches": [
+            {
+              "id": "a-1001",
+              "homeTeamId": "cor",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-20",
+                "time": "2026-11-20T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1002",
+              "homeTeamId": "noi",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-21",
+                "time": "2026-11-21T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1003",
+              "homeTeamId": "val",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-21",
+                "time": "2026-11-21T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1004",
+              "homeTeamId": "san",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-21",
+                "time": "2026-11-21T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1005",
+              "homeTeamId": "man",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-21",
+                "time": "2026-11-21T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1006",
+              "homeTeamId": "pen",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-22",
+                "time": "2026-11-22T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1007",
+              "homeTeamId": "zar",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-22",
+                "time": "2026-11-22T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1008",
+              "homeTeamId": "par",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-22",
+                "time": "2026-11-22T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-11",
+          "number": 11,
+          "name": "Jornada 11",
+          "matches": [
+            {
+              "id": "a-1101",
+              "homeTeamId": "bar",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-27",
+                "time": "2026-11-27T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1102",
+              "homeTeamId": "cor",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-28",
+                "time": "2026-11-28T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1103",
+              "homeTeamId": "noi",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-28",
+                "time": "2026-11-28T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1104",
+              "homeTeamId": "val",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-28",
+                "time": "2026-11-28T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1105",
+              "homeTeamId": "san",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-28",
+                "time": "2026-11-28T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1106",
+              "homeTeamId": "man",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-29",
+                "time": "2026-11-29T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1107",
+              "homeTeamId": "pen",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-29",
+                "time": "2026-11-29T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1108",
+              "homeTeamId": "zar",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-11-29",
+                "time": "2026-11-29T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-12",
+          "number": 12,
+          "name": "Jornada 12",
+          "matches": [
+            {
+              "id": "a-1201",
+              "homeTeamId": "jim",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-04",
+                "time": "2026-12-04T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1202",
+              "homeTeamId": "bet",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-05",
+                "time": "2026-12-05T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1203",
+              "homeTeamId": "cor",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-05",
+                "time": "2026-12-05T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1204",
+              "homeTeamId": "noi",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-05",
+                "time": "2026-12-05T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1205",
+              "homeTeamId": "val",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-05",
+                "time": "2026-12-05T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1206",
+              "homeTeamId": "san",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-06",
+                "time": "2026-12-06T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1207",
+              "homeTeamId": "man",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-06",
+                "time": "2026-12-06T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1208",
+              "homeTeamId": "pen",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-06",
+                "time": "2026-12-06T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-13",
+          "number": 13,
+          "name": "Jornada 13",
+          "matches": [
+            {
+              "id": "a-1301",
+              "homeTeamId": "bar",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-11",
+                "time": "2026-12-11T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1302",
+              "homeTeamId": "jim",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-12",
+                "time": "2026-12-12T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1303",
+              "homeTeamId": "bet",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-12",
+                "time": "2026-12-12T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1304",
+              "homeTeamId": "cor",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-12",
+                "time": "2026-12-12T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1305",
+              "homeTeamId": "noi",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-12",
+                "time": "2026-12-12T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1306",
+              "homeTeamId": "val",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-13",
+                "time": "2026-12-13T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1307",
+              "homeTeamId": "san",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-13",
+                "time": "2026-12-13T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1308",
+              "homeTeamId": "man",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-13",
+                "time": "2026-12-13T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-14",
+          "number": 14,
+          "name": "Jornada 14",
+          "matches": [
+            {
+              "id": "a-1401",
+              "homeTeamId": "int",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-18",
+                "time": "2026-12-18T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1402",
+              "homeTeamId": "pal",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-19",
+                "time": "2026-12-19T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1403",
+              "homeTeamId": "jim",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-19",
+                "time": "2026-12-19T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1404",
+              "homeTeamId": "bet",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-19",
+                "time": "2026-12-19T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1405",
+              "homeTeamId": "cor",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-19",
+                "time": "2026-12-19T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1406",
+              "homeTeamId": "noi",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-20",
+                "time": "2026-12-20T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1407",
+              "homeTeamId": "val",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-20",
+                "time": "2026-12-20T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1408",
+              "homeTeamId": "san",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2026-12-20",
+                "time": "2026-12-20T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "apertura-15",
+          "number": 15,
+          "name": "Jornada 15",
+          "matches": [
+            {
+              "id": "a-1501",
+              "homeTeamId": "bar",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-08",
+                "time": "2027-01-08T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1502",
+              "homeTeamId": "int",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-09",
+                "time": "2027-01-09T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1503",
+              "homeTeamId": "pal",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-09",
+                "time": "2027-01-09T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1504",
+              "homeTeamId": "jim",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-09",
+                "time": "2027-01-09T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1505",
+              "homeTeamId": "bet",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-09",
+                "time": "2027-01-09T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1506",
+              "homeTeamId": "cor",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-10",
+                "time": "2027-01-10T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1507",
+              "homeTeamId": "noi",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-10",
+                "time": "2027-01-10T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "a-1508",
+              "homeTeamId": "val",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-10",
+                "time": "2027-01-10T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clausura",
+      "name": "Torneo Clausura",
+      "kind": "league",
+      "order": 2,
+      "rounds": [
+        {
+          "id": "clausura-01",
+          "number": 1,
+          "name": "Jornada 1",
+          "matches": [
+            {
+              "id": "c-0101",
+              "homeTeamId": "jae",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-29",
+                "time": "2027-01-29T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0102",
+              "homeTeamId": "xot",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-30",
+                "time": "2027-01-30T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0103",
+              "homeTeamId": "par",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-30",
+                "time": "2027-01-30T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0104",
+              "homeTeamId": "zar",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-30",
+                "time": "2027-01-30T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0105",
+              "homeTeamId": "pen",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-30",
+                "time": "2027-01-30T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0106",
+              "homeTeamId": "man",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-31",
+                "time": "2027-01-31T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0107",
+              "homeTeamId": "san",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-31",
+                "time": "2027-01-31T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0108",
+              "homeTeamId": "val",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-01-31",
+                "time": "2027-01-31T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-02",
+          "number": 2,
+          "name": "Jornada 2",
+          "matches": [
+            {
+              "id": "c-0201",
+              "homeTeamId": "bar",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-05",
+                "time": "2027-02-05T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0202",
+              "homeTeamId": "par",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-06",
+                "time": "2027-02-06T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0203",
+              "homeTeamId": "zar",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-06",
+                "time": "2027-02-06T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0204",
+              "homeTeamId": "pen",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-06",
+                "time": "2027-02-06T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0205",
+              "homeTeamId": "man",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-06",
+                "time": "2027-02-06T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0206",
+              "homeTeamId": "san",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-07",
+                "time": "2027-02-07T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0207",
+              "homeTeamId": "val",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-07",
+                "time": "2027-02-07T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0208",
+              "homeTeamId": "noi",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-07",
+                "time": "2027-02-07T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-03",
+          "number": 3,
+          "name": "Jornada 3",
+          "matches": [
+            {
+              "id": "c-0301",
+              "homeTeamId": "par",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-12",
+                "time": "2027-02-12T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0302",
+              "homeTeamId": "zar",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-13",
+                "time": "2027-02-13T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0303",
+              "homeTeamId": "pen",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-13",
+                "time": "2027-02-13T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0304",
+              "homeTeamId": "man",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-13",
+                "time": "2027-02-13T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0305",
+              "homeTeamId": "san",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-13",
+                "time": "2027-02-13T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0306",
+              "homeTeamId": "val",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-14",
+                "time": "2027-02-14T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0307",
+              "homeTeamId": "noi",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-14",
+                "time": "2027-02-14T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0308",
+              "homeTeamId": "cor",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-14",
+                "time": "2027-02-14T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-04",
+          "number": 4,
+          "name": "Jornada 4",
+          "matches": [
+            {
+              "id": "c-0401",
+              "homeTeamId": "bar",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-19",
+                "time": "2027-02-19T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0402",
+              "homeTeamId": "pen",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-20",
+                "time": "2027-02-20T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0403",
+              "homeTeamId": "man",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-20",
+                "time": "2027-02-20T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0404",
+              "homeTeamId": "san",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-20",
+                "time": "2027-02-20T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0405",
+              "homeTeamId": "val",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-20",
+                "time": "2027-02-20T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0406",
+              "homeTeamId": "noi",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-21",
+                "time": "2027-02-21T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0407",
+              "homeTeamId": "cor",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-21",
+                "time": "2027-02-21T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0408",
+              "homeTeamId": "bet",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-21",
+                "time": "2027-02-21T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-05",
+          "number": 5,
+          "name": "Jornada 5",
+          "matches": [
+            {
+              "id": "c-0501",
+              "homeTeamId": "pen",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-26",
+                "time": "2027-02-26T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0502",
+              "homeTeamId": "man",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-27",
+                "time": "2027-02-27T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0503",
+              "homeTeamId": "san",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-27",
+                "time": "2027-02-27T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0504",
+              "homeTeamId": "val",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-27",
+                "time": "2027-02-27T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0505",
+              "homeTeamId": "noi",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-27",
+                "time": "2027-02-27T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0506",
+              "homeTeamId": "cor",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-28",
+                "time": "2027-02-28T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0507",
+              "homeTeamId": "bet",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-28",
+                "time": "2027-02-28T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0508",
+              "homeTeamId": "jim",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-02-28",
+                "time": "2027-02-28T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-06",
+          "number": 6,
+          "name": "Jornada 6",
+          "matches": [
+            {
+              "id": "c-0601",
+              "homeTeamId": "bar",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-05",
+                "time": "2027-03-05T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0602",
+              "homeTeamId": "san",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-06",
+                "time": "2027-03-06T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0603",
+              "homeTeamId": "val",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-06",
+                "time": "2027-03-06T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0604",
+              "homeTeamId": "noi",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-06",
+                "time": "2027-03-06T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0605",
+              "homeTeamId": "cor",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-06",
+                "time": "2027-03-06T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0606",
+              "homeTeamId": "bet",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-07",
+                "time": "2027-03-07T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0607",
+              "homeTeamId": "jim",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-07",
+                "time": "2027-03-07T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0608",
+              "homeTeamId": "pal",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-07",
+                "time": "2027-03-07T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-07",
+          "number": 7,
+          "name": "Jornada 7",
+          "matches": [
+            {
+              "id": "c-0701",
+              "homeTeamId": "san",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-12",
+                "time": "2027-03-12T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0702",
+              "homeTeamId": "val",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-13",
+                "time": "2027-03-13T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0703",
+              "homeTeamId": "noi",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-13",
+                "time": "2027-03-13T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0704",
+              "homeTeamId": "cor",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-13",
+                "time": "2027-03-13T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0705",
+              "homeTeamId": "bet",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-13",
+                "time": "2027-03-13T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0706",
+              "homeTeamId": "jim",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-14",
+                "time": "2027-03-14T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0707",
+              "homeTeamId": "pal",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-14",
+                "time": "2027-03-14T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0708",
+              "homeTeamId": "int",
+              "awayTeamId": "elp",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-14",
+                "time": "2027-03-14T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-08",
+          "number": 8,
+          "name": "Jornada 8",
+          "matches": [
+            {
+              "id": "c-0801",
+              "homeTeamId": "bar",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-19",
+                "time": "2027-03-19T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0802",
+              "homeTeamId": "noi",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-20",
+                "time": "2027-03-20T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0803",
+              "homeTeamId": "cor",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-20",
+                "time": "2027-03-20T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0804",
+              "homeTeamId": "bet",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-20",
+                "time": "2027-03-20T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0805",
+              "homeTeamId": "jim",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-20",
+                "time": "2027-03-20T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0806",
+              "homeTeamId": "pal",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-21",
+                "time": "2027-03-21T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0807",
+              "homeTeamId": "int",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-21",
+                "time": "2027-03-21T16:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0808",
+              "homeTeamId": "elp",
+              "awayTeamId": "jae",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-21",
+                "time": "2027-03-21T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-09",
+          "number": 9,
+          "name": "Jornada 9",
+          "matches": [
+            {
+              "id": "c-0901",
+              "homeTeamId": "noi",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-26",
+                "time": "2027-03-26T19:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0902",
+              "homeTeamId": "cor",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-27",
+                "time": "2027-03-27T11:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0903",
+              "homeTeamId": "bet",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-27",
+                "time": "2027-03-27T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0904",
+              "homeTeamId": "jim",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-27",
+                "time": "2027-03-27T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0905",
+              "homeTeamId": "pal",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-27",
+                "time": "2027-03-27T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0906",
+              "homeTeamId": "int",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-28",
+                "time": "2027-03-28T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0907",
+              "homeTeamId": "elp",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-28",
+                "time": "2027-03-28T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-0908",
+              "homeTeamId": "jae",
+              "awayTeamId": "xot",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-03-28",
+                "time": "2027-03-28T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-10",
+          "number": 10,
+          "name": "Jornada 10",
+          "matches": [
+            {
+              "id": "c-1001",
+              "homeTeamId": "bar",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-02",
+                "time": "2027-04-02T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1002",
+              "homeTeamId": "bet",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-03",
+                "time": "2027-04-03T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1003",
+              "homeTeamId": "jim",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-03",
+                "time": "2027-04-03T16:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1004",
+              "homeTeamId": "pal",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-03",
+                "time": "2027-04-03T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1005",
+              "homeTeamId": "int",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-03",
+                "time": "2027-04-03T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1006",
+              "homeTeamId": "elp",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-04",
+                "time": "2027-04-04T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1007",
+              "homeTeamId": "jae",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-04",
+                "time": "2027-04-04T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1008",
+              "homeTeamId": "xot",
+              "awayTeamId": "par",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-04",
+                "time": "2027-04-04T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-11",
+          "number": 11,
+          "name": "Jornada 11",
+          "matches": [
+            {
+              "id": "c-1101",
+              "homeTeamId": "bet",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-09",
+                "time": "2027-04-09T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1102",
+              "homeTeamId": "jim",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-10",
+                "time": "2027-04-10T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1103",
+              "homeTeamId": "pal",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-10",
+                "time": "2027-04-10T16:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1104",
+              "homeTeamId": "int",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-10",
+                "time": "2027-04-10T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1105",
+              "homeTeamId": "elp",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-10",
+                "time": "2027-04-10T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1106",
+              "homeTeamId": "jae",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-11",
+                "time": "2027-04-11T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1107",
+              "homeTeamId": "xot",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-11",
+                "time": "2027-04-11T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1108",
+              "homeTeamId": "par",
+              "awayTeamId": "zar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-11",
+                "time": "2027-04-11T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-12",
+          "number": 12,
+          "name": "Jornada 12",
+          "matches": [
+            {
+              "id": "c-1201",
+              "homeTeamId": "bar",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-16",
+                "time": "2027-04-16T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1202",
+              "homeTeamId": "pal",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-17",
+                "time": "2027-04-17T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1203",
+              "homeTeamId": "int",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-17",
+                "time": "2027-04-17T16:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1204",
+              "homeTeamId": "elp",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-17",
+                "time": "2027-04-17T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1205",
+              "homeTeamId": "jae",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-17",
+                "time": "2027-04-17T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1206",
+              "homeTeamId": "xot",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-18",
+                "time": "2027-04-18T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1207",
+              "homeTeamId": "par",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-18",
+                "time": "2027-04-18T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1208",
+              "homeTeamId": "zar",
+              "awayTeamId": "pen",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-18",
+                "time": "2027-04-18T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-13",
+          "number": 13,
+          "name": "Jornada 13",
+          "matches": [
+            {
+              "id": "c-1301",
+              "homeTeamId": "pal",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-23",
+                "time": "2027-04-23T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1302",
+              "homeTeamId": "int",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-24",
+                "time": "2027-04-24T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1303",
+              "homeTeamId": "elp",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-24",
+                "time": "2027-04-24T16:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1304",
+              "homeTeamId": "jae",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-24",
+                "time": "2027-04-24T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1305",
+              "homeTeamId": "xot",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-24",
+                "time": "2027-04-24T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1306",
+              "homeTeamId": "par",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-25",
+                "time": "2027-04-25T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1307",
+              "homeTeamId": "zar",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-25",
+                "time": "2027-04-25T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1308",
+              "homeTeamId": "pen",
+              "awayTeamId": "man",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-25",
+                "time": "2027-04-25T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-14",
+          "number": 14,
+          "name": "Jornada 14",
+          "matches": [
+            {
+              "id": "c-1401",
+              "homeTeamId": "bar",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-04-30",
+                "time": "2027-04-30T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1402",
+              "homeTeamId": "elp",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-01",
+                "time": "2027-05-01T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1403",
+              "homeTeamId": "jae",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-01",
+                "time": "2027-05-01T16:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1404",
+              "homeTeamId": "xot",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-01",
+                "time": "2027-05-01T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1405",
+              "homeTeamId": "par",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-01",
+                "time": "2027-05-01T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1406",
+              "homeTeamId": "zar",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-02",
+                "time": "2027-05-02T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1407",
+              "homeTeamId": "pen",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-02",
+                "time": "2027-05-02T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1408",
+              "homeTeamId": "man",
+              "awayTeamId": "san",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-02",
+                "time": "2027-05-02T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "clausura-15",
+          "number": 15,
+          "name": "Jornada 15",
+          "matches": [
+            {
+              "id": "c-1501",
+              "homeTeamId": "elp",
+              "awayTeamId": "bar",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-07",
+                "time": "2027-05-07T18:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1502",
+              "homeTeamId": "jae",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-08",
+                "time": "2027-05-08T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1503",
+              "homeTeamId": "xot",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-08",
+                "time": "2027-05-08T16:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1504",
+              "homeTeamId": "par",
+              "awayTeamId": "jim",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-08",
+                "time": "2027-05-08T17:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1505",
+              "homeTeamId": "zar",
+              "awayTeamId": "bet",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-08",
+                "time": "2027-05-08T18:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1506",
+              "homeTeamId": "pen",
+              "awayTeamId": "cor",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-09",
+                "time": "2027-05-09T10:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1507",
+              "homeTeamId": "man",
+              "awayTeamId": "noi",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-09",
+                "time": "2027-05-09T15:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            },
+            {
+              "id": "c-1508",
+              "homeTeamId": "san",
+              "awayTeamId": "val",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-05-09",
+                "time": "2027-05-09T17:30:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "playoff",
+      "name": "Campeón de Temporada",
+      "kind": "knockout",
+      "order": 3,
+      "rounds": [
+        {
+          "id": "playoff-qf",
+          "number": 1,
+          "name": "Cuartos de final",
+          "matches": []
+        }
+      ]
+    }
+  ]
+}

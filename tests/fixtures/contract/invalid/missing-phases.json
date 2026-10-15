@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "seasonId": "2026-27",
+  "competitionName": "Primera División de fútbol sala (datos de ejemplo)",
+  "updatedAt": "2026-08-01T00:00:00Z",
+  "teams": [
+    {
+      "id": "bar",
+      "name": "Barça",
+      "shortName": "BAR",
+      "crestURL": null
+    }
+  ]
+}

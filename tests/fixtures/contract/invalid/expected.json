@@ -1,0 +1,78 @@
+{
+  "schema-version-2.json": {
+    "path": "$.schemaVersion",
+    "contains": "1 was expected"
+  },
+  "missing-season-id.json": {
+    "path": "$",
+    "contains": "'seasonId' is a required property"
+  },
+  "missing-teams.json": {
+    "path": "$",
+    "contains": "'teams' is a required property"
+  },
+  "missing-phases.json": {
+    "path": "$",
+    "contains": "'phases' is a required property"
+  },
+  "bad-status.json": {
+    "path": "$.phases[0].rounds[0].matches[0].status",
+    "contains": "is not one of"
+  },
+  "unknown-kind.json": {
+    "path": "$.phases[0].kind",
+    "contains": "is not one of"
+  },
+  "extra-property.json": {
+    "path": "$.teams[0]",
+    "contains": "Additional properties are not allowed"
+  },
+  "bad-date-format.json": {
+    "path": "$.phases[0].rounds[0].matches[0].kickoff.date",
+    "contains": "does not match"
+  },
+  "crest-http.json": {
+    "path": "$.teams[0].crestURL",
+    "contains": "does not match"
+  },
+  "negative-score.json": {
+    "path": "$.phases[0].rounds[0].matches[0].score.home",
+    "contains": "less than the minimum"
+  },
+  "time-not-iso.json": {
+    "path": "$.phases[0].rounds[0].matches[0].kickoff.time",
+    "contains": "does not match"
+  },
+  "time-without-z.json": {
+    "path": "$.phases[0].rounds[0].matches[0].kickoff.time",
+    "contains": "does not match"
+  },
+  "bad-decided-by.json": {
+    "path": "$.phases[0].rounds[0].matches[0].decidedBy",
+    "contains": "is not one of"
+  },
+  "index-schema-version-2.json": {
+    "path": "$.schemaVersion",
+    "contains": "1 was expected"
+  },
+  "index-missing-current-season-id.json": {
+    "path": "$",
+    "contains": "'currentSeasonId' is a required property"
+  },
+  "index-absolute-url.json": {
+    "path": "$.seasons[0].url",
+    "contains": "does not match"
+  },
+  "instant-impossible-date.json": {
+    "path": "$.updatedAt",
+    "contains": "is not a 'date-time'"
+  },
+  "kickoff-missing-time.json": {
+    "path": "$.phases[0].rounds[0].matches[0].kickoff",
+    "contains": "'time' is a required property"
+  },
+  "kickoff-empty.json": {
+    "path": "$.phases[0].rounds[0].matches[0].kickoff",
+    "contains": "'date' is a required property"
+  }
+}

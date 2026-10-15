@@ -1,0 +1,18 @@
+# Bloqueo de herramientas del contrato (ADR-006 §2). Versiones exactas, Python 3.9.
+# Mismo contenido en myfutsal-feed/requirements-ci.txt (la paridad lo vigila).
+attrs==26.1.0
+certifi==2026.7.22
+charset-normalizer==3.5.2
+check-jsonschema==0.36.2
+click==8.1.8
+idna==3.20
+jsonschema==4.25.1
+jsonschema-specifications==2025.9.1
+referencing==0.36.2
+regress==2025.5.1
+requests==2.32.5
+rpds-py==0.27.1
+ruamel.yaml==0.19.1
+tomli==2.5.0
+typing_extensions==4.16.0
+urllib3==2.6.3

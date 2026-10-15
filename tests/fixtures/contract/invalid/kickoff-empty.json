@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "seasonId": "2026-27",
+  "competitionName": "Primera División de fútbol sala (datos de ejemplo)",
+  "updatedAt": "2026-08-01T00:00:00Z",
+  "teams": [
+    {
+      "id": "bar",
+      "name": "Barça",
+      "shortName": "BAR",
+      "crestURL": null
+    },
+    {
+      "id": "bbb",
+      "name": "Segundo equipo",
+      "shortName": "BBB",
+      "crestURL": null
+    }
+  ],
+  "phases": [
+    {
+      "id": "liga",
+      "name": "Liga",
+      "kind": "league",
+      "order": 1,
+      "rounds": [
+        {
+          "id": "liga-01",
+          "number": 1,
+          "name": "Jornada 1",
+          "matches": [
+            {
+              "id": "m-1",
+              "homeTeamId": "bar",
+              "awayTeamId": "bbb",
+              "status": "scheduled",
+              "kickoff": {},
+              "score": null,
+              "decidedBy": null,
+              "note": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

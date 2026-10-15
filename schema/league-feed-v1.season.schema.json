@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "league-feed-v1: documento de temporada (seasons/<id>.json)",
+  "description": "Esquema estricto del productor (ADR-006 §1): enumeraciones cerradas y additionalProperties false. La tolerancia a valores y campos nuevos es de la app (ADR-002 §5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "seasonId",
+    "competitionName",
+    "updatedAt",
+    "teams",
+    "phases"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "seasonId": {
+      "$ref": "#/$defs/id"
+    },
+    "competitionName": {
+      "$ref": "#/$defs/text"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/instant"
+    },
+    "teams": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/team"
+      }
+    },
+    "phases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/phase"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datePattern": {
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+      "format": "date"
+    },
+    "nullableDate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "$ref": "#/$defs/datePattern"
+    },
+    "instantPattern": {
+      "description": "Instante UTC: solo con sufijo Z.",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "instant": {
+      "type": "string",
+      "$ref": "#/$defs/instantPattern"
+    },
+    "nullableInstant": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "$ref": "#/$defs/instantPattern"
+    },
+    "goals": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "goalPair": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "home",
+        "away"
+      ],
+      "properties": {
+        "home": {
+          "$ref": "#/$defs/goals"
+        },
+        "away": {
+          "$ref": "#/$defs/goals"
+        }
+      }
+    },
+    "team": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "shortName"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "shortName": {
+          "$ref": "#/$defs/text"
+        },
+        "crestURL": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^https://[^ ]+$"
+        }
+      }
+    },
+    "kickoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "time"
+      ],
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/nullableDate"
+        },
+        "time": {
+          "$ref": "#/$defs/nullableInstant"
+        }
+      }
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "homeTeamId",
+        "awayTeamId",
+        "status",
+        "kickoff"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "homeTeamId": {
+          "$ref": "#/$defs/id"
+        },
+        "awayTeamId": {
+          "$ref": "#/$defs/id"
+        },
+        "status": {
+          "enum": [
+            "scheduled",
+            "live",
+            "finished",
+            "postponed",
+            "suspended",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "kickoff": {
+          "$ref": "#/$defs/kickoff"
+        },
+        "score": {
+          "$ref": "#/$defs/goalPair"
+        },
+        "decidedBy": {
+          "enum": [
+            null,
+            "extraTime",
+            "penalties"
+          ]
+        },
+        "penalties": {
+          "$ref": "#/$defs/goalPair"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "round": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "number",
+        "name",
+        "matches"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "matches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/match"
+          }
+        }
+      }
+    },
+    "phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "order",
+        "rounds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "kind": {
+          "enum": [
+            "league",
+            "knockout"
+          ]
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rounds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/round"
+          }
+        }
+      }
+    }
+  }
+}

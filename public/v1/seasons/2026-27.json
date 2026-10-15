@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "seasonId": "2026-27",
+  "competitionName": "Primera División de fútbol sala",
+  "updatedAt": "2026-10-15T00:00:00Z",
+  "teams": [
+    {
+      "id": "pendiente",
+      "name": "Pendiente de carga",
+      "shortName": "TBD",
+      "crestURL": null
+    }
+  ],
+  "phases": [
+    {
+      "id": "pendiente",
+      "name": "Pendiente de carga",
+      "kind": "league",
+      "order": 1,
+      "rounds": []
+    }
+  ]
+}

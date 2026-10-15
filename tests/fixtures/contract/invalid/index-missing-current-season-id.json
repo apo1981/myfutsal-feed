@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "seasons": [
+    {
+      "id": "2026-27",
+      "name": "Temporada 2026/27",
+      "url": "seasons/2026-27.json"
+    }
+  ]
+}
