@@ -14,12 +14,12 @@ from typing import List, Optional, Tuple
 
 # (nombre, patron del encabezado, conceptos que deben aparecer en el cuerpo de la seccion)
 REQUIRED_SECTIONS = [
-    ("primera vez", r"primera vez", [r"crear.*repositorio", r"Pages", r"push protection|protecci[oó]n contra push", r"noreply"]),
+    ("primera vez", r"primera vez", [r"crear.*repositorio", r"Pages", r"push protection|protecci[oó]n contra push", r"noreply", r"Block command line pushes"]),
     ("publicar un resultado", r"publicar un resultado", [r"updatedAt", r"scripts/verify"]),
     ("cambiar hora, aplazar o suspender", r"cambiar hora|aplazar|suspender", [r"postponed", r"suspended", r"kickoff"]),
     ("falla validate", r"falla .*validate", [r"scripts/validate-schema", r"scripts/check-invariants"]),
     ("falla la comprobacion posterior", r"falla la comprobaci[oó]n posterior", [r"scripts/smoke-check", r"600"]),
-    ("revertir (rollback)", r"revertir|rollback", [r"git revert"]),
+    ("revertir (rollback)", r"revertir|rollback", [r"git revert --no-commit", r"updatedAt"]),
     ("verificacion en el iPhone", r"iPhone", [r"pull to refresh"]),
     ("anotar el tiempo por dia de partido", r"tiempo", [r"tiempo:", r"git log"]),
 ]

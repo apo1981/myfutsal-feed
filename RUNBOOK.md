@@ -17,7 +17,7 @@ Una sola vez, y antes del primer *push*. Requiere tu cuenta de GitHub (historia 
    Un email personal publicado en el historial de un repositorio público no se puede retirar sin reescribirlo.
 2. **Crear el repositorio** público `myfutsal-feed` en GitHub, sin README ni licencia (vacío), y añadir el remoto: `git remote add origin https://github.com/<usuario>/myfutsal-feed.git`.
 3. **Activar Pages:** Settings → Pages → Source: «GitHub Actions».
-4. **Protección contra push de secretos** (*push protection*): Settings → Code security. Suele estar activada por defecto en repositorios públicos nuevos; comprueba que lo está. Nada de claves ni tokens en este repositorio.
+4. **Protección contra push de secretos** (*push protection*): Settings → Code security. Suele estar activada por defecto en repositorios públicos nuevos; comprueba que lo está. Nada de claves ni tokens en este repositorio. Activa también «Block command line pushes that expose my email» (Settings → Emails): es la red de seguridad en el servidor para que no se publique un email personal.
 5. **Primer push:** `git push -u origin main`. Observa la pestaña Actions: deben pasar `validate`, `deploy` y `smoke`.
 
 ## Publicar un resultado
@@ -69,14 +69,21 @@ El workflow queda en rojo, GitHub te avisa por email y **no se despliega nada**:
 
 ## Revertir (rollback) a la versión anterior
 
-El historial de Git es el rollback. Localiza el commit malo con `git log --oneline` y revierte **sin reescribir el historial**:
+El historial de Git es el rollback. Localiza el commit malo con `git log --oneline` y revierte **sin reescribir el historial** y **con un `updatedAt` nuevo**: un `git revert` a secas devuelve el contenido anterior con su `updatedAt` anterior, y la puerta lo rechaza (`updated-at-sin-avanzar`) porque el contenido cambia sin que `updatedAt` avance. Además, la app usa `updatedAt` para la antigüedad de los datos (FR-005), que tras un rollback debe reflejar el momento de la corrección.
 
 ```
-git revert <commit>
+git revert --no-commit <commit>
+```
+
+Edita `public/v1/seasons/<id>.json` y pon `updatedAt` en el instante actual en UTC (`date -u +%Y-%m-%dT%H:%M:%SZ`). Después:
+
+```
+scripts/verify
+git commit -m "Revertir <commit> (tiempo: 5 min)"
 git push origin main
 ```
 
-El revert pasa por la misma puerta, así que despliega la versión anterior. Si el commit malo contenía además un cambio bueno, edita el JSON a mano en lugar de revertir.
+El commit pasa por la misma puerta y despliega la versión anterior con el `updatedAt` nuevo. Si no puedes usar la línea de comandos, edita el JSON en la web de GitHub: restaura el contenido bueno y cambia `updatedAt`. Si el commit malo contenía además un cambio bueno, edita el JSON a mano en lugar de revertir.
 
 ## Verificación en el iPhone
 

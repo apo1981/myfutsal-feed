@@ -63,6 +63,20 @@ class BrokenRunbooks(TempDirTestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("'primera vez' no menciona", result.stderr)
 
+    def test_us007a_c8_rollback_that_forgets_the_new_updated_at_fails(self) -> None:
+        # B-2: el rollback sin `updatedAt` nuevo es rechazado por la puerta.
+        text = read(REAL_RUNBOOK)
+        start = text.index("## Revertir")
+        end = text.index("## Verificación en el iPhone")
+        result = self.check(text[:start] + "## Revertir (rollback)\n\n```\ngit revert <commit>\n```\n\n" + text[end:])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("'revertir (rollback)' no menciona", result.stderr)
+
+    def test_us007a_c8_first_time_without_the_email_push_block_fails(self) -> None:
+        result = self.check(read(REAL_RUNBOOK).replace("Block command line pushes", "otra cosa"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Block command line pushes", result.stderr)
+
     def test_us007a_c8_command_that_does_not_exist_fails(self) -> None:
         text = read(REAL_RUNBOOK) + "\n```\nscripts/no-existe --ayuda\n```\n"
         result = self.check(text)
