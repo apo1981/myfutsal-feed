@@ -26,9 +26,16 @@ def run_tool(tool: str, schema: str, files: List[str]) -> Dict[str, Any]:
     command = [tool, "--no-cache", "--output-format", "json", "--schemafile", schema] + files
     proc = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     try:
-        return json.loads(proc.stdout)
+        report = json.loads(proc.stdout)
     except ValueError:
-        return {"status": "error", "errors": [], "parse_errors": [{"filename": "?", "message": proc.stderr.strip() or proc.stdout.strip()}]}
+        return unreadable_report(proc.stderr.strip() or proc.stdout.strip())
+    if proc.returncode != 0 and not report.get("errors") and not report.get("parse_errors"):
+        return unreadable_report("la herramienta termino con codigo %d sin describir ningun error" % proc.returncode)
+    return report
+
+
+def unreadable_report(message: str) -> Dict[str, Any]:
+    return {"status": "error", "errors": [], "parse_errors": [{"filename": "?", "message": message}]}
 
 
 def problems_in(report: Dict[str, Any]) -> List[str]:

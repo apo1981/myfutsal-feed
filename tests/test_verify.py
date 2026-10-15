@@ -74,6 +74,15 @@ class FullRun(CopiedFeed):
         self.assertIn("verify: FALLO", result.stderr)
         self.assertIn("1-estructura", result.stderr)
 
+    def test_us007a_c9_a_failure_message_containing_the_word_warn_is_not_hidden(self) -> None:
+        # S-6: solo se filtra el aviso conocido de urllib3, no cualquier linea con "warn".
+        self.init_repo()
+        with open(os.path.join(self.feed, "public", "v1", "warning-notes.pdf"), "w") as handle:
+            handle.write("x")
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("warning-notes.pdf", result.stdout)
+
     def test_us007a_c9_a_broken_workflow_is_named(self) -> None:
         self.init_repo()
         path = os.path.join(self.feed, ".github", "workflows", "publish.yml")

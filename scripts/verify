@@ -33,7 +33,7 @@ run() {
         FAILED=$((FAILED + 1))
         FAILED_NAMES="$FAILED_NAMES $name"
         echo "[FALLO] $name"
-        printf '%s\n' "$output" | grep -vi 'warn' | sed 's/^/        /'
+        printf '%s\n' "$output" | grep -vE 'NotOpenSSLWarning|warnings\.warn' | sed 's/^/        /'
     fi
 }
 

@@ -7,6 +7,7 @@ import unittest
 from typing import List
 
 import support
+import validate_schema
 from support import FIXTURES, output_of, run_script
 
 VALIDATE = os.path.join(support.SCRIPTS, "validate-schema")
@@ -49,6 +50,31 @@ class ContractFixtures(unittest.TestCase):
         with open(os.path.join(directory, "expected.json"), encoding="utf-8") as handle:
             expected = sorted(json.load(handle))
         self.assertEqual(expected, sorted(os.path.basename(p) for p in files_in(directory, ["expected.json"])))
+
+
+class ToolExitCode(support.TempDirTestCase):
+    """S-5: un codigo de salida distinto de 0 sin errores descritos tambien es un fallo."""
+
+    def fake_tool(self, stdout: str, code: int) -> str:
+        path = os.path.join(self.tmp, "fake-check-jsonschema")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("#!/bin/sh\ncat <<'EOF'\n%s\nEOF\nexit %d\n" % (stdout, code))
+        os.chmod(path, 0o755)
+        return path
+
+    def validate(self, tool: str):
+        target = os.path.join(self.tmp, "season.json")
+        with open(target, "w", encoding="utf-8") as handle:
+            handle.write("{}")
+        return support.run_main(validate_schema.main, ["--feed", support.FEED, "--tool", tool, target])
+
+    def test_us007a_c3_non_zero_exit_with_json_without_errors_fails(self) -> None:
+        result = self.validate(self.fake_tool('{"status": "fail"}', 1))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("codigo 1", result.stderr)
+
+    def test_us007a_c3_zero_exit_with_json_without_errors_passes(self) -> None:
+        self.assertEqual(self.validate(self.fake_tool('{"status": "ok"}', 0)).returncode, 0)
 
 
 if __name__ == "__main__":
