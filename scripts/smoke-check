@@ -1,0 +1,7 @@
+#!/bin/sh
+# Comprobacion posterior al despliegue (ADR-004 §4). No necesita el venv, solo python3.
+# Uso: scripts/smoke-check --base <URL> [--public <dir>] [--interval <s>] [--timeout <s>]
+#   Por defecto: intervalo 60 s y plazo 720 s (12 min).
+set -eu
+. "$(dirname "$0")/_env.sh"
+run_python "$FEED/scripts/smoke_check.py" --feed "$FEED" "$@"
