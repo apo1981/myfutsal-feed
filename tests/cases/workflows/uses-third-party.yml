@@ -1,0 +1,105 @@
+name: Publish feed
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout (full history for the previous version)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install check-jsonschema (pinned in requirements-ci.txt)
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --disable-pip-version-check --quiet -r requirements-ci.txt
+
+      - name: Find the previous version of the current season
+        id: previous
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          season_id=$(jq -r .currentSeasonId public/v1/index.json)
+          ref=""
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+              && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            ref="$BEFORE"
+          elif git rev-parse --verify --quiet "HEAD^" >/dev/null; then
+            ref="HEAD^"
+          fi
+          previous_file="${RUNNER_TEMP:-/tmp}/previous-season.json"
+          if [ -n "$ref" ] && git show "$ref:public/v1/seasons/$season_id.json" > "$previous_file" 2>/dev/null; then
+            echo "previous=$previous_file" >> "$GITHUB_OUTPUT"
+            echo "Previous version taken from $ref"
+          else
+            echo "previous=" >> "$GITHUB_OUTPUT"
+            echo "First publication: no previous version"
+          fi
+
+      - name: Schema parity (no accidental edits)
+        run: cd schema && shasum -a 256 -c SHA256SUMS
+
+      - name: Allowlist for public/
+        run: scripts/check-allowlist
+
+      - name: Validate against the schema
+        run: scripts/validate-schema public/v1/index.json public/v1/seasons/*.json
+
+      - name: Invariants
+        env:
+          PREVIOUS: ${{ steps.previous.outputs.previous }}
+        run: |
+          if [ -n "$PREVIOUS" ]; then
+            scripts/check-invariants --previous "$PREVIOUS"
+          else
+            scripts/check-invariants
+          fi
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Upload the public/ artifact
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Post-deploy check (200, JSON, ETag, 304, updatedAt)
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: scripts/smoke-check --base "$PAGE_URL"

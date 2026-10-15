@@ -1,0 +1,33 @@
+#!/bin/sh
+# Comprobacion estatica del workflow (US-007a, criterio 5; ADR-006 §7). Un workflow no se puede
+# ejecutar en local: se valida su estructura, la politica propia y la ausencia de secretos.
+# Uso: scripts/check-workflow [<fichero>]   (por defecto .github/workflows/publish.yml)
+set -eu
+. "$(dirname "$0")/_env.sh"
+require_tools
+
+FILE=${1:-$FEED/.github/workflows/publish.yml}
+CHECK="$TOOLS_VENV/bin/check-jsonschema"
+status=0
+
+# Ejecuta una fase; si falla, imprime su nombre y la salida de la herramienta.
+phase() {
+    name=$1; shift
+    if output=$("$@" 2>&1); then
+        echo "ok $name"
+    else
+        echo "FALLO $name: $FILE" >&2
+        printf '%s\n' "$output" | sed 's/^/    /' >&2
+        status=1
+    fi
+}
+
+# Falla si el workflow referencia algun secreto distinto de GITHUB_TOKEN.
+no_foreign_secrets() {
+    ! grep -nE '(^|[^A-Za-z_])secrets([^A-Za-z_]|$)' "$FILE" | grep -v 'secrets\.GITHUB_TOKEN'
+}
+
+phase vendor-github-workflows "$CHECK" --no-cache --builtin-schema vendor.github-workflows "$FILE"
+phase politica-propia "$CHECK" --no-cache --schemafile "$FEED/policy/workflow-policy.schema.json" "$FILE"
+phase sin-secretos no_foreign_secrets
+exit "$status"

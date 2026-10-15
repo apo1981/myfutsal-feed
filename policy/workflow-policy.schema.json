@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Politica propia del workflow de publicacion del feed (ADR-006 §7, US-007a criterio 5)",
+  "description": "Se aplica al YAML del workflow con check-jsonschema. Complementa vendor.github-workflows (estructura) y el grep de secretos de scripts/check-workflow.",
+  "type": "object",
+  "required": [
+    "on",
+    "permissions",
+    "concurrency",
+    "jobs"
+  ],
+  "properties": {
+    "on": {
+      "description": "Regla 1: solo push a main y workflow_dispatch.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "push",
+        "workflow_dispatch"
+      ],
+      "properties": {
+        "push": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "branches"
+          ],
+          "properties": {
+            "branches": {
+              "const": [
+                "main"
+              ]
+            }
+          }
+        },
+        "workflow_dispatch": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "permissions": {
+      "description": "Regla 2: permisos de nivel superior solo contents: read.",
+      "const": {
+        "contents": "read"
+      }
+    },
+    "concurrency": {
+      "description": "Regla 8: grupo pages, sin cancelar el despliegue en curso.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group"
+      ],
+      "properties": {
+        "group": {
+          "const": "pages"
+        },
+        "cancel-in-progress": {
+          "const": false
+        }
+      }
+    },
+    "jobs": {
+      "type": "object",
+      "required": [
+        "validate",
+        "deploy",
+        "smoke"
+      ],
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/job"
+          },
+          {
+            "$ref": "#/$defs/noDeployPermissions"
+          }
+        ]
+      },
+      "properties": {
+        "validate": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/job"
+            },
+            {
+              "$ref": "#/$defs/noDeployPermissions"
+            },
+            {
+              "description": "Reglas 9 a 11: checkout completo, version anterior con git show y la puerta completa.",
+              "required": [
+                "steps"
+              ],
+              "properties": {
+                "steps": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "$ref": "#/$defs/checkoutStep"
+                      }
+                    },
+                    {
+                      "items": {
+                        "$ref": "#/$defs/checkoutDepth"
+                      }
+                    },
+                    {
+                      "contains": {
+                        "$ref": "#/$defs/stepRunning",
+                        "properties": {
+                          "run": {
+                            "pattern": "git show [^\\n]*public/v1/seasons/"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "contains": {
+                        "$ref": "#/$defs/stepRunning",
+                        "properties": {
+                          "run": {
+                            "pattern": "shasum -a 256 -c SHA256SUMS"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "contains": {
+                        "$ref": "#/$defs/stepRunning",
+                        "properties": {
+                          "run": {
+                            "pattern": "scripts/check-allowlist"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "contains": {
+                        "$ref": "#/$defs/stepRunning",
+                        "properties": {
+                          "run": {
+                            "pattern": "scripts/validate-schema"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "contains": {
+                        "$ref": "#/$defs/stepRunning",
+                        "properties": {
+                          "run": {
+                            "pattern": "scripts/check-invariants"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "deploy": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/job"
+            },
+            {
+              "description": "Reglas 3 y 4: depende de validate y es el unico con permisos de despliegue.",
+              "required": [
+                "needs",
+                "permissions"
+              ],
+              "properties": {
+                "needs": {
+                  "anyOf": [
+                    {
+                      "const": "validate"
+                    },
+                    {
+                      "type": "array",
+                      "contains": {
+                        "const": "validate"
+                      }
+                    }
+                  ]
+                },
+                "permissions": {
+                  "type": "object",
+                  "required": [
+                    "pages",
+                    "id-token"
+                  ],
+                  "properties": {
+                    "pages": {
+                      "const": "write"
+                    },
+                    "id-token": {
+                      "const": "write"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "smoke": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/job"
+            },
+            {
+              "$ref": "#/$defs/noDeployPermissions"
+            },
+            {
+              "description": "Regla 4: la comprobacion posterior espera al despliegue y ejecuta el smoke check.",
+              "required": [
+                "needs",
+                "steps"
+              ],
+              "properties": {
+                "needs": {
+                  "anyOf": [
+                    {
+                      "const": "deploy"
+                    },
+                    {
+                      "type": "array",
+                      "contains": {
+                        "const": "deploy"
+                      }
+                    }
+                  ]
+                },
+                "steps": {
+                  "contains": {
+                    "$ref": "#/$defs/stepRunning",
+                    "properties": {
+                      "run": {
+                        "pattern": "scripts/smoke-check"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "notAlways": {
+      "description": "Regla 5: ningun if con always().",
+      "not": {
+        "type": "string",
+        "pattern": "[aA][lL][wW][aA][yY][sS]\\(\\)"
+      }
+    },
+    "stepRunning": {
+      "type": "object",
+      "required": [
+        "run"
+      ],
+      "properties": {
+        "run": {
+          "type": "string"
+        }
+      }
+    },
+    "checkoutStep": {
+      "type": "object",
+      "required": [
+        "uses"
+      ],
+      "properties": {
+        "uses": {
+          "pattern": "^actions/checkout@"
+        }
+      }
+    },
+    "checkoutDepth": {
+      "description": "Regla 9: todo checkout de validate trae el historial completo.",
+      "if": {
+        "$ref": "#/$defs/checkoutStep"
+      },
+      "then": {
+        "required": [
+          "with"
+        ],
+        "properties": {
+          "with": {
+            "type": "object",
+            "required": [
+              "fetch-depth"
+            ],
+            "properties": {
+              "fetch-depth": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "not": {
+        "required": [
+          "continue-on-error"
+        ]
+      },
+      "properties": {
+        "if": {
+          "$ref": "#/$defs/notAlways"
+        },
+        "uses": {
+          "type": "string",
+          "pattern": "^actions/",
+          "description": "Regla 6: solo acciones oficiales actions/*."
+        }
+      }
+    },
+    "job": {
+      "type": "object",
+      "not": {
+        "required": [
+          "continue-on-error"
+        ]
+      },
+      "required": [
+        "runs-on",
+        "steps"
+      ],
+      "properties": {
+        "runs-on": {
+          "const": "ubuntu-24.04",
+          "description": "Regla 7: runner fijado."
+        },
+        "if": {
+          "$ref": "#/$defs/notAlways"
+        },
+        "uses": {
+          "type": "string",
+          "pattern": "^actions/"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    },
+    "noDeployPermissions": {
+      "description": "Regla 3: pages e id-token no se conceden fuera de deploy.",
+      "type": "object",
+      "properties": {
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "pages": {
+              "enum": [
+                "none",
+                "read"
+              ]
+            },
+            "id-token": {
+              "enum": [
+                "none"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "checkout-shallow.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "9 fetch-depth 0"
+  },
+  "checkout-without-with.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "9 fetch-depth 0"
+  },
+  "concurrency-cancel.yml": {
+    "phase": "politica-propia",
+    "contains": "concurrency",
+    "rule": "8 concurrency sin cancelar"
+  },
+  "concurrency-other-group.yml": {
+    "phase": "politica-propia",
+    "contains": "concurrency",
+    "rule": "8 grupo pages"
+  },
+  "continue-on-error-job.yml": {
+    "phase": "politica-propia",
+    "contains": "validate",
+    "rule": "5 continue-on-error"
+  },
+  "continue-on-error-step.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "5 continue-on-error"
+  },
+  "deploy-without-needs.yml": {
+    "phase": "politica-propia",
+    "contains": "deploy",
+    "rule": "4 deploy needs validate"
+  },
+  "if-always-job.yml": {
+    "phase": "politica-propia",
+    "contains": "deploy",
+    "rule": "5 if always"
+  },
+  "if-always-step.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "5 if always"
+  },
+  "missing-smoke-job.yml": {
+    "phase": "politica-propia",
+    "contains": "smoke",
+    "rule": "4 job de comprobacion posterior"
+  },
+  "no-git-show.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "10 version anterior con git show"
+  },
+  "on-pull-request.yml": {
+    "phase": "politica-propia",
+    "contains": "on",
+    "rule": "1 disparadores"
+  },
+  "on-push-other-branch.yml": {
+    "phase": "politica-propia",
+    "contains": "branches",
+    "rule": "1 disparadores"
+  },
+  "permissions-top-pages.yml": {
+    "phase": "politica-propia",
+    "contains": "permissions",
+    "rule": "2 permisos de nivel superior"
+  },
+  "permissions-top-write.yml": {
+    "phase": "politica-propia",
+    "contains": "permissions",
+    "rule": "2 permisos de nivel superior"
+  },
+  "runs-on-latest.yml": {
+    "phase": "politica-propia",
+    "contains": "runs-on",
+    "rule": "7 runner fijado"
+  },
+  "secret-reference.yml": {
+    "phase": "sin-secretos",
+    "contains": "secrets.DEPLOY_KEY",
+    "rule": "12 sin secretos distintos de GITHUB_TOKEN"
+  },
+  "smoke-without-needs.yml": {
+    "phase": "politica-propia",
+    "contains": "smoke",
+    "rule": "4 smoke espera a deploy"
+  },
+  "smoke-without-script.yml": {
+    "phase": "politica-propia",
+    "contains": "smoke",
+    "rule": "4 smoke ejecuta el script"
+  },
+  "uses-third-party.yml": {
+    "phase": "politica-propia",
+    "contains": "uses",
+    "rule": "6 uses solo actions/*"
+  },
+  "validate-has-id-token-write.yml": {
+    "phase": "politica-propia",
+    "contains": "validate",
+    "rule": "3 id-token solo en deploy"
+  },
+  "validate-has-pages-write.yml": {
+    "phase": "politica-propia",
+    "contains": "validate",
+    "rule": "3 pages solo en deploy"
+  },
+  "validate-without-allowlist.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "11 puerta: lista permitida"
+  },
+  "validate-without-invariants.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "11 puerta: invariantes"
+  },
+  "validate-without-schema.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "11 puerta: esquema"
+  },
+  "validate-without-shasum.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "11 puerta: shasum"
+  },
+  "vendor-schema-typo.yml": {
+    "phase": "vendor-github-workflows",
+    "contains": "stepz",
+    "rule": "0 YAML valido segun vendor.github-workflows"
+  }
+}
