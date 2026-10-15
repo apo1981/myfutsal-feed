@@ -191,6 +191,7 @@
                 "permissions": {
                   "type": "object",
                   "required": [
+                    "contents",
                     "pages",
                     "id-token"
                   ],
@@ -200,9 +201,22 @@
                     },
                     "id-token": {
                       "const": "write"
+                    },
+                    "contents": {
+                      "const": "read"
                     }
-                  }
+                  },
+                  "additionalProperties": false,
+                  "description": "Regla 3: exactamente contents read, pages write e id-token write."
                 }
+              }
+            },
+            {
+              "description": "Regla 5: deploy y smoke no llevan if: ninguna condicion puede saltarse la puerta.",
+              "not": {
+                "required": [
+                  "if"
+                ]
               }
             }
           ]
@@ -246,6 +260,14 @@
                   }
                 }
               }
+            },
+            {
+              "description": "Regla 5: deploy y smoke no llevan if: ninguna condicion puede saltarse la puerta.",
+              "not": {
+                "required": [
+                  "if"
+                ]
+              }
             }
           ]
         }
@@ -254,10 +276,10 @@
   },
   "$defs": {
     "notAlways": {
-      "description": "Regla 5: ningun if con always().",
+      "description": "Regla 5: ningun if puede ejecutar un job o paso con la puerta en rojo: sin always(), failure() ni cancelled().",
       "not": {
         "type": "string",
-        "pattern": "[aA][lL][wW][aA][yY][sS]\\(\\)"
+        "pattern": "([aA][lL][wW][aA][yY][sS]|[fF][aA][iI][lL][uU][rR][eE]|[cC][aA][nN][cC][eE][lL][lL][eE][dD])\\s*\\("
       }
     },
     "stepRunning": {

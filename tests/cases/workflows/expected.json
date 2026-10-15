@@ -29,6 +29,31 @@
     "contains": "steps",
     "rule": "5 continue-on-error"
   },
+  "deploy-if-always-spaced-uppercase.yml": {
+    "phase": "politica-propia",
+    "contains": "deploy",
+    "rule": "5 if always variantes"
+  },
+  "deploy-if-any-condition.yml": {
+    "phase": "politica-propia",
+    "contains": "deploy",
+    "rule": "5 deploy sin if"
+  },
+  "deploy-if-failure.yml": {
+    "phase": "politica-propia",
+    "contains": "deploy",
+    "rule": "5 if failure en deploy"
+  },
+  "deploy-if-not-cancelled.yml": {
+    "phase": "politica-propia",
+    "contains": "deploy",
+    "rule": "5 if cancelled en deploy"
+  },
+  "deploy-permissions-contents-write.yml": {
+    "phase": "politica-propia",
+    "contains": "permissions",
+    "rule": "3 permisos de deploy exactos"
+  },
   "deploy-without-needs.yml": {
     "phase": "politica-propia",
     "contains": "deploy",
@@ -79,10 +104,20 @@
     "contains": "runs-on",
     "rule": "7 runner fijado"
   },
+  "secret-after-github-token.yml": {
+    "phase": "sin-secretos",
+    "contains": "secrets.DEPLOY_KEY",
+    "rule": "12 secreto ajeno en la misma linea que GITHUB_TOKEN"
+  },
   "secret-reference.yml": {
     "phase": "sin-secretos",
     "contains": "secrets.DEPLOY_KEY",
     "rule": "12 sin secretos distintos de GITHUB_TOKEN"
+  },
+  "smoke-if-always.yml": {
+    "phase": "politica-propia",
+    "contains": "smoke",
+    "rule": "5 smoke sin if"
   },
   "smoke-without-needs.yml": {
     "phase": "politica-propia",
@@ -93,6 +128,11 @@
     "phase": "politica-propia",
     "contains": "smoke",
     "rule": "4 smoke ejecuta el script"
+  },
+  "step-if-failure.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "5 if failure en paso"
   },
   "uses-third-party.yml": {
     "phase": "politica-propia",

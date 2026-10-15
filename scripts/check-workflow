@@ -24,7 +24,8 @@ phase() {
 
 # Falla si el workflow referencia algun secreto distinto de GITHUB_TOKEN.
 no_foreign_secrets() {
-    ! grep -nE '(^|[^A-Za-z_])secrets([^A-Za-z_]|$)' "$FILE" | grep -v 'secrets\.GITHUB_TOKEN'
+    # Una referencia por linea de salida (grep -o), para que GITHUB_TOKEN no tape a otro secreto en la misma linea.
+    ! grep -noE '(^|[^A-Za-z_])secrets(\.[A-Za-z0-9_]+|\[[^]]*\])?' "$FILE" | grep -vE ':.?secrets\.GITHUB_TOKEN$'
 }
 
 phase vendor-github-workflows "$CHECK" --no-cache --builtin-schema vendor.github-workflows "$FILE"

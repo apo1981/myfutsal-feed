@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import subprocess
 import unittest
 from typing import Any, Dict, List
 
-import support
+import support  # debe ir antes que invariants y runbook_check: anade scripts/ al sys.path
+import invariants
+import runbook_check
 from support import TempDirTestCase, output_of, run_script
 
 WORKFLOW = os.path.join(support.FEED, ".github", "workflows", "publish.yml")
@@ -100,6 +103,14 @@ class InvalidExamples(unittest.TestCase):
         self.assertIn("secrets.DEPLOY_KEY", result.stderr)
         self.assertIn("ok politica-propia", result.stdout)
 
+    def test_us007a_c5_the_script_rejects_a_foreign_secret_on_the_same_line_as_github_token(self) -> None:
+        # S-7: antes, la linea entera se descartaba por contener secrets.GITHUB_TOKEN.
+        result = run_script([CHECK_WORKFLOW, os.path.join(CASES, "secret-after-github-token.yml")])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("FALLO sin-secretos", result.stderr)
+        self.assertIn("secrets.DEPLOY_KEY", result.stderr)
+        self.assertNotIn("secrets.GITHUB_TOKEN", result.stderr)
+
     def test_us007a_c5_the_script_rejects_a_vendor_schema_violation(self) -> None:
         result = run_script([CHECK_WORKFLOW, os.path.join(CASES, "vendor-schema-typo.yml")])
         self.assertNotEqual(result.returncode, 0)
@@ -139,7 +150,7 @@ class WorkflowShape(unittest.TestCase):
     def test_us007a_c5_no_job_or_step_can_skip_the_gate(self) -> None:
         with open(WORKFLOW, encoding="utf-8") as handle:
             text = handle.read()
-        self.assertNotRegex(text, r"(?i)always\(\)")
+        self.assertNotRegex(text, r"(?i)(always|failure|cancelled)\s*\(")
         self.assertNotIn("continue-on-error", text)
 
     def test_us007a_c5_actions_runner_and_concurrency(self) -> None:
@@ -149,12 +160,29 @@ class WorkflowShape(unittest.TestCase):
         self.assertEqual({job["runs-on"] for job in self.workflow["jobs"].values()}, {"ubuntu-24.04"})
         self.assertEqual(self.workflow["concurrency"], {"group": "pages", "cancel-in-progress": False})
 
+    def test_us007a_c5_pages_actions_use_the_node_24_major_version(self) -> None:
+        # I-2: la v4 usa Node 20, retirado de los runners el 23-09-2026.
+        uses = [step["uses"] for step in self.workflow["jobs"]["deploy"]["steps"] if "uses" in step]
+        self.assertIn("actions/upload-pages-artifact@v5", uses)
+        self.assertIn("actions/deploy-pages@v5", uses)
+
+    def test_us007a_c5_deploy_and_smoke_have_no_if(self) -> None:
+        for name in ("deploy", "smoke"):
+            self.assertNotIn("if", self.workflow["jobs"][name], name)
+
+    def test_us007a_c5_checkouts_do_not_persist_the_token(self) -> None:
+        # S-2: validate instala paquetes de PyPI tras el checkout; el token no debe quedar en .git/config.
+        checkouts = [s for job in self.workflow["jobs"].values() for s in job["steps"]
+                     if s.get("uses", "").startswith("actions/checkout@")]
+        self.assertEqual(len(checkouts), 3)
+        self.assertTrue(all(s["with"]["persist-credentials"] is False for s in checkouts))
+
     def test_us007a_c5_validate_checks_out_the_full_history(self) -> None:
         checkout = [s for s in self.workflow["jobs"]["validate"]["steps"] if s.get("uses", "").startswith("actions/checkout@")]
         self.assertEqual([s["with"]["fetch-depth"] for s in checkout], [0])
 
 
-class PreviousVersionStep(TempDirTestCase):
+class TempGitFeed(TempDirTestCase):
     """El paso `previous` del workflow se ejecuta de verdad en un repositorio Git temporal."""
 
     @classmethod
@@ -179,11 +207,29 @@ class PreviousVersionStep(TempDirTestCase):
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
         return proc.stdout.strip()
 
-    def commit_season(self, updated_at: str) -> str:
-        season = support.season_with(lambda s: s.update(updatedAt=updated_at))
-        support.write_json(os.path.join(self.repo, "public", "v1", "seasons", support.SEASON_ID + ".json"), season)
+    def season_path(self) -> str:
+        return os.path.join(self.repo, "public", "v1", "seasons", support.SEASON_ID + ".json")
+
+    def write_season(self, updated_at: str, postponed: bool = False) -> None:
+        def mutate(season: Dict[str, Any]) -> None:
+            season.update(updatedAt=updated_at)
+            if postponed:
+                support.match_of(season, "m-02").update(status="postponed")
+        support.write_json(self.season_path(), support.season_with(mutate))
+
+    def commit_season(self, updated_at: str, postponed: bool = False) -> str:
+        self.write_season(updated_at, postponed)
+        return self.commit_all(updated_at)
+
+    def commit_broken_season(self) -> str:
+        """Un commit con JSON mal formado (el error tipico al editar a mano): no pasa la puerta."""
+        with open(self.season_path(), "w", encoding="utf-8") as handle:
+            handle.write('{"schemaVersion": 1,, "seasonId": ')
+        return self.commit_all("broken json")
+
+    def commit_all(self, message: str) -> str:
         self.git("add", "-A")
-        self.git("commit", "-q", "-m", updated_at)
+        self.git("commit", "-q", "-m", message)
         return self.git("rev-parse", "HEAD")
 
     def run_step(self, before: str) -> str:
@@ -195,10 +241,19 @@ class PreviousVersionStep(TempDirTestCase):
             line = [l for l in handle.read().splitlines() if l.startswith("previous=")][-1]
         return line[len("previous="):]
 
+    def run_invariants(self, before: str):
+        """El paso `previous` real seguido de la invariante, como en el job `validate`."""
+        previous = self.run_step(before)
+        args = ["--feed", self.repo, "--public", os.path.join(self.repo, "public")]
+        return support.run_main(invariants.main, args + (["--previous", previous] if previous else []))
+
     def previous_updated_at(self, path: str) -> str:
         with open(path, encoding="utf-8") as handle:
             return json.load(handle)["updatedAt"]
 
+
+
+class PreviousVersionStep(TempGitFeed):
     def test_us007a_c5_uses_github_event_before_when_it_exists(self) -> None:
         first = self.commit_season("2026-10-01T10:00:00Z")
         self.commit_season("2026-10-02T10:00:00Z")
@@ -230,6 +285,63 @@ class PreviousVersionStep(TempDirTestCase):
         self.git("commit", "-q", "-m", "index only")
         self.commit_season("2026-10-01T10:00:00Z")
         self.assertEqual(self.run_step(ZEROS), "")
+
+    def test_us007a_c4_fix_after_a_broken_commit_passes_the_gate_on_push_and_on_manual_rerun(self) -> None:
+        # B-1: bueno -> roto (no se publico) -> correccion. Antes, la correccion fallaba por leer el commit roto.
+        self.commit_season("2026-10-01T10:00:00Z")
+        broken = self.commit_broken_season()
+        self.commit_season("2026-10-02T10:00:00Z", postponed=True)
+        for label, before in (("push", broken), ("workflow_dispatch", "")):
+            with self.subTest(label):
+                result = self.run_invariants(before)
+                self.assertEqual(result.returncode, 0, output_of(result))
+                self.assertIn("version anterior ilegible", result.stdout)
+
+    def test_us007a_c4_a_broken_commit_still_fails_the_gate_itself(self) -> None:
+        self.commit_season("2026-10-01T10:00:00Z")
+        good = self.commit_season("2026-10-02T10:00:00Z")
+        self.commit_broken_season()
+        self.assertNotEqual(self.run_invariants(good).returncode, 0)
+
+
+class RollbackProcedure(TempGitFeed):
+    """B-2: el procedimiento de rollback del RUNBOOK, ejecutado de verdad en un repositorio temporal."""
+
+    def runbook_revert_command(self, commit: str) -> List[str]:
+        with open(os.path.join(support.FEED, "RUNBOOK.md"), encoding="utf-8") as handle:
+            text = handle.read()
+        sections = [body for heading, body in runbook_check.split_sections(text) if "rollback" in heading.lower()]
+        self.assertEqual(len(sections), 1)
+        lines = [line.strip() for block in runbook_check.code_blocks(sections[0]) for line in block.splitlines()]
+        reverts = [line for line in lines if line.startswith("git revert")]
+        self.assertEqual(len(reverts), 1, reverts)
+        return shlex.split(reverts[0].replace("<commit>", commit))[1:]
+
+    def deploy_bad_version(self) -> str:
+        self.commit_season("2026-10-01T10:00:00Z")
+        bad = self.commit_season("2026-10-02T10:00:00Z", postponed=True)  # valido, desplegado y erroneo
+        return bad
+
+    def test_us007a_c8_the_documented_rollback_with_a_new_updated_at_passes_the_gate(self) -> None:
+        bad = self.deploy_bad_version()
+        self.git(*self.runbook_revert_command(bad))
+        self.write_season("2026-10-03T10:00:00Z")  # el contenido bueno con el updatedAt nuevo
+        self.commit_all("Revertir")
+        result = self.run_invariants(bad)
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("contenido cambiado y updatedAt posterior", result.stdout)
+
+    def test_us007a_c8_a_plain_revert_without_a_new_updated_at_is_rejected(self) -> None:
+        # Control: es el fallo que tenia el procedimiento anterior (`git revert` a secas).
+        bad = self.deploy_bad_version()
+        self.git("revert", "--no-edit", bad)
+        result = self.run_invariants(bad)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("invariante updated-at-sin-avanzar", result.stderr)
+
+    def test_us007a_c8_the_runbook_revert_command_keeps_the_changes_uncommitted(self) -> None:
+        # Sin `--no-commit` no hay ocasion de cambiar `updatedAt` antes del commit.
+        self.assertIn("--no-commit", self.runbook_revert_command("abc"))
 
 
 if __name__ == "__main__":
