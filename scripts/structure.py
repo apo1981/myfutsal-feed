@@ -1,8 +1,8 @@
-"""Estructura del repositorio del feed (US-007a, criterio 1).
+"""Estructura del repositorio del feed (US-007a, criterio 1; US-007b1, criterio 7c).
 
 Lista permitida de `public/`, ficheros obligatorios, ausencia de secretos y de `_headers`,
-repositorio Git independiente e identidad no personal (D-067). Solo biblioteca estandar,
-compatible con Python 3.9. No escribe nada.
+repositorio Git independiente, remoto esperado e identidad no personal (D-067, D-074(2)).
+Solo biblioteca estandar, compatible con Python 3.9. No escribe nada.
 """
 from __future__ import annotations
 
@@ -39,12 +39,23 @@ REQUIRED_FILES = [
     os.path.join("scripts", "check-workflow"),
     os.path.join("scripts", "check-runbook"),
     os.path.join("scripts", "smoke-check"),
+    os.path.join("scripts", "prepare-gate-rehearsal"),
 ]
 
 SECRET_NAME_PATTERNS = [".env*", "*.pem", "*.key", "id_*"]
 # Los patrones se parten en dos para que este fichero no se detecte a si mismo.
 SECRET_CONTENT_MARKERS = [b"gh" + b"p_", b"github" + b"_pat_", b"-----" + b"BEGIN", b"AK" + b"IA"]
 IGNORED_DIRECTORIES = {".git", ".venv", "__pycache__"}
+
+# Identidad (D-074(2)). La direccion `noreply` del operador no se escribe aqui: es la identidad local del
+# repositorio (`git config --local user.email`) y debe tener esta forma. El resto de direcciones permitidas
+# en el historial son fijas.
+NON_PERSONAL_EMAIL = "feed@example.invalid"
+WEB_COMMITTER_EMAIL = "noreply@github.com"
+OPERATOR_NOREPLY_PATTERN = re.compile(r"^[0-9]+\+[^@\s]+@users\.noreply\.github\.com$")
+REMOTE_NAME = "origin"
+# Solo HTTPS sin credenciales incrustadas (un token en la URL acabaria en .git/config).
+REMOTE_URL_PATTERN = re.compile(r"^https://github\.com/[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?/myfutsal-feed(?:\.git)?$")
 
 
 def walk_files(root: str, skip_ignored: bool = True) -> List[str]:
@@ -157,20 +168,50 @@ def local_config(feed: str, key: str) -> str:
     return git(feed, "config", "--local", "--get", key).stdout.strip()
 
 
+def remote_problems(feed: str) -> List[str]:
+    """Sin remoto, o solo `origin` apuntando a `https://github.com/<usuario>/myfutsal-feed(.git)` sin credenciales."""
+    listing = git(feed, "remote", "-v")
+    if listing.returncode != 0:
+        return ["no se pudo leer el remoto: %s" % listing.stderr.strip()]
+    problems = []
+    for line in sorted(set(listing.stdout.splitlines())):
+        fields = line.split()
+        name, url = fields[0], fields[1] if len(fields) > 1 else ""
+        if name != REMOTE_NAME:
+            problems.append("remoto inesperado %r (solo se admite %r)" % (name, REMOTE_NAME))
+        elif not REMOTE_URL_PATTERN.match(url):
+            problems.append("la URL del remoto %r no es https://github.com/<usuario>/myfutsal-feed(.git) sin credenciales" % name)
+    return problems
+
+
 def identity_problems(feed: str) -> List[str]:
+    """Identidad local no personal y direcciones del historial dentro de la lista permitida (D-074(2)).
+
+    La identidad local es `feed@example.invalid` mientras no haya remoto y la `noreply` del operador en cuanto
+    exista `origin`. El historial solo puede contener esa identidad local, `feed@example.invalid` y
+    `noreply@github.com` (committer de las ediciones web).
+    """
     configured = local_config(feed, "user.email")
     if not local_config(feed, "user.name") or not configured:
         return ["falta la identidad local (git config --local user.name / user.email) antes del primer commit"]
     global_email = git(feed, "config", "--global", "--get", "user.email").stdout.strip()
     if global_email and configured == global_email:
         return ["la identidad local coincide con la global personal: use una direccion no personal"]
-    log = git(feed, "log", "--all", "--format=%ae %ce")
+    is_noreply = bool(OPERATOR_NOREPLY_PATTERN.match(configured))
+    has_remote = bool(git(feed, "remote").stdout.strip())
+    if has_remote and not is_noreply:
+        return ["con remoto la identidad local debe ser la direccion noreply del operador (<id>+<usuario>@users.noreply.github.com), no %s" % configured]
+    if not has_remote and not is_noreply and configured != NON_PERSONAL_EMAIL:
+        return ["la identidad local %s no es %s ni una direccion noreply de GitHub" % (configured, NON_PERSONAL_EMAIL)]
+    log = git(feed, "log", "--all", "--format=%ae%n%ce")
     if log.returncode != 0:
         return []  # sin commits todavia
-    addresses = set(log.stdout.split())
-    unexpected = sorted(addresses - {configured})
+    allowed = {NON_PERSONAL_EMAIL, WEB_COMMITTER_EMAIL}
+    if is_noreply:
+        allowed.add(configured)
+    unexpected = sorted(set(log.stdout.split()) - allowed)
     if unexpected:
-        return ["el historial contiene direcciones distintas de la configurada (%s): %s" % (configured, ", ".join(unexpected))]
+        return ["el historial contiene direcciones fuera de la lista permitida (%s): %s" % (", ".join(sorted(allowed)), ", ".join(unexpected))]
     return []
 
 
@@ -186,6 +227,7 @@ def structure_problems(feed: str, app_root: Optional[str]) -> Dict[str, List[str
         "sin-secretos": secret_problems(feed),
         "sin-datos-inventados": placeholder_problems(feed),
         "repositorio-independiente": independent_repo_problems(feed),
+        "remoto-esperado": remote_problems(feed),
         "identidad-no-personal": identity_problems(feed),
     }  # type: Dict[str, List[str]]
     if app_root:

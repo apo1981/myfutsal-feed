@@ -1,4 +1,5 @@
-"""US-007a, criterio 1: estructura, lista permitida, secretos, repositorio independiente e identidad."""
+"""US-007a, criterio 1 y US-007b1, criterio 7c: estructura, lista permitida, secretos, repositorio independiente,
+remoto esperado e identidad."""
 from __future__ import annotations
 
 import os
@@ -16,6 +17,10 @@ from support import TempDirTestCase, write_json
 FEED_NAME = "myfutsal-feed"
 NON_PERSONAL_EMAIL = "feed@example.invalid"
 OTHER_EMAIL = "otra.persona@example.invalid"
+OPERATOR_EMAIL = "12345678+operador@users.noreply.github.com"
+OTHER_NOREPLY_EMAIL = "99999999+otro@users.noreply.github.com"
+WEB_COMMITTER_EMAIL = "noreply@github.com"
+EXPECTED_REMOTE = "https://github.com/operador/myfutsal-feed.git"
 SKIPPED = shutil.ignore_patterns(".git", ".venv", "__pycache__")
 
 
@@ -205,8 +210,44 @@ class IndependentRepository(StructureTestCase):
         found = self.problems()
         self.assertTrue(any("versiona" in p for p in found["ignorado-por-la-app"]), found)
 
-    def test_us007a_c1_feed_has_no_remote_yet(self) -> None:
+class Remote(StructureTestCase):
+    """US-007b1, 7c: antes sin remoto; despues solo `origin` hacia el repositorio esperado y sin credenciales."""
+
+    def add_remote(self, name: str, url: str) -> None:
+        git(self.feed, "remote", "add", name, url)
+
+    def use_operator_identity(self) -> None:
+        git(self.feed, "config", "--local", "user.email", OPERATOR_EMAIL)
+        git(self.feed, "config", "--local", "user.name", "operador")
+
+    def test_us007b1_c7c_no_remote_is_accepted_before_the_first_push(self) -> None:
         self.assertEqual(git(self.feed, "remote").strip(), "")
+        self.assertEqual(structure.remote_problems(self.feed), [])
+
+    def test_us007b1_c7c_the_expected_origin_is_accepted(self) -> None:
+        self.add_remote("origin", EXPECTED_REMOTE)
+        self.use_operator_identity()
+        self.assertEqual(self.problems(), {})
+
+    def test_us007b1_c7c_origin_without_dot_git_suffix_is_accepted(self) -> None:
+        self.add_remote("origin", "https://github.com/operador/myfutsal-feed")
+        self.assertEqual(structure.remote_problems(self.feed), [])
+
+    def test_us007b1_c7c_a_remote_with_credentials_in_the_url_fails(self) -> None:
+        self.add_remote("origin", "https://operador:token@github.com/operador/myfutsal-feed.git")
+        self.assertTrue(any("sin credenciales" in p for p in structure.remote_problems(self.feed)))
+
+    def test_us007b1_c7c_a_remote_with_another_name_fails(self) -> None:
+        self.add_remote("upstream", EXPECTED_REMOTE)
+        self.assertTrue(any("upstream" in p for p in structure.remote_problems(self.feed)))
+
+    def test_us007b1_c7c_origin_pointing_to_another_repository_or_host_fails(self) -> None:
+        self.add_remote("origin", EXPECTED_REMOTE)
+        for url in ("https://github.com/operador/otro-repo.git", "https://example.com/operador/myfutsal-feed.git",
+                    "git@github.com:operador/myfutsal-feed.git"):
+            with self.subTest(url):
+                git(self.feed, "remote", "set-url", "origin", url)
+                self.assertNotEqual(structure.remote_problems(self.feed), [])
 
 
 class Identity(StructureTestCase):
@@ -242,16 +283,80 @@ class Identity(StructureTestCase):
         self.assertEqual(structure.identity_problems(self.feed), [])
 
 
+class OperatorIdentity(StructureTestCase):
+    """US-007b1, 7c (D-074(2)): lista permitida con la `noreply` del operador, configurada como identidad local."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        git(self.feed, "remote", "add", "origin", EXPECTED_REMOTE)
+        git(self.feed, "config", "--local", "user.email", OPERATOR_EMAIL)
+        git(self.feed, "config", "--local", "user.name", "operador")
+
+    def test_us007b1_c7c_history_with_the_three_allowed_addresses_passes(self) -> None:
+        commit(self.feed, OPERATOR_EMAIL)
+        commit(self.feed, WEB_COMMITTER_EMAIL)
+        self.assertEqual(self.problems(), {})
+
+    def test_us007b1_c7c_web_committer_with_operator_author_passes(self) -> None:
+        git(self.feed, "-c", "user.name=Web", "-c", "user.email=%s" % WEB_COMMITTER_EMAIL, "commit", "-q", "--allow-empty",
+            "--author=Operador <%s>" % OPERATOR_EMAIL, "-m", "web edit")
+        self.assertEqual(self.problems(), {})
+
+    def test_us007b1_c7c_another_address_fails_and_is_named(self) -> None:
+        for other in (OTHER_EMAIL, OTHER_NOREPLY_EMAIL, "persona@gmail.com"):
+            with self.subTest(other):
+                commit(self.feed, other)
+                self.assert_only("identidad-no-personal", other)
+                git(self.feed, "reset", "-q", "--hard", "HEAD~1")
+
+    def test_us007b1_c7c_the_non_personal_address_is_still_allowed_in_the_history(self) -> None:
+        # Los commits previos de feed@example.invalid no se reescriben (D-074(2)).
+        self.assertIn(NON_PERSONAL_EMAIL, git(self.feed, "log", "--format=%ae").split())
+        self.assertEqual(self.problems(), {})
+
+    def test_us007b1_c7c_with_remote_the_local_identity_must_be_noreply(self) -> None:
+        git(self.feed, "config", "--local", "user.email", NON_PERSONAL_EMAIL)
+        self.assert_only("identidad-no-personal", "noreply")
+        git(self.feed, "config", "--local", "user.email", "persona@gmail.com")
+        self.assert_only("identidad-no-personal", "noreply")
+
+    def test_us007b1_c7c_without_remote_a_personal_local_address_fails_even_with_no_commits(self) -> None:
+        git(self.feed, "remote", "remove", "origin")
+        git(self.feed, "config", "--local", "user.email", "persona@gmail.com")
+        self.assert_only("identidad-no-personal", "persona@gmail.com")
+
+    def test_us007b1_c7c_missing_global_email_counts_as_different(self) -> None:
+        # setUp deja GIT_CONFIG_GLOBAL en /dev/null: no hay email global.
+        self.assertEqual(subprocess.run(["git", "config", "--global", "--get", "user.email"], stdout=subprocess.PIPE,
+                                        universal_newlines=True).stdout.strip(), "")
+        self.assertEqual(self.problems(), {})
+
+    def test_us007b1_c7c_local_identity_equal_to_the_global_one_fails(self) -> None:
+        global_config = os.path.join(self.tmp, "gitconfig-global")
+        with open(global_config, "w") as handle:
+            handle.write("[user]\n\temail = %s\n" % OPERATOR_EMAIL)
+        os.environ["GIT_CONFIG_GLOBAL"] = global_config
+        self.assert_only("identidad-no-personal", "global")
+
+
 class RealRepository(unittest.TestCase):
-    def test_us007a_c1_the_real_feed_repository_has_only_the_non_personal_address(self) -> None:
-        result = subprocess.run(["git", "-C", support.FEED, "log", "--format=%ae %ce"], stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, universal_newlines=True)
+    def real_git(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", "-C", support.FEED] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              universal_newlines=True)
+
+    def test_us007b1_c7c_every_address_in_the_real_history_is_in_the_allowed_list(self) -> None:
+        result = self.real_git("log", "--all", "--format=%ae%n%ce")
         if result.returncode != 0:
             self.skipTest("el repositorio del feed aun no tiene commits")
-        configured = subprocess.run(["git", "-C", support.FEED, "config", "--local", "--get", "user.email"],
-                                    stdout=subprocess.PIPE, universal_newlines=True).stdout.strip()
-        self.assertTrue(configured)
-        self.assertEqual(set(result.stdout.split()), {configured})
+        configured = self.real_git("config", "--local", "--get", "user.email").stdout.strip()
+        allowed = {NON_PERSONAL_EMAIL, WEB_COMMITTER_EMAIL}
+        if structure.OPERATOR_NOREPLY_PATTERN.match(configured):
+            allowed.add(configured)
+        self.assertEqual(set(result.stdout.split()) - allowed, set())
+
+    def test_us007b1_c7c_the_real_repository_passes_the_remote_and_identity_checks(self) -> None:
+        self.assertEqual(structure.remote_problems(support.FEED), [])
+        self.assertEqual(structure.identity_problems(support.FEED), [])
 
 
 if __name__ == "__main__":
