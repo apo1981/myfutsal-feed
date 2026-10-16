@@ -123,6 +123,38 @@ class BrokenRunbooks(TempDirTestCase):
         result = self.check(text)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_us007a2_i1_publish_that_commits_before_verify_fails(self) -> None:
+        # I-1: con el commit hecho, `verify` compara HEAD consigo mismo y el verde es enganoso.
+        text = read(REAL_RUNBOOK)
+        start = text.index("## Publicar un resultado")
+        end = text.index("## Cambiar hora")
+        section = text[start:end]
+        verify_block = "   ```\n   scripts/verify\n   ```\n"
+        commit_block = '   ```\n   git add public/v1/seasons/<id>.json\n   git commit -m "Jornada 7: resultados (tiempo: 12 min)"\n   git push origin main\n   ```\n'
+        self.assertIn(verify_block, section)
+        self.assertIn(commit_block, section)
+        self.assertLess(section.index(verify_block), section.index(commit_block))
+        swapped = section.replace(verify_block, "@@V@@").replace(commit_block, "@@C@@")
+        swapped = swapped.replace("@@V@@", commit_block).replace("@@C@@", verify_block)
+        result = self.check(text[:start] + swapped + text[end:])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("confirma (`git commit`) sin ejecutar antes `scripts/verify`", result.stderr)
+
+    def test_us007a2_i1_publish_without_verify_or_without_commit_in_code_fails(self) -> None:
+        text = read(REAL_RUNBOOK)
+        result = self.check(text.replace("   ```\n   scripts/verify\n   ```\n", "", 1))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("'Publicar un resultado' debe tener", result.stderr)
+
+    def test_us007a2_i1_initial_load_that_commits_before_verify_fails(self) -> None:
+        text = read(REAL_RUNBOOK)
+        start = text.index("## Carga inicial")
+        end = text.index("## Qué hacer si falla `validate`")
+        section = text[start:end].replace("scripts/verify\n", "scripts/check-allowlist\n")
+        result = self.check(text[:start] + section + text[end:])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("'Carga inicial' confirma", result.stderr)
+
     def test_us007a_c8_first_time_without_the_email_push_block_fails(self) -> None:
         result = self.check(read(REAL_RUNBOOK).replace("Block command line pushes", "otra cosa"))
         self.assertNotEqual(result.returncode, 0)

@@ -87,6 +87,27 @@ def rollback_staging_problems(text: str) -> List[str]:
     return []
 
 
+VERIFY_COMMAND = re.compile(r"^scripts/verify\b")
+COMMIT_COMMAND = re.compile(r"^git commit\b")
+PUBLISH_HEADING = re.compile(r"publicar un resultado", re.IGNORECASE)
+
+
+def verify_before_commit_problems(text: str) -> List[str]:
+    """I-1: `verify` compara `updatedAt` con `HEAD`; si el commit ya esta hecho compara `HEAD` consigo mismo y
+    nunca detecta nada. En cada seccion con `git commit` en sus bloques de codigo, `scripts/verify` debe
+    aparecer antes; y 'publicar un resultado' debe tener los dos. Se mira solo el codigo, no la prosa."""
+    problems = []
+    for heading, body in split_sections(text):
+        code = [line.strip() for block in code_blocks(body) for line in block.splitlines()]
+        verifies = [i for i, line in enumerate(code) if VERIFY_COMMAND.match(line)]
+        commits = [i for i, line in enumerate(code) if COMMIT_COMMAND.match(line)]
+        if PUBLISH_HEADING.search(heading) and not (verifies and commits):
+            problems.append("la seccion '%s' debe tener `scripts/verify` y `git commit` en sus bloques de codigo" % heading)
+        elif commits and not (verifies and verifies[0] < commits[0]):
+            problems.append("la seccion '%s' confirma (`git commit`) sin ejecutar antes `scripts/verify` en sus bloques de codigo" % heading)
+    return problems
+
+
 def command_problems(text: str, feed: str) -> List[str]:
     cited = sorted(set(path.rstrip(".,;:") for block in code_blocks(text) for path in SCRIPT_PATH.findall(block)))
     return ["el comando %s citado en un bloque de codigo no existe" % path
@@ -109,7 +130,7 @@ def main(argv: List[str]) -> int:
     except OSError as error:
         print("FALLO runbook: no se pudo leer %s: %s" % (path, error), file=sys.stderr)
         return 1
-    problems = section_problems(text) + rollback_staging_problems(text) + command_problems(text, args.feed)
+    problems = section_problems(text) + rollback_staging_problems(text) + verify_before_commit_problems(text) + command_problems(text, args.feed)
     for problem in problems:
         print("FALLO runbook: %s" % problem, file=sys.stderr)
     if problems:

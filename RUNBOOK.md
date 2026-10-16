@@ -25,10 +25,15 @@ Una sola vez, y antes del primer *push*. Requiere tu cuenta de GitHub (historia 
 1. Abre `public/v1/seasons/<id>.json` en el editor web de GitHub (o en local).
 2. En el partido, cambia `status` a `finished` y rellena `score` (`home` y `away`, goles al final incluida la prórroga). En eliminatorias, `decidedBy` es `null`, `extraTime` o `penalties`.
 3. Cambia `updatedAt` al instante actual en UTC con formato `AAAA-MM-DDTHH:MM:SSZ`. **Es obligatorio si cambias algo más**: la puerta rechaza un contenido cambiado con el mismo `updatedAt`.
-4. Confirma en `main` con un mensaje que incluya el tiempo dedicado (ver «Anotar el tiempo»).
-5. Si trabajas en local, antes de subir ejecuta la verificación completa:
+4. Si trabajas en local, **antes de confirmar** ejecuta la verificación completa. Con el cambio aún sin confirmar, `verify` compara `updatedAt` con el de `HEAD`; si ya has confirmado, compara `HEAD` consigo mismo y no detecta un `updatedAt` olvidado:
    ```
    scripts/verify
+   ```
+5. Confirma en `main` con un mensaje que incluya el tiempo dedicado (ver «Anotar el tiempo»). Si editas en la web de GitHub, no hay verificación local: la puerta del workflow es la que comprueba.
+   ```
+   git add public/v1/seasons/<id>.json
+   git commit -m "Jornada 7: resultados (tiempo: 12 min)"
+   git push origin main
    ```
 6. Espera a que termine el workflow (normalmente unos minutos) y comprueba el iPhone (ver «Verificación en el iPhone»).
 
@@ -44,13 +49,13 @@ Una sola vez, y antes del primer *push*. Requiere tu cuenta de GitHub (historia 
 
 Se hace una sola vez, con los datos de la temporada completa (US-007b). Nunca se escribe el JSON a mano: se transcribe a CSV y se convierte. **El PDF oficial del calendario no se sube nunca a este repositorio** (ni a `public/`, ni a ningún otro sitio: la lista permitida lo rechaza). Se lee fuera del repositorio y solo se transcriben los datos.
 
-1. **Prepara los CSV** fuera de `public/` (los de ejemplo, con datos ficticios, están en `examples/initial-load/`). Son UTF-8, separados por comas y con la cabecera exacta de los ejemplos:
+1. **Prepara los CSV** en un directorio fuera del repositorio, por ejemplo `~/myfutsal-carga/` (así no quedan como ficheros sin seguimiento; los de ejemplo, con datos ficticios, están en `examples/initial-load/`). Son UTF-8, separados por comas y con la cabecera exacta de los ejemplos:
    - `equipos.csv`: `id,name,shortName`. Los escudos no se cargan (`crestURL` siempre `null`).
    - `partidos.csv`: una fila por partido, con su fase y su ronda. La **hora es la local de Madrid** (`HH:MM`); el conversor la pasa a UTC.
    - Campos vacíos: hora vacía = hora por confirmar; fecha vacía (y hora vacía) = sin fecha; estado vacío = `scheduled`. Un partido sin marcador final no lleva `homeScore` ni `awayScore`: nunca `0-0`.
 2. **Convierte**, fuera de `public/` (el conversor se niega a escribir dentro) y con el instante actual en UTC:
    ```
-   scripts/convert-csv --teams equipos.csv --matches partidos.csv --season-id 2026-27 \
+   scripts/convert-csv --teams ~/myfutsal-carga/equipos.csv --matches ~/myfutsal-carga/partidos.csv --season-id 2026-27 \
        --competition-name "Primera División de fútbol sala" \
        --updated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out /tmp/2026-27.json
    ```
@@ -61,7 +66,12 @@ Se hace una sola vez, con los datos de la temporada completa (US-007b). Nunca se
    scripts/verify
    ```
    `verify` aplica el esquema, las invariantes y la comprobación de `updatedAt` frente a `HEAD`.
-4. **Publica** como en «Publicar un resultado» (paso 4): confirma en `main` con el tiempo dedicado en el mensaje y espera al workflow.
+4. **Publica** solo después de que `verify` esté en verde. Añade únicamente la temporada (nunca `git add -A`), confirma con el tiempo dedicado en el mensaje y espera al workflow:
+   ```
+   git add public/v1/seasons/2026-27.json
+   git commit -m "Carga inicial de la temporada 2026-27 (tiempo: 30 min)"
+   git push origin main
+   ```
 
 Para corregir los CSV y regenerar el JSON, **vuelve a pasar un `--updated-at` nuevo** (el instante actual): así no hace falta editar `updatedAt` a mano y la puerta acepta el cambio aunque el commit anterior fuera legible pero inválido.
 
