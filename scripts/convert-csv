@@ -1,0 +1,9 @@
+#!/bin/sh
+# Convierte los CSV de equipos y de partidos en un documento de temporada de league-feed-v1 (US-007a2).
+# Sin red, determinista (el instante se pasa con --updated-at) y sin salida si hay algun error.
+# Uso: scripts/convert-csv --teams <equipos.csv> --matches <partidos.csv> --season-id AAAA-AA \
+#          --competition-name <texto> --updated-at AAAA-MM-DDTHH:MM:SSZ --out <fichero.json>
+# --out no puede estar dentro de public/: se revisa y se copia a mano (RUNBOOK, «Carga inicial»).
+set -eu
+. "$(dirname "$0")/_env.sh"
+run_python "$FEED/scripts/convert_csv.py" --feed "$FEED" "$@"

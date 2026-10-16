@@ -1,0 +1,7 @@
+id,phaseId,phaseName,phaseKind,phaseOrder,roundId,roundNumber,roundName,homeTeamId,awayTeamId,status,date,time,homeScore,awayScore,decidedBy,note
+j01-01,apertura,Torneo de ejemplo,league,1,apertura-01,1,Jornada 1,norte,sur,finished,2026-10-03,17:30,3,2,,
+j01-02,apertura,Torneo de ejemplo,league,1,apertura-01,1,Jornada 1,este,oeste,finished,2026-10-04,19:00,1,1,,
+j02-01,apertura,Torneo de ejemplo,league,1,apertura-02,2,Jornada 2,sur,este,,2026-10-31,19:00,,,,
+j02-02,apertura,Torneo de ejemplo,league,1,apertura-02,2,Jornada 2,oeste,norte,scheduled,2026-11-01,,,,,Hora por confirmar
+j03-01,apertura,Torneo de ejemplo,league,1,apertura-03,3,Jornada 3,norte,este,,,,,,,Fecha por confirmar
+j03-02,apertura,Torneo de ejemplo,league,1,apertura-03,3,Jornada 3,sur,oeste,postponed,2026-11-08,,,,,Aplazado por obras en el pabellon
