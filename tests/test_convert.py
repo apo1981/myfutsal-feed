@@ -192,6 +192,29 @@ class WrongRows(ConverterTestCase):
     def test_us007a2_c3_unknown_status_names_file_and_line(self) -> None:
         self.assert_fails_at([match_row("m1"), match_row("m2", status="jugado", homeTeamId="b", awayTeamId="c")], "partidos.csv", 3, "status")
 
+    def test_us007a2_s6_semicolon_separated_csv_names_the_cause(self) -> None:
+        write_csv(self.teams, TEAM_COLUMNS, TEAMS)
+        with open(self.matches, "w", encoding="utf-8") as handle:
+            handle.write(";".join(MATCH_COLUMNS) + "\n")
+        result = self.convert()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("la cabecera debe ser exactamente", result.stderr)
+        self.assertIn("separador ';'", result.stderr)
+        self.assertFalse(os.path.exists(self.out))
+
+    def test_us007a2_s6_wrong_header_without_semicolons_has_no_separator_hint(self) -> None:
+        write_csv(self.teams, TEAM_COLUMNS, TEAMS)
+        with open(self.matches, "w", encoding="utf-8") as handle:
+            handle.write("a,b,c\n")
+        result = self.convert()
+        self.assertIn("la cabecera debe ser exactamente", result.stderr)
+        self.assertNotIn("separador", result.stderr)
+
+    def test_us007a2_s5_example_notes_do_not_repeat_the_interface_text(self) -> None:
+        with open(os.path.join(EXAMPLES, "partidos.csv"), encoding="utf-8") as handle:
+            text = handle.read()
+        self.assertNotIn("por confirmar", text.lower())
+
     def test_us007a2_c3_repeated_team_id_names_the_teams_file(self) -> None:
         write_csv(self.teams, TEAM_COLUMNS, TEAMS + [["a", "Otro", "OTR"]])
         write_csv(self.matches, MATCH_COLUMNS, [match_row()])
@@ -324,6 +347,23 @@ class PublicIsUntouched(ConverterTestCase):
                                      "--season-id", "2026-27", "--competition-name", "x", "--updated-at", UPDATED_AT,
                                      "--out", os.path.join(feed, target)])
                 self.assertNotEqual(result.returncode, 0)
+                self.assertIn("public/", result.stderr)
+        self.assertEqual(self.snapshot(feed), before)
+
+    def test_us007a2_s1_other_letter_case_of_public_is_refused_on_case_insensitive_filesystems(self) -> None:
+        feed = os.path.join(self.tmp, "feed")
+        shutil.copytree(os.path.join(FEED, "scripts"), os.path.join(feed, "scripts"), ignore=shutil.ignore_patterns("__pycache__"))
+        os.makedirs(os.path.join(feed, "public", "v1", "seasons"))
+        if not os.path.isdir(os.path.join(feed, "PUBLIC")):
+            self.skipTest("el sistema de ficheros distingue mayusculas: PUBLIC no es public")
+        self.write_inputs([match_row()])
+        before = self.snapshot(feed)
+        for target in ("PUBLIC/v1/seasons/2026-27.json", "Public/v1/nuevo.json"):
+            with self.subTest(target):
+                result = run_script([os.path.join(feed, "scripts", "convert-csv"), "--teams", self.teams, "--matches", self.matches,
+                                     "--season-id", "2026-27", "--competition-name", "x", "--updated-at", UPDATED_AT,
+                                     "--out", os.path.join(feed, target)])
+                self.assertEqual(result.returncode, 2, output_of(result))
                 self.assertIn("public/", result.stderr)
         self.assertEqual(self.snapshot(feed), before)
 

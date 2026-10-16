@@ -68,7 +68,8 @@ def read_rows(path: str, columns: Tuple[str, ...], problems: Problems) -> List[R
         problems.add(path, HEADER_LINE, "no se pudo leer el CSV (%s)" % type(error).__name__)
         return []
     if not rows or tuple(cell.strip() for cell in rows[0][1]) != columns:
-        problems.add(path, HEADER_LINE, "la cabecera debe ser exactamente: %s" % ",".join(columns))
+        hint = " (¿separador ';'? exporta el CSV con comas)" if rows and any(";" in cell for cell in rows[0][1]) else ""
+        problems.add(path, HEADER_LINE, "la cabecera debe ser exactamente: %s%s" % (",".join(columns), hint))
         return []
     result = []  # type: List[Row]
     for line, record in rows[1:]:
@@ -280,9 +281,20 @@ def write_atomically(path: str, text: str) -> None:
 
 
 def inside_public(path: str, feed: str) -> bool:
-    public = os.path.realpath(os.path.join(feed, "public"))
-    target = os.path.realpath(path)
-    return target == public or target.startswith(public + os.sep)
+    """True si `path` es `public/` o cuelga de el. Compara con `os.path.samefile` cada ancestro existente de la
+    ruta resuelta: asi cubre `..`, enlaces simbolicos y sistemas de ficheros que no distinguen mayusculas
+    (APFS por defecto: `PUBLIC/` es `public/`)."""
+    public = os.path.join(feed, "public")
+    if not os.path.isdir(public):
+        return False
+    current = os.path.realpath(path)
+    while True:
+        if os.path.exists(current) and os.path.samefile(current, public):
+            return True
+        parent = os.path.dirname(current)
+        if parent == current:
+            return False
+        current = parent
 
 
 def argument_problems(args: argparse.Namespace, feed: str) -> List[str]:
