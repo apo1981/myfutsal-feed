@@ -25,8 +25,8 @@ class RealRunbook(unittest.TestCase):
 
     def test_us007a_c8_the_required_sections_cover_the_story(self) -> None:
         names = [name for name, _heading, _concepts in runbook_check.REQUIRED_SECTIONS]
-        self.assertEqual(len(names), 8)
-        for fragment in ("primera vez", "publicar", "aplazar", "validate", "posterior", "rollback", "iPhone", "tiempo"):
+        self.assertEqual(len(names), 9)
+        for fragment in ("primera vez", "publicar", "aplazar", "carga inicial", "validate", "posterior", "rollback", "iPhone", "tiempo"):
             self.assertTrue(any(fragment.lower() in name.lower() for name in names), fragment)
 
     def test_us007a_c8_first_time_section_mentions_the_local_identity_change(self) -> None:
@@ -40,6 +40,44 @@ class RealRunbook(unittest.TestCase):
         self.assertGreaterEqual(len(cited), 5)
         for path in cited:
             self.assertTrue(os.path.isfile(os.path.join(support.FEED, path)), path)
+
+
+def section_body(text: str, heading_start: str) -> str:
+    return next(body for heading, body in runbook_check.split_sections(text) if heading.lower().startswith(heading_start))
+
+
+class InitialLoadSection(unittest.TestCase):
+    def test_us007a2_c6_real_runbook_passes_the_content_check_with_the_initial_load_section(self) -> None:
+        result = run_main(runbook_check.main, ["--feed", support.FEED])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("carga inicial", [heading.lower() for heading, _ in runbook_check.split_sections(read(REAL_RUNBOOK))])
+
+    def test_us007a2_c6_the_section_covers_prepare_convert_validate_publish_and_the_pdf_rule(self) -> None:
+        body = section_body(read(REAL_RUNBOOK), "carga inicial")
+        for step in ("Prepara los CSV", "Convierte", "valida", "Publica"):
+            self.assertIn(step, body)
+        self.assertRegex(body, r"PDF[^.]*nunca")
+        self.assertIn("scripts/convert-csv", body)
+        self.assertIn("scripts/verify", body)
+
+    def test_us007a2_c6_every_command_of_the_section_exists(self) -> None:
+        blocks = runbook_check.code_blocks(section_body(read(REAL_RUNBOOK), "carga inicial"))
+        cited = {m for block in blocks for m in re.findall(r"scripts/[A-Za-z0-9_./-]+", block)}
+        self.assertIn("scripts/convert-csv", cited)
+        for path in cited:
+            self.assertTrue(os.path.isfile(os.path.join(support.FEED, path)), path)
+
+    def test_us007a2_c10_the_section_and_step_3_of_validate_tell_to_pass_a_new_updated_at(self) -> None:
+        text = read(REAL_RUNBOOK)
+        self.assertRegex(section_body(text, "carga inicial"), r"--updated-at[^\n]*nuevo|nuevo[^\n]*--updated-at")
+        step3 = next(line for line in section_body(text, "qué hacer si falla `validate`").splitlines() if line.startswith("3."))
+        self.assertIn("--updated-at", step3)
+        self.assertIn("nuevo", step3)
+        self.assertIn("a mano", step3)
+
+    def test_us007a2_c10_the_manual_instruction_of_s10_is_kept_for_direct_json_edits(self) -> None:
+        step3 = next(line for line in section_body(read(REAL_RUNBOOK), "qué hacer si falla `validate`").splitlines() if line.startswith("3."))
+        self.assertIn("pon de nuevo `updatedAt` en el instante actual", step3)
 
 
 class BrokenRunbooks(TempDirTestCase):
@@ -99,6 +137,21 @@ class BrokenRunbooks(TempDirTestCase):
     def test_us007a_c8_command_only_in_prose_is_not_extracted(self) -> None:
         result = self.check(read(REAL_RUNBOOK) + "\nTambien existe scripts/solo-en-prosa pero no esta en un bloque.\n")
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_us007a2_c6_missing_initial_load_section_fails_and_is_named(self) -> None:
+        result = self.check(read(REAL_RUNBOOK).replace("## Carga inicial", "## Otra cosa"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("falta la seccion 'carga inicial'", result.stderr)
+
+    def test_us007a2_c6_initial_load_without_the_pdf_rule_fails(self) -> None:
+        result = self.check(read(REAL_RUNBOOK).replace("no se sube nunca", "se puede subir"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("'carga inicial' no menciona", result.stderr)
+
+    def test_us007a2_c6_initial_load_citing_a_missing_converter_fails(self) -> None:
+        result = self.check(read(REAL_RUNBOOK).replace("scripts/convert-csv --teams", "scripts/convierte-todo --teams"))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("scripts/convierte-todo", result.stderr)
 
     def test_us007a_c8_missing_runbook_fails(self) -> None:
         result = run_main(runbook_check.main, ["--feed", self.tmp, os.path.join(self.tmp, "nada.md")])

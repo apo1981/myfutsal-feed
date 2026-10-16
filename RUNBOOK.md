@@ -40,6 +40,31 @@ Una sola vez, y antes del primer *push*. Requiere tu cuenta de GitHub (historia 
 - **Suspendido:** `status: "suspended"` y `score: null`. El marcador parcial no se publica: la puerta rechaza un `score` con un estado distinto de `live` y `finished`.
 - Cambia siempre `updatedAt`.
 
+## Carga inicial
+
+Se hace una sola vez, con los datos de la temporada completa (US-007b). Nunca se escribe el JSON a mano: se transcribe a CSV y se convierte. **El PDF oficial del calendario no se sube nunca a este repositorio** (ni a `public/`, ni a ningún otro sitio: la lista permitida lo rechaza). Se lee fuera del repositorio y solo se transcriben los datos.
+
+1. **Prepara los CSV** fuera de `public/` (los de ejemplo, con datos ficticios, están en `examples/initial-load/`). Son UTF-8, separados por comas y con la cabecera exacta de los ejemplos:
+   - `equipos.csv`: `id,name,shortName`. Los escudos no se cargan (`crestURL` siempre `null`).
+   - `partidos.csv`: una fila por partido, con su fase y su ronda. La **hora es la local de Madrid** (`HH:MM`); el conversor la pasa a UTC.
+   - Campos vacíos: hora vacía = hora por confirmar; fecha vacía (y hora vacía) = sin fecha; estado vacío = `scheduled`. Un partido sin marcador final no lleva `homeScore` ni `awayScore`: nunca `0-0`.
+2. **Convierte**, fuera de `public/` (el conversor se niega a escribir dentro) y con el instante actual en UTC:
+   ```
+   scripts/convert-csv --teams equipos.csv --matches partidos.csv --season-id 2026-27 \
+       --competition-name "Primera División de fútbol sala" \
+       --updated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out /tmp/2026-27.json
+   ```
+   Si hay errores, cada uno indica `fichero:línea` y no se escribe nada: corrige el CSV y repite.
+3. **Copia y valida:**
+   ```
+   cp /tmp/2026-27.json public/v1/seasons/2026-27.json
+   scripts/verify
+   ```
+   `verify` aplica el esquema, las invariantes y la comprobación de `updatedAt` frente a `HEAD`.
+4. **Publica** como en «Publicar un resultado» (paso 4): confirma en `main` con el tiempo dedicado en el mensaje y espera al workflow.
+
+Para corregir los CSV y regenerar el JSON, **vuelve a pasar un `--updated-at` nuevo** (el instante actual): así no hace falta editar `updatedAt` a mano y la puerta acepta el cambio aunque el commit anterior fuera legible pero inválido.
+
 ## Qué hacer si falla `validate`
 
 El workflow queda en rojo, GitHub te avisa por email y **no se despliega nada**: la app sigue viendo la última versión buena.
@@ -52,7 +77,7 @@ El workflow queda en rojo, GitHub te avisa por email y **no se despliega nada**:
    scripts/check-invariants
    ```
    Cada mensaje nombra la invariante incumplida y el identificador afectado (partido, equipo, fase o ronda).
-3. Corrige el JSON, pon de nuevo `updatedAt` en el instante actual y vuelve a confirmar. Si no ves la causa, revierte el cambio (ver «Revertir»).
+3. Corrige el JSON, pon de nuevo `updatedAt` en el instante actual y vuelve a confirmar. Si el JSON salió del conversor, corrige los CSV y vuelve a convertir con un `--updated-at` nuevo (ver «Carga inicial»): no hace falta editarlo a mano. Si no ves la causa, revierte el cambio (ver «Revertir»).
 4. Si falla la paridad del esquema (`shasum`), alguien ha editado `schema/`: restáuralo desde el repositorio de la app; no lo corrijas a mano.
 
 ## Qué hacer si falla la comprobación posterior
@@ -113,6 +138,8 @@ git log --grep='tiempo:' --format='%ad %s' --date=short
 | `scripts/verify` | Verificación completa en local, sin red |
 | `scripts/validate-schema` | Valida ficheros contra el esquema |
 | `scripts/check-invariants` | Invariantes que el esquema no expresa |
+| `scripts/check-updated-at` | Comprueba que `updatedAt` avanza respecto a `HEAD` |
+| `scripts/convert-csv` | Convierte los CSV de equipos y partidos en el JSON de temporada |
 | `scripts/check-allowlist` | Solo `v1/index.json` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
 | `scripts/check-workflow` | Comprobación estática del workflow |
 | `scripts/smoke-check` | Comprobación posterior al despliegue |
