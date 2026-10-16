@@ -86,6 +86,8 @@ unit 5-workflow-pruebas test_workflow.py
 
 unit 6-smoke-check-pruebas test_smoke.py
 
+unit 7-conversor-pruebas test_convert.py
+
 run 8-runbook "$FEED/scripts/check-runbook"
 unit 8-runbook-pruebas test_runbook.py
 
