@@ -283,10 +283,16 @@
       }
     },
     "stepRunning": {
+      "description": "Paso que ejecuta la puerta: lleva run y ningun if (un if que no sea de estado tambien lo omitiria).",
       "type": "object",
       "required": [
         "run"
       ],
+      "not": {
+        "required": [
+          "if"
+        ]
+      },
       "properties": {
         "run": {
           "type": "string"

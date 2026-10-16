@@ -149,6 +149,21 @@
     "contains": "validate",
     "rule": "3 pages solo en deploy"
   },
+  "validate-previous-step-if-condition.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "5 if no de estado en el paso previous"
+  },
+  "validate-step-if-condition.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "5 if no de estado en un paso de la puerta (Invariants)"
+  },
+  "validate-step-if-true.yml": {
+    "phase": "politica-propia",
+    "contains": "steps",
+    "rule": "5 if no de estado en un paso de la puerta (allowlist)"
+  },
   "validate-without-allowlist.yml": {
     "phase": "politica-propia",
     "contains": "steps",
