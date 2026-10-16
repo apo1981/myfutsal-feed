@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-10-15T00:00:00Z",
+  "updatedAt": "2026-10-16T15:33:59Z",
   "teams": [
     {
       "id": "pendiente",
@@ -15,7 +15,7 @@
     {
       "id": "pendiente",
       "name": "Pendiente de carga",
-      "kind": "league",
+      "kind": "legue",
       "order": 1,
       "rounds": []
     }
