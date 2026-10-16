@@ -29,6 +29,7 @@ run() {
     if output=$("$@" 2>&1); then
         PASSED=$((PASSED + 1))
         echo "[ OK ] $name"
+        printf '%s\n' "$output" | grep -E '^aviso|ilegible' | sed 's/^/        /'
     else
         FAILED=$((FAILED + 1))
         FAILED_NAMES="$FAILED_NAMES $name"
@@ -77,6 +78,7 @@ run 3-esquema-de-public validate_public
 unit 3-fixtures-del-contrato test_fixtures.py
 
 run 4-invariantes-de-public "$FEED/scripts/check-invariants"
+run 4b-updated-at-frente-a-head "$FEED/scripts/check-updated-at"
 unit 4-invariantes-pruebas test_invariants.py
 
 run 5-workflow "$FEED/scripts/check-workflow"

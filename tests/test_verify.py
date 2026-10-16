@@ -5,6 +5,7 @@ el repositorio real no se toca. En la ejecucion anidada verify omite las pruebas
 """
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -41,6 +42,104 @@ class CopiedFeed(TempDirTestCase):
         env = tool_env({"FEED_TOOLS_VENV": REAL_VENV, "FEED_VERIFY_NESTED": "1", "GIT_CONFIG_GLOBAL": os.devnull})
         env.update(extra_env or {})
         return run_script([os.path.join(self.feed, "scripts", "verify")], cwd=self.tmp, env=env)
+
+
+SEASON_PATH = os.path.join("public", "v1", "seasons", "2026-27.json")
+
+
+class UpdatedAtAgainstHead(CopiedFeed):
+    """US-007a2, criterio 8 (S-11): verify compara `updatedAt` con `git show HEAD:public/v1/seasons/<id>.json`."""
+
+    def season(self) -> dict:
+        with open(os.path.join(self.feed, SEASON_PATH), encoding="utf-8") as handle:
+            return json.load(handle)
+
+    def write_season(self, season: dict) -> None:
+        with open(os.path.join(self.feed, SEASON_PATH), "w", encoding="utf-8") as handle:
+            json.dump(season, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+
+    def edit(self, updated_at: str = None, change_content: bool = True) -> None:
+        season = self.season()
+        if change_content:
+            season["competitionName"] = season["competitionName"] + " (editado)"
+        if updated_at:
+            season["updatedAt"] = updated_at
+        self.write_season(season)
+
+    def test_us007a2_c8_changed_content_with_the_same_updated_at_fails_naming_the_invariant(self) -> None:
+        self.init_repo()
+        self.edit(change_content=True)
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0, output_of(result))
+        self.assertIn("[FALLO] 4b-updated-at-frente-a-head", result.stdout)
+        self.assertIn("updated-at-sin-avanzar", result.stdout)
+        self.assertIn("4b-updated-at-frente-a-head", result.stderr)
+
+    def test_us007a2_c8_changed_content_with_an_older_updated_at_fails(self) -> None:
+        self.init_repo()
+        self.edit(updated_at="2020-01-01T00:00:00Z")
+        result = self.verify()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("updated-at-sin-avanzar", result.stdout)
+
+    def test_us007a2_c8_changed_content_with_a_later_updated_at_passes(self) -> None:
+        self.init_repo()
+        self.edit(updated_at="2099-01-01T00:00:00Z")
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
+
+    def test_us007a2_c8_unchanged_content_passes(self) -> None:
+        self.init_repo()
+        result = self.verify()
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
+
+    def test_us007a2_c8_unchanged_content_with_a_different_updated_at_passes(self) -> None:
+        self.init_repo()
+        self.edit(updated_at="2099-01-01T00:00:00Z", change_content=False)
+        self.assertEqual(self.verify().returncode, 0)
+        self.edit(updated_at="2000-01-01T00:00:00Z", change_content=False)
+        self.assertEqual(self.verify().returncode, 0)
+
+    def test_us007a2_c8_head_without_the_season_does_not_fail_and_warns(self) -> None:
+        git(self.feed, "init", "-q", "-b", "main")
+        git(self.feed, "config", "--local", "user.email", "feed@example.invalid")
+        git(self.feed, "config", "--local", "user.name", "Feed Bot")
+        git(self.feed, "add", "-A")
+        git(self.feed, "rm", "-q", "--cached", SEASON_PATH)
+        git(self.feed, "commit", "-q", "-m", "without the season")
+        result = self.verify()
+        self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
+        self.assertIn("aviso: HEAD no tiene", result.stdout)
+
+    def test_us007a2_c8_no_commit_at_all_does_not_fail_and_warns(self) -> None:
+        git(self.feed, "init", "-q", "-b", "main")
+        result = self.verify()
+        self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
+        self.assertIn("aviso: HEAD no tiene", result.stdout)
+
+    def test_us007a2_c8_unreadable_head_version_does_not_fail_and_warns(self) -> None:
+        self.init_repo()
+        with open(os.path.join(self.feed, SEASON_PATH), encoding="utf-8") as handle:
+            good = handle.read()
+        with open(os.path.join(self.feed, SEASON_PATH), "w", encoding="utf-8") as handle:
+            handle.write(good[:-40])
+        git(self.feed, "commit", "-q", "-am", "broken")
+        with open(os.path.join(self.feed, SEASON_PATH), "w", encoding="utf-8") as handle:
+            handle.write(good)
+        self.edit(updated_at="2099-01-01T00:00:00Z")
+        result = self.verify()
+        self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
+        self.assertIn("version anterior ilegible", result.stdout)
+
+    def test_us007a2_c8_the_comparison_leaves_no_file_in_the_repository(self) -> None:
+        self.init_repo()
+        self.verify()
+        status = subprocess.run(["git", "-C", self.feed, "status", "--porcelain", "--untracked-files=all"],
+                                stdout=subprocess.PIPE, universal_newlines=True).stdout
+        self.assertEqual(status, "")
 
 
 class MissingTools(CopiedFeed):

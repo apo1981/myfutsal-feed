@@ -1,0 +1,23 @@
+#!/bin/sh
+# Comprueba en local que `updatedAt` avanza respecto a la ultima version confirmada (US-007a2, criterio 8, S-11).
+# Misma logica que el paso `previous` del workflow: la version anterior es `git show HEAD:public/v1/seasons/<id>.json`.
+# Si HEAD no tiene la temporada (o no hay HEAD), no falla y lo avisa. No escribe en el repositorio.
+# Uso: scripts/check-updated-at
+set -u
+. "$(dirname "$0")/_env.sh"
+
+cd "$FEED" || exit 2
+season_id=$(run_python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["currentSeasonId"])' public/v1/index.json) || {
+    echo "FALLO updatedAt: no se pudo leer currentSeasonId de public/v1/index.json" >&2
+    exit 1
+}
+previous_file=$(mktemp "${TMPDIR:-/tmp}/feed-previous-season.XXXXXX") || exit 2
+trap 'rm -f "$previous_file"' EXIT
+
+if git show "HEAD:public/v1/seasons/$season_id.json" > "$previous_file" 2>/dev/null; then
+    echo "updatedAt: comparado con HEAD:public/v1/seasons/$season_id.json"
+    "$FEED/scripts/check-invariants" --previous "$previous_file"
+else
+    echo "aviso: HEAD no tiene public/v1/seasons/$season_id.json; no se comprueba que updatedAt avance"
+    "$FEED/scripts/check-invariants"
+fi
