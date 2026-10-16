@@ -14,13 +14,17 @@ from typing import List, Optional, Tuple
 
 # (nombre, patron del encabezado, conceptos que deben aparecer en el cuerpo de la seccion)
 REQUIRED_SECTIONS = [
-    ("primera vez", r"primera vez", [r"crear.*repositorio", r"Pages", r"push protection|protecci[oó]n contra push", r"noreply", r"Block command line pushes"]),
+    ("primera vez", r"primera vez", [r"crear.*repositorio", r"Pages", r"push protection|protecci[oó]n contra push", r"noreply", r"Block command line pushes",
+                       r"Secret Protection", r"Workflows", r"git remote add origin", r"git pull --ff-only"]),
     ("publicar un resultado", r"publicar un resultado", [r"updatedAt", r"scripts/verify"]),
     ("cambiar hora, aplazar o suspender", r"cambiar hora|aplazar|suspender", [r"postponed", r"suspended", r"kickoff"]),
     ("carga inicial", r"carga inicial", [r"scripts/convert-csv", r"--updated-at", r"PDF[^.]*nunca", r"scripts/verify", r"examples/initial-load"]),
     ("falla validate", r"falla .*validate", [r"scripts/validate-schema", r"scripts/check-invariants", r"scripts/convert-csv|conversor"]),
     ("falla la comprobacion posterior", r"falla la comprobaci[oó]n posterior", [r"scripts/smoke-check", r"600"]),
     ("revertir (rollback)", r"revertir|rollback", [r"git revert --no-commit", r"updatedAt"]),
+    ("ensayo de la puerta", r"ensayo de la puerta", [r"scripts/prepare-gate-rehearsal", r"ensayo-puerta", r"git revert --no-commit", r"servida tras"]),
+    ("url base para la app", r"url base", [r"github\.io/myfutsal-feed", r"US-005"]),
+    ("registro de evidencias", r"registro de evidencias", [r"NFR-011", r"I-2", r"S-4"]),
     ("verificacion en el iPhone", r"iPhone", [r"pull to refresh"]),
     ("anotar el tiempo por dia de partido", r"tiempo", [r"tiempo:", r"git log"]),
 ]

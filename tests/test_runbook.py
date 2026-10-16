@@ -25,8 +25,9 @@ class RealRunbook(unittest.TestCase):
 
     def test_us007a_c8_the_required_sections_cover_the_story(self) -> None:
         names = [name for name, _heading, _concepts in runbook_check.REQUIRED_SECTIONS]
-        self.assertEqual(len(names), 9)
-        for fragment in ("primera vez", "publicar", "aplazar", "carga inicial", "validate", "posterior", "rollback", "iPhone", "tiempo"):
+        self.assertEqual(len(names), 12)
+        for fragment in ("primera vez", "publicar", "aplazar", "carga inicial", "validate", "posterior", "rollback", "iPhone", "tiempo",
+                         "ensayo de la puerta", "url base", "registro de evidencias"):
             self.assertTrue(any(fragment.lower() in name.lower() for name in names), fragment)
 
     def test_us007a_c8_first_time_section_mentions_the_local_identity_change(self) -> None:
@@ -44,6 +45,39 @@ class RealRunbook(unittest.TestCase):
 
 def section_body(text: str, heading_start: str) -> str:
     return next(body for heading, body in runbook_check.split_sections(text) if heading.lower().startswith(heading_start))
+
+
+class FirstPublicationSections(unittest.TestCase):
+    """US-007b1, criterios 1, 3, 4, 7c y 8: la guia del humano, el ensayo de la puerta y la URL base estan en el runbook."""
+
+    def test_us007b1_c7c_first_time_follows_the_guide_in_order(self) -> None:
+        body = section_body(read(REAL_RUNBOOK), "primera vez")
+        positions = [body.index(fragment) for fragment in (
+            "Email privado", "Crear el repositorio", "Pages:", "Protección contra push de secretos", "Token para el push",
+            "Identidad y remoto locales", "Primer push", "Después de editar en la web")]
+        self.assertEqual(positions, sorted(positions))
+        self.assertLess(body.index("user.email"), body.index("git remote add origin"), "la identidad va antes que el remoto")
+
+    def test_us007b1_c7c_the_runbook_never_asks_to_store_the_token_anywhere(self) -> None:
+        body = section_body(read(REAL_RUNBOOK), "primera vez")
+        self.assertIn("Nunca pegues el token en un fichero", body)
+        # Los prefijos se parten para que este fichero no dispare la comprobacion de secretos.
+        self.assertNotRegex(read(REAL_RUNBOOK), "github" + "_pat_|gh" + "p_")
+
+    def test_us007b1_c3_the_rehearsal_gives_the_exact_commands_and_the_rollback(self) -> None:
+        body = section_body(read(REAL_RUNBOOK), "ensayo de la puerta")
+        for command in ("git switch main", "git merge --ff-only ensayo-puerta", "git push origin main", "git revert --no-commit HEAD",
+                        "git add public/v1/seasons/2026-27.json", "scripts/verify"):
+            self.assertIn(command, body)
+
+    def test_us007b1_c4_the_evidence_table_names_the_propagation_datum(self) -> None:
+        body = section_body(read(REAL_RUNBOOK), "registro de evidencias")
+        self.assertIn("NFR-011", body)
+        self.assertIn("servida tras N s", body)
+
+    def test_us007b1_c8_the_base_url_includes_the_path(self) -> None:
+        body = section_body(read(REAL_RUNBOOK), "url base")
+        self.assertIn("https://<usuario>.github.io/myfutsal-feed", body)
 
 
 class InitialLoadSection(unittest.TestCase):

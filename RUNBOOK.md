@@ -7,22 +7,43 @@ Solo hay tres sitios donde editar: `public/v1/index.json`, `public/v1/seasons/<i
 
 ## Primera vez
 
-Una sola vez, y antes del primer *push*. Requiere tu cuenta de GitHub (historia US-007b).
+Una sola vez, en este orden y antes del primer *push* (historia US-007b1). Los pasos 1 a 5, 7 y 8 los haces tú en tu cuenta de GitHub o en Terminal; el paso 6 lo hace el equipo cuando le pasas tu usuario y tu dirección `noreply`. **Nunca pegues el token en un fichero, en un chat ni en un commit**: solo en la pregunta de contraseña de `git`.
 
-1. **Identidad Git local.** Hasta ahora los commits usan una dirección no personal (`feed@example.invalid`). Antes del primer push, cambia la identidad local a la dirección `noreply` de tu cuenta (en GitHub: Settings → Emails → «Keep my email addresses private»; la dirección tiene la forma `<id>+<usuario>@users.noreply.github.com`):
+1. **Email privado.** En github.com: avatar → Settings → Emails. Marca «Keep my email addresses private» y «Block command line pushes that expose my email» (es la red de seguridad del servidor para que no se publique un email personal). Copia la dirección con la forma `<id>+<usuario>@users.noreply.github.com` y pásala al equipo junto con tu usuario. Un email personal publicado en el historial de un repositorio público no se puede retirar sin reescribirlo.
+2. **Crear el repositorio** en <https://github.com/new>: nombre `myfutsal-feed`, **Public**, sin README, `.gitignore` ni licencia (vacío).
+3. **Pages:** Settings → Pages → Build and deployment → Source: «GitHub Actions». Si con el repositorio vacío no aparece la opción, hazlo después del primer push y relanza el workflow (Actions → ejecución fallida → Re-run all jobs).
+4. **Protección contra push de secretos** (*push protection*): Settings → Advanced Security → Secret Protection «Enable» y Push protection «Enable». Haz una captura de esa pantalla y de la de Pages (evidencia del criterio 1). Nada de claves ni tokens en este repositorio.
+5. **Token para el push** (no hay `gh`; `git` guarda la credencial en el llavero del Mac). Avatar → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token: nombre `myfutsal-feed-push`, caducidad 30 días, «Only select repositories» → `myfutsal-feed`, permisos Contents «Read and write» y Workflows «Read and write» (el push incluye `.github/workflows/`).
+6. **Identidad y remoto locales** (los hace el equipo con tu usuario y tu `noreply`; ver «Cómo se fija la dirección `noreply`»):
    ```
-   git config --local user.name "<tu usuario>"
+   cd /Users/antonioplazaortega/Claude/futsal/myfutsal-feed
+   git config --local user.name "<usuario>"
    git config --local user.email "<id>+<usuario>@users.noreply.github.com"
+   git remote add origin https://github.com/<usuario>/myfutsal-feed.git
+   scripts/verify
    ```
-   Un email personal publicado en el historial de un repositorio público no se puede retirar sin reescribirlo.
-2. **Crear el repositorio** público `myfutsal-feed` en GitHub, sin README ni licencia (vacío), y añadir el remoto: `git remote add origin https://github.com/<usuario>/myfutsal-feed.git`.
-3. **Activar Pages:** Settings → Pages → Source: «GitHub Actions».
-4. **Protección contra push de secretos** (*push protection*): Settings → Code security. Suele estar activada por defecto en repositorios públicos nuevos; comprueba que lo está. Nada de claves ni tokens en este repositorio. Activa también «Block command line pushes that expose my email» (Settings → Emails): es la red de seguridad en el servidor para que no se publique un email personal.
-5. **Primer push:** `git push -u origin main`. Observa la pestaña Actions: deben pasar `validate`, `deploy` y `smoke`.
+   La identidad va antes que el remoto: con `origin` presente, `scripts/verify` exige que la identidad local sea la `noreply`. La URL del remoto no lleva credenciales; `verify` lo comprueba.
+7. **Primer push:**
+   ```
+   scripts/verify
+   git push -u origin main
+   ```
+   Cuando `git` lo pida, en *Username* pon tu usuario de GitHub y en *Password* el token. En la pestaña Actions deben salir en verde `validate`, `deploy` y `smoke`. Abre el job `smoke` y copia al equipo las últimas líneas del log. Si `git` avisa de *workflow scope*, falta el permiso Workflows del token: amplíalo y repite.
+8. **Después de editar en la web de GitHub**, antes de volver a trabajar en local: `git pull --ff-only`. Así tu copia local parte del commit publicado y la puerta no ve un historial divergente.
+
+### Cómo se fija la dirección `noreply`
+
+La dirección del operador **no está escrita en ningún fichero del repositorio**: es la identidad local de Git (`git config --local user.email`, que vive en `.git/config` y no se publica). `scripts/check-structure` (y por tanto `scripts/verify`) comprueba que:
+
+- la identidad local es `feed@example.invalid` (mientras no haya remoto) o tiene la forma `<id>+<usuario>@users.noreply.github.com`, y con `origin` presente solo la segunda;
+- es distinta del email global (la ausencia de email global cuenta como distinta);
+- cada dirección de `git log --all --format='%ae%n%ce'` es `feed@example.invalid`, `noreply@github.com` (el *committer* de las ediciones web) o esa `noreply` local. Cualquier otra falla y se nombra.
+
+El historial anterior, con `feed@example.invalid`, no se reescribe.
 
 ## Publicar un resultado
 
-1. Abre `public/v1/seasons/<id>.json` en el editor web de GitHub (o en local).
+1. Abre `public/v1/seasons/<id>.json` en el editor web de GitHub (o en local; si antes editaste en la web, haz `git pull --ff-only` primero).
 2. En el partido, cambia `status` a `finished` y rellena `score` (`home` y `away`, goles al final incluida la prórroga). En eliminatorias, `decidedBy` es `null`, `extraTime` o `penalties`.
 3. Cambia `updatedAt` al instante actual en UTC con formato `AAAA-MM-DDTHH:MM:SSZ`. **Es obligatorio si cambias algo más**: la puerta rechaza un contenido cambiado con el mismo `updatedAt`.
 4. Si trabajas en local, **antes de confirmar** ejecuta la verificación completa. Con el cambio aún sin confirmar, `verify` compara `updatedAt` con el de `HEAD`; si ya has confirmado, compara `HEAD` consigo mismo y no detecta un `updatedAt` olvidado:
@@ -47,7 +68,7 @@ Una sola vez, y antes del primer *push*. Requiere tu cuenta de GitHub (historia 
 
 ## Carga inicial
 
-Se hace una sola vez, con los datos de la temporada completa (US-007b). Nunca se escribe el JSON a mano: se transcribe a CSV y se convierte. **El PDF oficial del calendario no se sube nunca a este repositorio** (ni a `public/`, ni a ningún otro sitio: la lista permitida lo rechaza). Se lee fuera del repositorio y solo se transcriben los datos.
+Se hace una sola vez, con los datos de la temporada completa (US-007b2). Nunca se escribe el JSON a mano: se transcribe a CSV y se convierte. **El PDF oficial del calendario no se sube nunca a este repositorio** (ni a `public/`, ni a ningún otro sitio: la lista permitida lo rechaza). Se lee fuera del repositorio y solo se transcriben los datos.
 
 1. **Prepara los CSV** en un directorio fuera del repositorio, por ejemplo `~/myfutsal-carga/` (así no quedan como ficheros sin seguimiento; los de ejemplo, con datos ficticios, están en `examples/initial-load/`). Son UTF-8, separados por comas y con la cabecera exacta de los ejemplos:
    - `equipos.csv`: `id,name,shortName`. Los escudos no se cargan (`crestURL` siempre `null`).
@@ -121,6 +142,56 @@ git push origin main
 
 El commit pasa por la misma puerta y despliega la versión anterior con el `updatedAt` nuevo. Si no puedes usar la línea de comandos, edita el JSON en la web de GitHub: restaura el contenido bueno y cambia `updatedAt`. Si el commit malo contenía además un cambio bueno, edita el JSON a mano en lugar de revertir.
 
+## Ensayo de la puerta (una sola vez)
+
+Historia US-007b1, criterios 3 y 4. Se hace **después** del primer despliegue verde y comprueba en el servidor real que un JSON inválido no llega a producción y que el rollback funciona. El equipo prepara el commit inválido en una rama local `ensayo-puerta` (sin pasar por `scripts/verify`, que lo rechazaría); no está publicado hasta que tú lo subes.
+
+El commit cambia `phases[0].kind` de `league` a `legue` (un valor fuera del enumerado del esquema; el marcador actual no tiene partidos, así que no hay `status` que estropear) y avanza `updatedAt`, de modo que solo falla la validación contra el esquema. Si la rama está desfasada porque `main` ha avanzado, el equipo la regenera con `scripts/prepare-gate-rehearsal --recreate`.
+
+1. **Sube el commit inválido:**
+   ```
+   cd /Users/antonioplazaortega/Claude/futsal/myfutsal-feed
+   git switch main
+   git merge --ff-only ensayo-puerta
+   git push origin main
+   ```
+2. **Comprueba** en Actions: `validate` en rojo (paso «Validate against the schema»), `deploy` y `smoke` sin ejecutarse, y el email de GitHub. Si no llega, revisa Settings → Notifications → System → Actions. El equipo comprueba con `curl` que la URL pública sigue sirviendo la versión anterior (`kind` = `league`, `updatedAt` anterior).
+3. **Rollback** (la misma secuencia de «Revertir (rollback)» con el commit que acabas de subir, `HEAD`):
+   ```
+   git revert --no-commit HEAD
+   sed -i '' "s/\"updatedAt\": \".*\"/\"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" public/v1/seasons/2026-27.json
+   git add public/v1/seasons/2026-27.json
+   scripts/verify
+   git commit -m "Revertir el ensayo de la puerta (tiempo: 5 min)"
+   git push origin main
+   ```
+   (`sed -i ''` es la forma de macOS.) La puerta debe aceptarlo y volver a desplegar.
+4. Cuando `smoke` salga en verde, copia al equipo la línea `smoke-check correcto: version ... servida tras N s` del log: es el dato de NFR-011 (ver «Registro de evidencias»).
+5. Limpieza: `git branch -d ensayo-puerta` (la rama ya está fusionada).
+
+## URL base para la app
+
+La app (US-005) usará como valor de configuración la URL base **con ruta**:
+
+```
+https://<usuario>.github.io/myfutsal-feed
+```
+
+El feed vive en `<URL base>/v1/index.json`, y la temporada vigente en `<URL base>/v1/seasons/<id>.json`. Pendiente de ejecución por el humano: sustituir `<usuario>` por el real cuando lo dé al equipo (US-007b1, criterio 8).
+
+## Registro de evidencias de US-007b1
+
+Se rellena a medida que el humano ejecuta los pasos (los datos son de ejecución real, no estimaciones).
+
+| Criterio | Evidencia | Estado |
+|---|---|---|
+| 1. Repositorio público, Pages con «GitHub Actions», Secret Protection y Push protection, `noreply` | Capturas de Settings → Pages y Advanced Security | Pendiente de ejecución por el humano |
+| 2. Primer despliegue: `validate`, `deploy` y `smoke` en verde; 200 + `ETag`; 304 con `If-None-Match` | Log del job `smoke` y `curl` desde fuera | Pendiente de ejecución por el humano |
+| 3. La puerta bloquea el commit inválido; rollback aceptado y desplegado | Capturas de Actions y email | Pendiente de ejecución por el humano |
+| 4. Propagación (NFR-011, objetivo ≤ 15 min; revisar ADR-004 si es > 10 min de forma habitual) | Línea `servida tras N s` del `smoke` del rollback | Pendiente de ejecución por el humano |
+| 7c I-2. `actions/upload-pages-artifact@v5` y `actions/deploy-pages@v5` sin avisos de runtime obsoleto | Anotaciones del run del primer despliegue | Pendiente de ejecución por el humano |
+| 7c S-4. Si el primer `smoke` da 404 o 5xx, reintentar dentro del plazo de 12 min; si no, se descarta | Log del primer `smoke` | Pendiente de ejecución por el humano |
+
 ## Verificación en el iPhone
 
 1. Abre la app y haz *pull to refresh* en la pantalla de resultados.
@@ -153,3 +224,4 @@ git log --grep='tiempo:' --format='%ad %s' --date=short
 | `scripts/check-allowlist` | Solo `v1/index.json` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
 | `scripts/check-workflow` | Comprobación estática del workflow |
 | `scripts/smoke-check` | Comprobación posterior al despliegue |
+| `scripts/prepare-gate-rehearsal` | Prepara en local, sin publicar, el commit inválido del ensayo de la puerta |

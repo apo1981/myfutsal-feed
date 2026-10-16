@@ -83,6 +83,8 @@ unit 4-invariantes-pruebas test_invariants.py
 
 run 5-workflow "$FEED/scripts/check-workflow"
 unit 5-workflow-pruebas test_workflow.py
+unit 5b-bloqueo-de-herramientas-pruebas test_lock.py
+unit 5c-ensayo-de-la-puerta-pruebas test_rehearsal.py
 
 unit 6-smoke-check-pruebas test_smoke.py
 

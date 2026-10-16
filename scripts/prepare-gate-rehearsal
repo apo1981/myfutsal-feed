@@ -1,0 +1,9 @@
+#!/bin/sh
+# Prepara, SIN publicar, el commit invalido del ensayo de la puerta (US-007b1, criterio 3) en la rama local
+# `ensayo-puerta`. No pasa por `scripts/verify`, que lo rechazaria. Cambia `kind` por un valor fuera del
+# enumerado del esquema y avanza `updatedAt`. Pasos para subirlo: RUNBOOK, «Ensayo de la puerta».
+# Uso: scripts/prepare-gate-rehearsal [--recreate]
+set -eu
+. "$(dirname "$0")/_env.sh"
+require_tools
+run_python "$FEED/scripts/gate_rehearsal.py" --feed "$FEED" "$@"
