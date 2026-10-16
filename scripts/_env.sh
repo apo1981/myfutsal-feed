@@ -25,7 +25,7 @@ require_tools() {
     if [ -z "$TOOLS_VENV" ]; then
         echo "FALLO: falta el venv con check-jsonschema." >&2
         echo "  En el repositorio de la app: scripts/bootstrap-contract-tools (crea /.venv-tools, necesita red una vez)." >&2
-        echo "  O en este repositorio: python3 -m venv .venv && .venv/bin/pip install -r requirements-ci.txt" >&2
+        echo "  O en este repositorio: python3 -m venv .venv && .venv/bin/pip install --require-hashes --only-binary=:all: -r requirements-ci.txt" >&2
         exit 2
     fi
 }

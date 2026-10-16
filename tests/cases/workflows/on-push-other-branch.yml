@@ -21,10 +21,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install check-jsonschema (pinned in requirements-ci.txt)
+      - name: Install check-jsonschema (pinned with hashes in requirements-ci.txt)
         run: |
           python3 -m venv .venv
-          .venv/bin/pip install --disable-pip-version-check --quiet -r requirements-ci.txt
+          .venv/bin/pip install --disable-pip-version-check --quiet --require-hashes --only-binary=:all: -r requirements-ci.txt
 
       - name: Find the previous version of the current season
         id: previous
