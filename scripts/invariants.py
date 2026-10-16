@@ -222,12 +222,9 @@ def readable_previous(path: str, log: List[str]) -> Optional[Dict[str, Any]]:
     return previous
 
 
-def updated_at_violation(season: Dict[str, Any], previous: Optional[Dict[str, Any]], log: List[str]) -> Optional[Violation]:
+def updated_at_violation(season: Dict[str, Any], previous: Dict[str, Any], log: List[str]) -> Optional[Violation]:
     """`updatedAt` debe avanzar cuando el contenido cambia (la app lo usa para la antiguedad de los datos)."""
     subject = str(season.get("seasonId"))
-    if previous is None:
-        log.append("updatedAt: primera publicacion (sin version anterior)")
-        return None
     if canonical_without_updated_at(season) == canonical_without_updated_at(previous):
         log.append("updatedAt: contenido sin cambios respecto a la version anterior")
         return None
@@ -237,6 +234,20 @@ def updated_at_violation(season: Dict[str, Any], previous: Optional[Dict[str, An
                              season.get("updatedAt"), previous.get("updatedAt")))
     log.append("updatedAt: contenido cambiado y updatedAt posterior")
     return None
+
+
+def updated_at_check(season: Dict[str, Any], previous_path: Optional[str], log: List[str]) -> Optional[Violation]:
+    """Aplica la invariante de `updatedAt` segun haya, no haya o sea ilegible la version anterior.
+
+    S-12: una version anterior ilegible solo se avisa; no es ademas una «primera publicacion».
+    """
+    if previous_path is None:
+        log.append("updatedAt: primera publicacion (sin version anterior)")
+        return None
+    previous = readable_previous(previous_path, log)
+    if previous is None:
+        return None
+    return updated_at_violation(season, previous, log)
 
 
 # --------------------------------------------------------------------------
@@ -274,8 +285,7 @@ def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optiona
         if size:
             found.append(size)
         if identifier == target_id:
-            previous = readable_previous(previous_path, log) if previous_path else None
-            violation = updated_at_violation(season, previous, log)
+            violation = updated_at_check(season, previous_path, log)
             if violation:
                 found.append(violation)
     return found

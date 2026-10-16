@@ -256,6 +256,22 @@ class UpdatedAt(InvariantsCliTestCase):
         result = self.check_with_previous_text("{", season_with(lambda s: match_of(s, "m-02").update(awayTeamId="bbb")))
         self.assert_fails(result, "local-igual-visitante", "m-02")
 
+    def test_us007a2_c9_unreadable_previous_does_not_also_claim_a_first_publication(self) -> None:
+        # S-12: JSON truncado y updatedAt que no es un instante; ambos avisan y ninguno dice «primera publicacion».
+        valid_json_bad_instant = json.dumps(dict(support.BASE_SEASON, updatedAt="ayer"))
+        for text in (json.dumps(support.BASE_SEASON)[:-30], valid_json_bad_instant):
+            with self.subTest(text[:20]):
+                result = self.check_with_previous_text(text)
+                self.assertEqual(result.returncode, 0, output_of(result))
+                self.assertIn("version anterior ilegible", result.stdout)
+                self.assertIn("se omite la invariante", result.stdout)
+                self.assertNotIn("primera publicacion", result.stdout)
+
+    def test_us007a2_c9_a_readable_previous_never_reports_a_first_publication(self) -> None:
+        result = self.check(previous=support.BASE_SEASON)
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertNotIn("primera publicacion", result.stdout)
+
     def test_us007a_c4_without_previous_reports_first_publication(self) -> None:
         result = self.check()
         self.assertEqual(result.returncode, 0, output_of(result))
