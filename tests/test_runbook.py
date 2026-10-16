@@ -77,7 +77,8 @@ class FirstPublicationSections(unittest.TestCase):
 
     def test_us007b1_c8_the_base_url_includes_the_path(self) -> None:
         body = section_body(read(REAL_RUNBOOK), "url base")
-        self.assertIn("https://<usuario>.github.io/myfutsal-feed", body)
+        self.assertIn("\nhttps://apo1981.github.io/myfutsal-feed\n", body)
+        self.assertNotIn("<usuario>", body)
 
 
 class InitialLoadSection(unittest.TestCase):

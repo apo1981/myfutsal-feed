@@ -174,23 +174,26 @@ El commit cambia `phases[0].kind` de `league` a `legue` (un valor fuera del enum
 La app (US-005) usará como valor de configuración la URL base **con ruta**:
 
 ```
-https://<usuario>.github.io/myfutsal-feed
+https://apo1981.github.io/myfutsal-feed
 ```
 
-El feed vive en `<URL base>/v1/index.json`, y la temporada vigente en `<URL base>/v1/seasons/<id>.json`. Pendiente de ejecución por el humano: sustituir `<usuario>` por el real cuando lo dé al equipo (US-007b1, criterio 8).
+Valor real, sin barra final y con la ruta `/myfutsal-feed` (US-007b1, criterio 8; usuario de GitHub `apo1981`). El feed vive en `<URL base>/v1/index.json`, y la temporada vigente en `<URL base>/v1/seasons/<id>.json`.
 
 ## Registro de evidencias de US-007b1
 
-Se rellena a medida que el humano ejecuta los pasos (los datos son de ejecución real, no estimaciones).
+Datos de ejecución real, no estimaciones. Fecha de las comprobaciones: 2026-10-16.
 
 | Criterio | Evidencia | Estado |
 |---|---|---|
-| 1. Repositorio público, Pages con «GitHub Actions», Secret Protection y Push protection, `noreply` | Capturas de Settings → Pages y Advanced Security | Pendiente de ejecución por el humano |
-| 2. Primer despliegue: `validate`, `deploy` y `smoke` en verde; 200 + `ETag`; 304 con `If-None-Match` | Log del job `smoke` y `curl` desde fuera | Pendiente de ejecución por el humano |
-| 3. La puerta bloquea el commit inválido; rollback aceptado y desplegado | Capturas de Actions y email | Pendiente de ejecución por el humano |
-| 4. Propagación (NFR-011, objetivo ≤ 15 min; revisar ADR-004 si es > 10 min de forma habitual) | Línea `servida tras N s` del `smoke` del rollback | Pendiente de ejecución por el humano |
-| 7c I-2. `actions/upload-pages-artifact@v5` y `actions/deploy-pages@v5` sin avisos de runtime obsoleto | Anotaciones del run del primer despliegue | Pendiente de ejecución por el humano |
-| 7c S-4. Si el primer `smoke` da 404 o 5xx, reintentar dentro del plazo de 12 min; si no, se descarta | Log del primer `smoke` | Pendiente de ejecución por el humano |
+| 1. Repositorio público, Pages con «GitHub Actions», Secret Protection y Push protection, `noreply` | Capturas del humano (2026-10-16): Settings → Pages con Source «GitHub Actions»; Settings → Advanced Security con Secret Protection y Push protection activadas; en Emails, «Keep my email addresses private» y «Block command line pushes that expose my email» marcados. Repositorio `apo1981/myfutsal-feed`, remoto `origin` = `https://github.com/apo1981/myfutsal-feed.git`. La dirección `noreply` solo vive en `.git/config` | Hecho |
+| 2. Primer despliegue: `validate`, `deploy` y `smoke` en verde; 200 + `ETag`; 304 con `If-None-Match` | Run 38923663846 «Publish feed» (commit `e02abaf`): `validate`, `deploy` y `smoke` en verde; creado 15:24:22Z, terminado 15:24:57Z (unos 35 s). `curl` desde fuera (~15:27Z): `/v1/index.json` → HTTP/2 200, `content-type: application/json; charset=utf-8`, `etag: "6ad241bd-b7"`, `cache-control: max-age=600`, 183 B; con `If-None-Match` → 304. `/v1/seasons/2026-27.json` → 200, `application/json`, `etag: "6ad241bc-1b8"`, 440 B (248 B con gzip); con `If-None-Match` → 304 | Hecho |
+| 3. La puerta bloquea el commit inválido; rollback aceptado y desplegado | Capturas de Actions y email (ver «Ensayo de la puerta») | Pendiente de ejecución por el humano |
+| 4. Propagación (NFR-011, objetivo ≤ 15 min; revisar ADR-004 si es > 10 min de forma habitual) | Línea `servida tras N s` del `smoke` del rollback. Tiempo medido: _pendiente (se rellena tras el rollback)_ | Pendiente de ejecución por el humano |
+| 7c I-2. `actions/upload-pages-artifact@v5` y `actions/deploy-pages@v5` sin avisos de runtime obsoleto | La API pública de check-runs del run 38923663846 muestra 0 anotaciones en los 3 jobs | Hecho: sin avisos |
+| 7c S-4. Si el primer `smoke` da 404 o 5xx, reintentar dentro del plazo de 12 min; si no, se descarta | El paso «Post-deploy check» pasó en 0 s al primer intento, sin 404 ni 5xx. **Decisión: descartado**; no se añade reintento en `smoke-check`. Se reabre si algún `smoke` real da 404/5xx justo tras `deploy` | Descartado |
+| A7. Pages permite elegir la fuente con el repositorio vacío | Confirmado: «GitHub Actions» se pudo elegir con el repositorio vacío, antes del primer push | Confirmado |
+| A8. El push de `.github/workflows/` exige el permiso Workflows | El push funcionó con un token con Contents y Workflows en lectura y escritura; no se probó sin Workflows | Sin refutar |
+| 8. URL base | `https://apo1981.github.io/myfutsal-feed` (ver «URL base para la app») | Hecho |
 
 ## Verificación en el iPhone
 
