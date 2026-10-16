@@ -71,6 +71,21 @@ def section_problems(text: str) -> List[str]:
     return problems
 
 
+ROLLBACK_HEADING = re.compile(r"revertir|rollback", re.IGNORECASE)
+STAGES_BEFORE_COMMIT = re.compile(r"(?s)^git add\b.*^git commit\b|^git commit (?:-[a-zA-Z]*a[a-zA-Z]*|--all)\b", re.MULTILINE)
+
+
+def rollback_staging_problems(text: str) -> List[str]:
+    """B-2: `git revert --no-commit` deja el contenido en el indice; sin `git add` (o `commit -a`) antes del
+    `git commit` se confirma el `updatedAt` antiguo. Se mira solo el codigo, no la prosa."""
+    for heading, body in split_sections(text):
+        if ROLLBACK_HEADING.search(heading):
+            code = "\n".join(line.strip() for block in code_blocks(body) for line in block.splitlines())
+            if not STAGES_BEFORE_COMMIT.search(code):
+                return ["la seccion 'revertir (rollback)' no hace `git add` (o `git commit -a`) antes de `git commit` en sus bloques de codigo"]
+    return []
+
+
 def command_problems(text: str, feed: str) -> List[str]:
     cited = sorted(set(path.rstrip(".,;:") for block in code_blocks(text) for path in SCRIPT_PATH.findall(block)))
     return ["el comando %s citado en un bloque de codigo no existe" % path
@@ -93,7 +108,7 @@ def main(argv: List[str]) -> int:
     except OSError as error:
         print("FALLO runbook: no se pudo leer %s: %s" % (path, error), file=sys.stderr)
         return 1
-    problems = section_problems(text) + command_problems(text, args.feed)
+    problems = section_problems(text) + rollback_staging_problems(text) + command_problems(text, args.feed)
     for problem in problems:
         print("FALLO runbook: %s" % problem, file=sys.stderr)
     if problems:

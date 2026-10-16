@@ -52,7 +52,7 @@ El workflow queda en rojo, GitHub te avisa por email y **no se despliega nada**:
    scripts/check-invariants
    ```
    Cada mensaje nombra la invariante incumplida y el identificador afectado (partido, equipo, fase o ronda).
-3. Corrige el JSON y vuelve a confirmar. Si no ves la causa, revierte el cambio (ver «Revertir»).
+3. Corrige el JSON, pon de nuevo `updatedAt` en el instante actual y vuelve a confirmar. Si no ves la causa, revierte el cambio (ver «Revertir»).
 4. Si falla la paridad del esquema (`shasum`), alguien ha editado `schema/`: restáuralo desde el repositorio de la app; no lo corrijas a mano.
 
 ## Qué hacer si falla la comprobación posterior
@@ -75,9 +75,10 @@ El historial de Git es el rollback. Localiza el commit malo con `git log --oneli
 git revert --no-commit <commit>
 ```
 
-Edita `public/v1/seasons/<id>.json` y pon `updatedAt` en el instante actual en UTC (`date -u +%Y-%m-%dT%H:%M:%SZ`). Después:
+Edita `public/v1/seasons/<id>.json` y pon `updatedAt` en el instante actual en UTC (`date -u +%Y-%m-%dT%H:%M:%SZ`). `git revert --no-commit` deja el contenido revertido en el índice y tu edición solo en el árbol de trabajo: **sin `git add` el commit se lleva el `updatedAt` antiguo** y la puerta lo rechaza aunque `scripts/verify` salga en verde en local. Después:
 
 ```
+git add public/v1/seasons/<id>.json
 scripts/verify
 git commit -m "Revertir <commit> (tiempo: 5 min)"
 git push origin main

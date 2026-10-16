@@ -243,6 +243,7 @@ class TempGitFeed(TempDirTestCase):
 
     def run_invariants(self, before: str):
         """El paso `previous` real seguido de la invariante, como en el job `validate`."""
+        self.git("checkout", "-q", "--", ".")  # CI valida un checkout limpio: solo cuenta lo confirmado, no el arbol de trabajo
         previous = self.run_step(before)
         args = ["--feed", self.repo, "--public", os.path.join(self.repo, "public")]
         return support.run_main(invariants.main, args + (["--previous", previous] if previous else []))
@@ -307,29 +308,60 @@ class PreviousVersionStep(TempGitFeed):
 class RollbackProcedure(TempGitFeed):
     """B-2: el procedimiento de rollback del RUNBOOK, ejecutado de verdad en un repositorio temporal."""
 
-    def runbook_revert_command(self, commit: str) -> List[str]:
-        with open(os.path.join(support.FEED, "RUNBOOK.md"), encoding="utf-8") as handle:
-            text = handle.read()
-        sections = [body for heading, body in runbook_check.split_sections(text) if "rollback" in heading.lower()]
-        self.assertEqual(len(sections), 1)
+    COMMIT_MESSAGE_TIME = "(tiempo: 5 min)"
+
+    @staticmethod
+    def runbook_git_commands(runbook_text: str) -> List[str]:
+        """Las lineas `git ...` de los bloques de la seccion de rollback, en orden y tal como estan escritas."""
+        sections = [body for heading, body in runbook_check.split_sections(runbook_text) if "rollback" in heading.lower()]
+        assert len(sections) == 1, sections
         lines = [line.strip() for block in runbook_check.code_blocks(sections[0]) for line in block.splitlines()]
-        reverts = [line for line in lines if line.startswith("git revert")]
-        self.assertEqual(len(reverts), 1, reverts)
-        return shlex.split(reverts[0].replace("<commit>", commit))[1:]
+        return [line for line in lines if line.startswith("git ")]
+
+    def runbook_text(self) -> str:
+        with open(os.path.join(support.FEED, "RUNBOOK.md"), encoding="utf-8") as handle:
+            return handle.read()
 
     def deploy_bad_version(self) -> str:
         self.commit_season("2026-10-01T10:00:00Z")
         bad = self.commit_season("2026-10-02T10:00:00Z", postponed=True)  # valido, desplegado y erroneo
         return bad
 
-    def test_us007a_c8_the_documented_rollback_with_a_new_updated_at_passes_the_gate(self) -> None:
+    def edit_updated_at(self, updated_at: str) -> None:
+        """El paso manual del runbook: editar `updatedAt` en el fichero ya revertido."""
+        with open(self.season_path(), encoding="utf-8") as handle:
+            season = json.load(handle)
+        season["updatedAt"] = updated_at
+        support.write_json(self.season_path(), season)
+
+    def follow_runbook(self, runbook_text: str, bad: str, new_updated_at: str) -> None:
+        """Ejecuta literalmente cada comando `git` del runbook (salvo `push`, que no tiene remoto aqui)."""
+        commands = [c for c in self.runbook_git_commands(runbook_text) if not c.startswith("git push")]
+        self.assertTrue(commands[0].startswith("git revert --no-commit"), commands)
+        for number, command in enumerate(commands):
+            words = shlex.split(command.replace("<commit>", bad).replace("<id>", support.SEASON_ID))
+            self.git(*words[1:])
+            if number == 0:
+                self.edit_updated_at(new_updated_at)
+
+    def test_us007a_c8_following_the_runbook_literally_passes_the_real_gate(self) -> None:
         bad = self.deploy_bad_version()
-        self.git(*self.runbook_revert_command(bad))
-        self.write_season("2026-10-03T10:00:00Z")  # el contenido bueno con el updatedAt nuevo
-        self.commit_all("Revertir")
+        self.follow_runbook(self.runbook_text(), bad, "2026-10-03T10:00:00Z")
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(self.git("show", "HEAD:public/v1/seasons/%s.json" % support.SEASON_ID).count("2026-10-03T10:00:00Z"), 1)
         result = self.run_invariants(bad)
         self.assertEqual(result.returncode, 0, output_of(result))
         self.assertIn("contenido cambiado y updatedAt posterior", result.stdout)
+
+    def test_us007a_c8_the_test_fails_if_the_runbook_loses_its_git_add(self) -> None:
+        # Control de B-2: sin `git add` el commit se lleva el updatedAt antiguo y la puerta lo rechaza.
+        without_add = "\n".join(line for line in self.runbook_text().splitlines() if not line.strip().startswith("git add"))
+        self.assertNotEqual(without_add, self.runbook_text())
+        bad = self.deploy_bad_version()
+        self.follow_runbook(without_add, bad, "2026-10-03T10:00:00Z")
+        result = self.run_invariants(bad)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("invariante updated-at-sin-avanzar", result.stderr)
 
     def test_us007a_c8_a_plain_revert_without_a_new_updated_at_is_rejected(self) -> None:
         # Control: es el fallo que tenia el procedimiento anterior (`git revert` a secas).
@@ -338,10 +370,6 @@ class RollbackProcedure(TempGitFeed):
         result = self.run_invariants(bad)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("invariante updated-at-sin-avanzar", result.stderr)
-
-    def test_us007a_c8_the_runbook_revert_command_keeps_the_changes_uncommitted(self) -> None:
-        # Sin `--no-commit` no hay ocasion de cambiar `updatedAt` antes del commit.
-        self.assertIn("--no-commit", self.runbook_revert_command("abc"))
 
 
 if __name__ == "__main__":
