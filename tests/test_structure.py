@@ -174,6 +174,27 @@ class Secrets(StructureTestCase):
         self.assertEqual(structure.secret_problems(support.FEED), [])
 
 
+class LocalPaths(StructureTestCase):
+    # Los literales se construyen por partes para que este fichero no se detecte a si mismo.
+    MAC_PATH = "/" + "Users/alguien/proyecto"
+    LINUX_PATH = "/" + "home/alguien/proyecto"
+
+    def test_us007b1_b1_a_mac_path_fails_and_names_file_and_line(self) -> None:
+        self.put("notas.md", "uno\ncd %s\n" % self.MAC_PATH)
+        self.assert_only("sin-rutas-locales", "notas.md:2")
+
+    def test_us007b1_b1_a_linux_path_fails_and_names_file_and_line(self) -> None:
+        self.put("docs/notas.md", "cd %s\n" % self.LINUX_PATH)
+        self.assert_only("sin-rutas-locales", "docs/notas.md:1")
+
+    def test_us007b1_b1_relative_paths_pass(self) -> None:
+        self.put("notas.md", "cd myfutsal-feed\nUsers y home sin barras\n")
+        self.assertEqual(structure.local_path_problems(self.feed), [])
+
+    def test_us007b1_b1_real_repository_has_no_local_paths(self) -> None:
+        self.assertEqual(structure.local_path_problems(support.FEED), [])
+
+
 class NoInventedData(StructureTestCase):
     def test_us007a_c1_real_team_in_public_fails(self) -> None:
         path = os.path.join(self.feed, "public", "v1", "seasons", "2026-27.json")

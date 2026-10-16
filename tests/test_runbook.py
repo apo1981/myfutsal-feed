@@ -73,7 +73,7 @@ class FirstPublicationSections(unittest.TestCase):
     def test_us007b1_c4_the_evidence_table_names_the_propagation_datum(self) -> None:
         body = section_body(read(REAL_RUNBOOK), "registro de evidencias")
         self.assertIn("NFR-011", body)
-        self.assertIn("servida tras N s", body)
+        self.assertRegex(body, r"servida tras [0-9.]+ s|≤ [0-9]+ s")
 
     def test_us007b1_c8_the_base_url_includes_the_path(self) -> None:
         body = section_body(read(REAL_RUNBOOK), "url base")

@@ -16,7 +16,7 @@ Una sola vez, en este orden y antes del primer *push* (historia US-007b1). Los p
 5. **Token para el push** (no hay `gh`; `git` guarda la credencial en el llavero del Mac). Avatar → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token: nombre `myfutsal-feed-push`, caducidad 30 días, «Only select repositories» → `myfutsal-feed`, permisos Contents «Read and write» y Workflows «Read and write» (el push incluye `.github/workflows/`).
 6. **Identidad y remoto locales** (los hace el equipo con tu usuario y tu `noreply`; ver «Cómo se fija la dirección `noreply`»):
    ```
-   cd /Users/antonioplazaortega/Claude/futsal/myfutsal-feed
+   cd myfutsal-feed   # desde la carpeta que contiene el repositorio
    git config --local user.name "<usuario>"
    git config --local user.email "<id>+<usuario>@users.noreply.github.com"
    git remote add origin https://github.com/<usuario>/myfutsal-feed.git
@@ -150,7 +150,7 @@ El commit cambia `phases[0].kind` de `league` a `legue` (un valor fuera del enum
 
 1. **Sube el commit inválido:**
    ```
-   cd /Users/antonioplazaortega/Claude/futsal/myfutsal-feed
+   cd myfutsal-feed   # desde la carpeta que contiene el repositorio
    git switch main
    git merge --ff-only ensayo-puerta
    git push origin main

@@ -45,6 +45,9 @@ REQUIRED_FILES = [
 SECRET_NAME_PATTERNS = [".env*", "*.pem", "*.key", "id_*"]
 # Los patrones se parten en dos para que este fichero no se detecte a si mismo.
 SECRET_CONTENT_MARKERS = [b"gh" + b"p_", b"github" + b"_pat_", b"-----" + b"BEGIN", b"AK" + b"IA"]
+# Rutas locales de un Mac o de un Linux: delatan el nombre del operador. Se construyen por partes para que este
+# fichero no se detecte a si mismo.
+LOCAL_PATH_MARKERS = [b"/" + b"Users/", b"/" + b"home/"]
 IGNORED_DIRECTORIES = {".git", ".venv", "__pycache__"}
 
 # Identidad (D-074(2)). La direccion `noreply` del operador no se escribe aqui: es la identidad local del
@@ -113,6 +116,18 @@ def secret_problems(feed: str) -> List[str]:
         for marker in SECRET_CONTENT_MARKERS:
             if marker in content:
                 problems.append("%s: el contenido parece un secreto (contiene %s)" % (relative, marker.decode("ascii")))
+    return problems
+
+
+def local_path_problems(feed: str) -> List[str]:
+    """Ningun fichero del repositorio puede llevar una ruta local (B-1 de la revision de US-007b1): nombra fichero:linea."""
+    problems = []
+    for relative in walk_files(feed):
+        with open(os.path.join(feed, relative), "rb") as handle:
+            for number, line in enumerate(handle.read().splitlines(), start=1):
+                for marker in LOCAL_PATH_MARKERS:
+                    if marker in line:
+                        problems.append("%s:%d: contiene una ruta local (%s); usa una ruta relativa" % (relative, number, marker.decode("ascii")))
     return problems
 
 
@@ -225,6 +240,7 @@ def structure_problems(feed: str, app_root: Optional[str]) -> Dict[str, List[str
         "lista-permitida": allowlist_problems(os.path.join(feed, "public")),
         "sin-headers": headers_problems(feed),
         "sin-secretos": secret_problems(feed),
+        "sin-rutas-locales": local_path_problems(feed),
         "sin-datos-inventados": placeholder_problems(feed),
         "repositorio-independiente": independent_repo_problems(feed),
         "remoto-esperado": remote_problems(feed),
