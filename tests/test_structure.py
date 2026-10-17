@@ -200,21 +200,6 @@ class LocalPaths(StructureTestCase):
         self.assertEqual(structure.local_path_problems(support.FEED), [])
 
 
-class NoInventedData(StructureTestCase):
-    def test_us007a_c1_real_team_in_public_fails(self) -> None:
-        path = os.path.join(self.feed, "public", "v1", "seasons", "2026-27.json")
-        season = support.season_with()
-        write_json(path, season)
-        self.assert_only("sin-datos-inventados", "aaa")
-
-    def test_us007a_c1_match_in_public_fails(self) -> None:
-        path = os.path.join(self.feed, "public", "v1", "seasons", "2026-27.json")
-        season = support.season_with(lambda s: s.update(teams=[s["teams"][0]]))
-        season["teams"][0]["id"] = structure.PLACEHOLDER_ID
-        write_json(path, season)
-        self.assert_only("sin-datos-inventados", "liga-01")
-
-
 class IndependentRepository(StructureTestCase):
     def test_us007a_c1_feed_without_its_own_repository_fails(self) -> None:
         shutil.rmtree(os.path.join(self.feed, ".git"))

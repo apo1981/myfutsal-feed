@@ -18,7 +18,6 @@ from typing import Dict, List, Optional
 SEASON_FILE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}\.json$")
 ALLOWED_INDEX = os.path.join("v1", "index.json")
 SEASONS_DIR = os.path.join("v1", "seasons")
-PLACEHOLDER_ID = "pendiente"
 EXAMPLE_TEAMS = os.path.join("examples", "initial-load", "equipos.csv")
 
 REQUIRED_FILES = [
@@ -143,25 +142,6 @@ def local_path_problems(feed: str) -> List[str]:
     return problems
 
 
-def placeholder_problems(feed: str) -> List[str]:
-    """Hasta US-007b `public/` no lleva equipos ni resultados inventados: solo el marcador `pendiente`."""
-    problems = []
-    seasons = os.path.join(feed, "public", SEASONS_DIR)
-    if not os.path.isdir(seasons):
-        return problems
-    for name in sorted(os.listdir(seasons)):
-        with open(os.path.join(seasons, name), "r", encoding="utf-8") as handle:
-            season = json.load(handle)
-        extra_teams = [t.get("id") for t in season.get("teams", []) if t.get("id") != PLACEHOLDER_ID]
-        if extra_teams:
-            problems.append("public/v1/seasons/%s: equipos que no son el marcador %r: %s" % (name, PLACEHOLDER_ID, extra_teams))
-        for phase in season.get("phases", []):
-            for rnd in phase.get("rounds", []):
-                if rnd.get("matches"):
-                    problems.append("public/v1/seasons/%s: la ronda %s tiene partidos" % (name, rnd.get("id")))
-    return problems
-
-
 # --------------------------------------------------------------------------
 # Git
 # --------------------------------------------------------------------------
@@ -253,7 +233,6 @@ def structure_problems(feed: str, app_root: Optional[str]) -> Dict[str, List[str
         "sin-headers": headers_problems(feed),
         "sin-secretos": secret_problems(feed),
         "sin-rutas-locales": local_path_problems(feed),
-        "sin-datos-inventados": placeholder_problems(feed),
         "repositorio-independiente": independent_repo_problems(feed),
         "remoto-esperado": remote_problems(feed),
         "identidad-no-personal": identity_problems(feed),

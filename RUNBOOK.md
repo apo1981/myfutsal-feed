@@ -81,12 +81,13 @@ Se hace una sola vez, con los datos de la temporada completa (US-007b2). Nunca s
        --updated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out /tmp/2026-27.json
    ```
    Si hay errores, cada uno indica `fichero:línea` y no se escribe nada: corrige el CSV y repite.
-3. **Copia y valida:**
+3. **Copia y valida**, en este orden (`convert-csv` → `check-initial-load` → `verify` sin confirmar → commit → push):
    ```
    cp /tmp/2026-27.json public/v1/seasons/2026-27.json
+   scripts/check-initial-load --cutoff AAAA-MM-DD
    scripts/verify
    ```
-   `verify` aplica el esquema, las invariantes y la comprobación de `updatedAt` frente a `HEAD`.
+   `check-initial-load` comprueba la carga (sin marcador `pendiente`, partidos anteriores al corte nunca `scheduled` ni `finished` después del corte) y lista los `unknown` que hay que poner al día. `verify` aplica el esquema, las invariantes y la comprobación de `updatedAt` frente a `HEAD`; va **antes** del commit porque esa última comprobación no está en `check-initial-load` (D-140).
 4. **Publica** solo después de que `verify` esté en verde. Añade únicamente la temporada (nunca `git add -A`), confirma con el tiempo dedicado en el mensaje y espera al workflow:
    ```
    git add public/v1/seasons/2026-27.json
