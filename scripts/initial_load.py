@@ -6,7 +6,8 @@ No escribe nada. Comprueba sobre la temporada vigente, sin fijar el numero de eq
   - cada fase de liga con N equipos tiene N-1 jornadas de N/2 partidos, cada equipo juega una vez
     por jornada y cada pareja se enfrenta una vez por fase;
   - ningun partido anterior al corte queda `scheduled` o `live`, y ninguno `finished` es posterior;
-y ademas esquema, invariantes de US-007a y tamano comprimido (invariantes). Lista los `unknown`.
+y ademas esquema, invariantes de US-007a y tamano comprimido (invariantes). Resume cada fase de liga
+(jornadas y partidos) y lista los `unknown`.
 Cada fallo se imprime como `FALLO carga-inicial <nombre>: <identificador>: <detalle>`.
 """
 from __future__ import annotations
@@ -143,6 +144,14 @@ def unknown_matches(season: Dict[str, Any]) -> List[str]:
             for match in invariants.iter_matches(season) if match.get("status") == UNKNOWN_STATUS]
 
 
+def phase_summaries(season: Dict[str, Any]) -> List[str]:
+    """7d-4: una linea por fase de liga con sus jornadas y partidos, para ver al instante si falta una fase."""
+    return ["%s: %d jornadas, %d partidos" % (
+                phase.get("id", "?"), len(phase.get("rounds", [])),
+                sum(len(rnd.get("matches", [])) for rnd in phase.get("rounds", [])))
+            for phase in season.get("phases", []) if phase.get("kind") == LEAGUE_KIND]
+
+
 def season_findings(season: Dict[str, Any], cutoff: datetime.date) -> List[Finding]:
     return (placeholder_findings(season) + knockout_findings(season)
             + calendar_findings(season) + cutoff_findings(season, cutoff))
@@ -193,7 +202,11 @@ def main(argv: List[str]) -> int:
     print("temporada %s, corte %s: %d equipos, %d partidos, %d bytes con gzip (maximo %d)"
           % (season_id, args.cutoff, len(season.get("teams", [])), len(list(invariants.iter_matches(season))),
              size, invariants.MAX_COMPRESSED_BYTES))
+    for summary in phase_summaries(season):
+        print(summary)
     print("partidos unknown para el runbook: %d%s" % (len(unknown), "".join("\n  " + item for item in unknown)))
+    # 7d-5: con `2>&1 | tee` stdout va por un tubo y se almacena en bloque; se vuelca antes de escribir los fallos.
+    sys.stdout.flush()
     for failure in failures:
         print(failure, file=sys.stderr)
     if failures:

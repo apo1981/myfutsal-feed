@@ -7,6 +7,7 @@ Solo biblioteca estandar, compatible con Python 3.9. No escribe nada.
 from __future__ import annotations
 
 import argparse
+import csv
 import fnmatch
 import json
 import os
@@ -19,12 +20,14 @@ SEASON_FILE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}\.json$")
 ALLOWED_INDEX = os.path.join("v1", "index.json")
 SEASONS_DIR = os.path.join("v1", "seasons")
 PLACEHOLDER_ID = "pendiente"
+EXAMPLE_TEAMS = os.path.join("examples", "initial-load", "equipos.csv")
 
 REQUIRED_FILES = [
     os.path.join("public", "v1", "index.json"),
     os.path.join("schema", "league-feed-v1.season.schema.json"),
     os.path.join("schema", "league-feed-v1.index.schema.json"),
     os.path.join("schema", "SHA256SUMS"),
+    EXAMPLE_TEAMS,
     os.path.join(".github", "workflows", "publish.yml"),
     os.path.join("policy", "workflow-policy.schema.json"),
     "requirements-ci.txt",
@@ -160,6 +163,30 @@ def placeholder_problems(feed: str) -> List[str]:
     return problems
 
 
+def example_team_ids(feed: str) -> List[str]:
+    with open(os.path.join(feed, EXAMPLE_TEAMS), "r", encoding="utf-8", newline="") as handle:
+        return [row["id"] for row in csv.DictReader(handle)]
+
+
+def example_id_problems(feed: str) -> List[str]:
+    """S-3 de la revision de US-007a2: ningun `id` de equipo de los datos de ejemplo puede estar en `public/`.
+
+    Mantiene A4 (sin datos inventados en lo publicado) durante toda la vida del feed.
+    """
+    seasons = os.path.join(feed, "public", SEASONS_DIR)
+    if not os.path.isfile(os.path.join(feed, EXAMPLE_TEAMS)) or not os.path.isdir(seasons):
+        return []  # lo primero ya lo senala `ficheros-obligatorios`
+    examples = set(example_team_ids(feed))
+    problems = []
+    for name in sorted(os.listdir(seasons)):
+        with open(os.path.join(seasons, name), "r", encoding="utf-8") as handle:
+            season = json.load(handle)
+        for team in season.get("teams", []):
+            if team.get("id") in examples:
+                problems.append("public/v1/seasons/%s: el equipo %r es un dato de ejemplo (%s)" % (name, team.get("id"), EXAMPLE_TEAMS))
+    return problems
+
+
 # --------------------------------------------------------------------------
 # Git
 # --------------------------------------------------------------------------
@@ -252,6 +279,7 @@ def structure_problems(feed: str, app_root: Optional[str]) -> Dict[str, List[str
         "sin-secretos": secret_problems(feed),
         "sin-rutas-locales": local_path_problems(feed),
         "sin-datos-inventados": placeholder_problems(feed),
+        "sin-ids-de-ejemplo": example_id_problems(feed),
         "repositorio-independiente": independent_repo_problems(feed),
         "remoto-esperado": remote_problems(feed),
         "identidad-no-personal": identity_problems(feed),

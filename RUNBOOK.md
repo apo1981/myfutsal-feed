@@ -70,13 +70,13 @@ El historial anterior, con `feed@example.invalid`, no se reescribe.
 
 Se hace una sola vez, con los datos de la temporada completa (US-007b2). Nunca se escribe el JSON a mano: se transcribe a CSV y se convierte. **El PDF oficial del calendario no se sube nunca a este repositorio** (ni a `public/`, ni a ningún otro sitio: la lista permitida lo rechaza). Se lee fuera del repositorio y solo se transcriben los datos.
 
-1. **Prepara los CSV** en un directorio fuera del repositorio, por ejemplo `~/myfutsal-carga/` (así no quedan como ficheros sin seguimiento; los de ejemplo, con datos ficticios, están en `examples/initial-load/`). Son UTF-8, separados por comas y con la cabecera exacta de los ejemplos:
+1. **Prepara los CSV** en `local-data/`, en la raíz del repositorio de la app (`../local-data/` desde este; está ignorado por Git en la app, así que ni el PDF ni los CSV se versionan en ninguno de los dos repositorios; tras la carga la fuente de verdad es el JSON; los de ejemplo, con datos ficticios, están en `examples/initial-load/`). Son UTF-8, separados por comas y con la cabecera exacta de los ejemplos:
    - `equipos.csv`: `id,name,shortName`. Los escudos no se cargan (`crestURL` siempre `null`).
    - `partidos.csv`: una fila por partido, con su fase y su ronda. La **hora es la local de Madrid** (`HH:MM`); el conversor la pasa a UTC.
    - Campos vacíos: hora vacía = hora por confirmar; fecha vacía (y hora vacía) = sin fecha; estado vacío = `scheduled`. Un partido sin marcador final no lleva `homeScore` ni `awayScore`: nunca `0-0`.
 2. **Convierte**, fuera de `public/` (el conversor se niega a escribir dentro) y con el instante actual en UTC:
    ```
-   scripts/convert-csv --teams ~/myfutsal-carga/equipos.csv --matches ~/myfutsal-carga/partidos.csv --season-id 2026-27 \
+   scripts/convert-csv --teams ../local-data/equipos.csv --matches ../local-data/partidos.csv --season-id 2026-27 \
        --competition-name "Primera División de fútbol sala" \
        --updated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --out /tmp/2026-27.json
    ```
