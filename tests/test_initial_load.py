@@ -207,6 +207,11 @@ class CommandLine(TempDirTestCase):
         self.assertIn("liga: 3 jornadas, 6 partidos\n", one.stdout)
         self.assertNotIn("clausura", one.stdout)
 
+    def test_us007b2a2_7d1_example_team_in_the_load_fails_before_the_commit(self) -> None:
+        result = self.check(mutated(lambda s: s["teams"][0].update(id="norte")))
+        self.assertEqual(result.returncode, 1, output_of(result))
+        self.assertIn("invariante id-de-ejemplo: norte", result.stderr)
+
     def test_us007b2a2_7d5_summary_comes_before_the_failures_when_stderr_is_redirected(self) -> None:
         public = support.build_public(self.tmp, mutated(lambda s: s["phases"][0]["rounds"].pop()))
         result = run_script_merged([os.path.join(support.FEED, "scripts", "check-initial-load"), "--cutoff", CUTOFF, "--public", public])

@@ -95,7 +95,10 @@ class ValidConversion(ConverterTestCase):
         # Las invariantes se aplican sobre un public/ temporal, nunca sobre el real.
         public = support.build_public(self.tmp, read_json(self.out))
         invariants = run_script([CHECK_INVARIANTS, "--public", public])
-        self.assertEqual(invariants.returncode, 0, output_of(invariants))
+        # Son datos de ejemplo: la unica invariante que debe saltar es `id-de-ejemplo` (US-007b2a2, 7d-1).
+        self.assertEqual(invariants.returncode, 1, output_of(invariants))
+        failures = [line for line in invariants.stderr.splitlines() if line.startswith("FALLO")]
+        self.assertTrue(failures and all("invariante id-de-ejemplo:" in line for line in failures), failures)
 
     def test_us007a2_c1_example_csv_cover_every_kind_of_row(self) -> None:
         self.convert(teams=os.path.join(EXAMPLES, "equipos.csv"), matches=os.path.join(EXAMPLES, "partidos.csv"))

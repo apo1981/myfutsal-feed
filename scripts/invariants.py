@@ -7,6 +7,7 @@ Cada violacion se imprime como `invariante <nombre>: <identificador>: <detalle>`
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime
 import gzip
 import json
@@ -24,6 +25,8 @@ MARCH = 3
 OCTOBER = 10
 SUNDAY = 6
 SEASON_URL_TEMPLATE = "seasons/%s.json"
+FEED_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EXAMPLE_TEAMS = os.path.join("examples", "initial-load", "equipos.csv")
 
 
 class Violation:
@@ -98,6 +101,23 @@ def unique_ids(season: Dict[str, Any]) -> List[Violation]:
         for repeated in duplicates([item.get("id") for item in items]):
             found.append(Violation(name, repeated, "el identificador de %s aparece mas de una vez" % noun))
     return found
+
+
+def example_team_ids() -> List[str]:
+    with open(os.path.join(FEED_ROOT, EXAMPLE_TEAMS), "r", encoding="utf-8", newline="") as handle:
+        return [row["id"] for row in csv.DictReader(handle)]
+
+
+def example_id_violations(season: Dict[str, Any], examples: List[str]) -> List[Violation]:
+    """Ningun `id` de equipo de los datos de ejemplo (`examples/initial-load/equipos.csv`) puede estar en `public/`.
+
+    Mantiene A4 (sin datos inventados en lo publicado) durante toda la vida del feed, tambien en la puerta de CI.
+    Solo se miran los equipos: los partidos de ejemplo no pueden publicarse sin su equipo (`equipo-inexistente`),
+    y los ids de fases y rondas de los ejemplos (`apertura`, ...) pueden ser legitimos en los datos reales.
+    """
+    return [Violation("id-de-ejemplo", str(team.get("id")),
+                      "el equipo %r de %s es un dato de ejemplo (%s)" % (team.get("id"), season.get("seasonId"), EXAMPLE_TEAMS))
+            for team in season.get("teams", []) if team.get("id") in examples]
 
 
 def kickoff_coherence(match: Dict[str, Any]) -> Optional[Violation]:
@@ -278,9 +298,15 @@ def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optiona
     if target_id not in [identifier for identifier, _ in paths]:
         found.append(Violation("temporada-vigente-sin-fichero", str(target_id),
                                "no hay seasons/%s.json: la invariante de updatedAt no se puede aplicar" % target_id))
+    try:
+        examples = example_team_ids()
+    except (OSError, KeyError) as error:
+        examples = []
+        found.append(Violation("id-de-ejemplo", EXAMPLE_TEAMS, "no se pueden leer los ids de ejemplo (%s): la comprobacion no se puede aplicar" % type(error).__name__))
     for identifier, path in paths:
         season = load(path)
         found.extend(season_violations(season))
+        found.extend(example_id_violations(season, examples))
         size = size_violation(path)
         if size:
             found.append(size)

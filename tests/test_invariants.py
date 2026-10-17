@@ -5,6 +5,7 @@ import json
 import os
 import random
 import unittest
+from unittest import mock
 from typing import Any, Callable, Dict, Optional
 
 import support  # debe ir antes que invariants: anade scripts/ al sys.path
@@ -276,6 +277,51 @@ class UpdatedAt(InvariantsCliTestCase):
         result = self.check()
         self.assertEqual(result.returncode, 0, output_of(result))
         self.assertIn("primera publicacion", result.stdout)
+
+
+class ExampleIds(InvariantsCliTestCase):
+    """US-007b2a2, 7d-1 (S-3): ningun `id` de `examples/initial-load/equipos.csv` puede estar en `public/`.
+
+    Es una invariante (no de `check-structure`) para que la aplique la puerta de CI (B-1 de la revision).
+    """
+
+    def with_team(self, identifier: str) -> Dict[str, Any]:
+        return season_with(lambda s: s["teams"].append({"id": identifier, "name": "x", "shortName": "XXX", "crestURL": None}))
+
+    def test_us007b2a2_7d1_example_ids_are_read_from_the_csv(self) -> None:
+        self.assertEqual(invariants.example_team_ids(), ["norte", "sur", "este", "oeste"])
+
+    def test_us007b2a2_7d1_public_without_example_ids_passes(self) -> None:
+        result = self.check(season_with())
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def test_us007b2a2_7d1_each_example_id_in_public_fails_and_is_named(self) -> None:
+        for identifier in invariants.example_team_ids():
+            with self.subTest(identifier):
+                self.assert_fails(self.check(self.with_team(identifier)), "id-de-ejemplo", identifier)
+
+    def test_us007b2a2_7d1_the_script_used_by_the_gate_fails_on_an_example_team(self) -> None:
+        public = support.build_public(self.tmp, self.with_team("norte"))
+        result = run_script([os.path.join(support.SCRIPTS, "check-invariants"), "--public", public])
+        self.assertEqual(result.returncode, 1, output_of(result))
+        self.assertIn("invariante id-de-ejemplo: norte", result.stderr)
+
+    def test_us007b2a2_7d1_ids_of_phases_rounds_and_matches_are_not_checked(self) -> None:
+        season = season_with(lambda s: s["phases"][0].update(id="norte"))
+        self.assertEqual(self.check(season).returncode, 0)
+
+    def test_us007b2a2_7d1_missing_examples_file_fails_in_the_gate(self) -> None:
+        with mock.patch.object(invariants, "FEED_ROOT", self.tmp):
+            result = self.check(season_with())
+        self.assert_fails(result, "id-de-ejemplo", invariants.EXAMPLE_TEAMS)
+
+    def test_us007b2a2_7d1_broken_season_json_is_a_named_failure_not_an_exception(self) -> None:
+        public = support.build_public(self.tmp)
+        with open(os.path.join(public, "v1", "seasons", SEASON_ID + ".json"), "w", encoding="utf-8") as handle:
+            handle.write("{no es json")
+        result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", public])
+        self.assertEqual(result.returncode, 1, output_of(result))
+        self.assertIn("FALLO invariantes: no se pudo leer el feed", result.stderr)
 
 
 class MalformedInput(InvariantsCliTestCase):
