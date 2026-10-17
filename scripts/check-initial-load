@@ -1,0 +1,7 @@
+#!/bin/sh
+# Comprobacion de un solo uso de la carga inicial antes del push (US-007b2a1, D-078). Fuera del workflow.
+# Uso: scripts/check-initial-load --cutoff AAAA-MM-DD [--public <dir>]
+set -eu
+. "$(dirname "$0")/_env.sh"
+require_tools
+run_python "$FEED/scripts/initial_load.py" --feed "$FEED" "$@"

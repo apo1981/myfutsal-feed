@@ -34,6 +34,7 @@ REQUIRED_FILES = [
     os.path.join("scripts", "check-invariants"),
     os.path.join("scripts", "check-updated-at"),
     os.path.join("scripts", "convert-csv"),
+    os.path.join("scripts", "check-initial-load"),
     os.path.join("scripts", "check-allowlist"),
     os.path.join("scripts", "check-structure"),
     os.path.join("scripts", "check-workflow"),
