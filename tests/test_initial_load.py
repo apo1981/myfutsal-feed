@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, List
 
 import support  # debe ir antes que initial_load: anade scripts/ al sys.path
 import initial_load
-from support import TempDirTestCase, output_of, run_script, write_json
+from support import TempDirTestCase, output_of, run_script, run_script_merged, write_json
 
 CUTOFF = "2026-10-20"
 FIRST_DAY = datetime.date(2026, 10, 3)
@@ -169,10 +169,52 @@ class Cutoff(unittest.TestCase):
         self.assertEqual(initial_load.unknown_matches(full_season()), [])
 
 
+def two_phase_season() -> Dict[str, Any]:
+    season = full_season()
+    ids = [team["id"] for team in season["teams"]]
+    season["phases"].append(league_phase("clausura", ids, FIRST_DAY + datetime.timedelta(days=60)))
+    season["phases"][1]["order"] = 2
+    return season
+
+
+class PhaseSummary(unittest.TestCase):
+    def test_us007b2a2_7d4_two_league_phases_give_one_line_each(self) -> None:
+        self.assertEqual(initial_load.phase_summaries(two_phase_season()),
+                         ["liga: 3 jornadas, 6 partidos", "clausura: 3 jornadas, 6 partidos"])
+
+    def test_us007b2a2_7d4_one_league_phase_gives_one_line(self) -> None:
+        self.assertEqual(initial_load.phase_summaries(full_season()), ["liga: 3 jornadas, 6 partidos"])
+
+    def test_us007b2a2_7d4_partial_transcription_is_visible_in_the_counts(self) -> None:
+        season = mutated(lambda s: s["phases"][0]["rounds"].pop())
+        self.assertEqual(initial_load.phase_summaries(season), ["liga: 2 jornadas, 4 partidos"])
+
+    def test_us007b2a2_7d4_knockout_phases_are_not_summarised(self) -> None:
+        season = mutated(lambda s: s["phases"].append({"id": "playoff", "name": "x", "kind": "knockout", "order": 2, "rounds": []}))
+        self.assertEqual(initial_load.phase_summaries(season), ["liga: 3 jornadas, 6 partidos"])
+
+
 class CommandLine(TempDirTestCase):
     def check(self, season: Dict[str, Any], cutoff: str = CUTOFF):
         public = support.build_public(self.tmp, season)
         return run_script([os.path.join(support.FEED, "scripts", "check-initial-load"), "--cutoff", cutoff, "--public", public])
+
+    def test_us007b2a2_7d4_output_has_a_line_per_league_phase(self) -> None:
+        two = self.check(two_phase_season())
+        self.assertIn("liga: 3 jornadas, 6 partidos\n", two.stdout)
+        self.assertIn("clausura: 3 jornadas, 6 partidos\n", two.stdout)
+        one = self.check(full_season())
+        self.assertIn("liga: 3 jornadas, 6 partidos\n", one.stdout)
+        self.assertNotIn("clausura", one.stdout)
+
+    def test_us007b2a2_7d5_summary_comes_before_the_failures_when_stderr_is_redirected(self) -> None:
+        public = support.build_public(self.tmp, mutated(lambda s: s["phases"][0]["rounds"].pop()))
+        result = run_script_merged([os.path.join(support.FEED, "scripts", "check-initial-load"), "--cutoff", CUTOFF, "--public", public])
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        summary, first_failure = result.stdout.index("liga: 2 jornadas, 4 partidos"), result.stdout.index("FALLO")
+        self.assertLess(result.stdout.index("temporada 2026-27"), first_failure)
+        self.assertLess(summary, first_failure)
+        self.assertLess(result.stdout.index("partidos unknown"), first_failure)
 
     def test_us007b2a1_c5_valid_load_passes_and_lists_unknown(self) -> None:
         season = mutated(lambda s: all_matches(s)[0].update(status="unknown", score=None))

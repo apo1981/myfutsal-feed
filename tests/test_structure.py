@@ -21,7 +21,6 @@ OPERATOR_EMAIL = "12345678+operador@users.noreply.github.com"
 OTHER_NOREPLY_EMAIL = "99999999+otro@users.noreply.github.com"
 WEB_COMMITTER_EMAIL = "noreply@github.com"
 EXPECTED_REMOTE = "https://github.com/operador/myfutsal-feed.git"
-SKIPPED = shutil.ignore_patterns(".git", ".venv", "__pycache__")
 
 
 def git(directory: str, *args: str) -> str:
@@ -51,7 +50,7 @@ class StructureTestCase(TempDirTestCase):
             git(app, "init", "-q", "-b", "main")
             with open(os.path.join(app, ".gitignore"), "w") as handle:
                 handle.write("/%s/\n" % FEED_NAME)
-            shutil.copytree(support.FEED, feed, ignore=SKIPPED)
+            support.copy_feed(feed)
             git(feed, "init", "-q", "-b", "main")
             git(feed, "config", "--local", "user.name", "Feed Bot")
             git(feed, "config", "--local", "user.email", NON_PERSONAL_EMAIL)
@@ -214,6 +213,48 @@ class NoInventedData(StructureTestCase):
         season["teams"][0]["id"] = structure.PLACEHOLDER_ID
         write_json(path, season)
         self.assert_only("sin-datos-inventados", "liga-01")
+
+
+class NoExampleIds(StructureTestCase):
+    """US-007b2a2, 7d-1 (S-3): ningun `id` de `examples/initial-load/equipos.csv` puede estar en `public/`."""
+
+    SEASON_PATH = os.path.join("public", "v1", "seasons", "2026-27.json")
+
+    def example_ids(self) -> List[str]:
+        return structure.example_team_ids(self.feed)
+
+    def test_us007b2a2_7d1_example_ids_are_read_from_the_csv(self) -> None:
+        self.assertEqual(self.example_ids(), ["norte", "sur", "este", "oeste"])
+
+    def test_us007b2a2_7d1_public_without_example_ids_passes(self) -> None:
+        self.assertEqual(structure.example_id_problems(self.feed), [])
+        self.assertNotIn("sin-ids-de-ejemplo", self.problems())
+
+    def test_us007b2a2_7d1_each_example_id_in_public_fails_and_is_named(self) -> None:
+        for identifier in self.example_ids():
+            with self.subTest(identifier):
+                season = support.season_with(lambda s: s["teams"].append(
+                    {"id": identifier, "name": "x", "shortName": "XXX", "crestURL": None}))
+                write_json(os.path.join(self.feed, self.SEASON_PATH), season)
+                found = self.problems()
+                self.assertIn("sin-ids-de-ejemplo", found)
+                self.assertTrue(any(repr(identifier) in problem for problem in found["sin-ids-de-ejemplo"]), found)
+
+    def test_us007b2a2_7d1_the_check_still_applies_with_real_data_in_public(self) -> None:
+        # Cuando US-007b2b retire `sin-datos-inventados`, esta comprobacion es la que impide los datos de ejemplo.
+        season = support.season_with()
+        season["teams"][0]["id"] = "norte"
+        write_json(os.path.join(self.feed, self.SEASON_PATH), season)
+        self.assertEqual(len(structure.example_id_problems(self.feed)), 1)
+
+    def test_us007b2a2_7d1_real_ids_that_are_not_examples_pass(self) -> None:
+        write_json(os.path.join(self.feed, self.SEASON_PATH), support.season_with())
+        self.assertEqual(structure.example_id_problems(self.feed), [])
+
+    def test_us007b2a2_7d1_missing_examples_file_is_reported_as_a_required_file(self) -> None:
+        os.remove(os.path.join(self.feed, structure.EXAMPLE_TEAMS))
+        self.assertIn("falta %s" % structure.EXAMPLE_TEAMS, structure.missing_files(self.feed))
+        self.assertEqual(structure.example_id_problems(self.feed), [])
 
 
 class IndependentRepository(StructureTestCase):

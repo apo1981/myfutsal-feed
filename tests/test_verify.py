@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import unittest
 from typing import Dict
@@ -15,7 +14,6 @@ from typing import Dict
 import support
 from support import TempDirTestCase, output_of, run_script, tool_env
 
-SKIPPED = shutil.ignore_patterns(".git", ".venv", "__pycache__")
 REAL_VENV = os.path.normpath(os.path.join(support.FEED, "..", ".venv-tools"))
 EXPECTED_CHECKS = ["1-estructura", "2-paridad-sha256sums", "3-esquema-de-public", "4-invariantes-de-public",
                    "5-workflow", "8-runbook", "9-idempotente"]
@@ -29,7 +27,7 @@ class CopiedFeed(TempDirTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.feed = os.path.join(self.tmp, "myfutsal-feed")
-        shutil.copytree(support.FEED, self.feed, ignore=SKIPPED)
+        support.copy_feed(self.feed)
 
     def init_repo(self) -> None:
         git(self.feed, "init", "-q", "-b", "main")

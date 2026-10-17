@@ -54,6 +54,17 @@ BASE_INDEX = {
 }
 
 
+PENDING_SEASON = {
+    "schemaVersion": 1,
+    "seasonId": SEASON_ID,
+    "competitionName": "Liga de prueba",
+    "updatedAt": "2026-10-01T10:00:00Z",
+    "teams": [{"id": "pendiente", "name": "Pendiente de carga", "shortName": "TBD", "crestURL": None}],
+    "phases": [{"id": "pendiente", "name": "Pendiente de carga", "kind": "league", "order": 1, "rounds": []}],
+}
+SKIPPED_ON_COPY = shutil.ignore_patterns(".git", ".venv", "__pycache__")
+
+
 def write_json(path: str, document: Any) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
@@ -84,6 +95,16 @@ def build_public(root: str, season: Optional[Dict[str, Any]] = None, index: Opti
     return public
 
 
+def copy_feed(destination: str) -> None:
+    """Copia el repositorio del feed con un `public/` propio (marcador `pendiente`), no el real.
+
+    US-007b2a2, 7d-2: las pruebas no dependen del contenido de `public/`, que cambiara con la carga real.
+    """
+    shutil.copytree(FEED, destination, ignore=SKIPPED_ON_COPY)
+    shutil.rmtree(os.path.join(destination, "public"))
+    build_public(destination, PENDING_SEASON)
+
+
 def tool_env(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
     """Entorno minimo y sin red: proxy inaccesible, solo loopback permitido."""
     env = {
@@ -101,6 +122,12 @@ def tool_env(extra: Optional[Dict[str, str]] = None) -> Dict[str, str]:
 
 def run_script(args: List[str], cwd: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> subprocess.CompletedProcess:
     return subprocess.run(args, cwd=cwd or FEED, env=env or tool_env(), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                          universal_newlines=True)
+
+
+def run_script_merged(args: List[str]) -> subprocess.CompletedProcess:
+    """Como `cmd 2>&1`: stderr va al mismo tubo que stdout, de modo que se ve el orden real de la salida."""
+    return subprocess.run(args, cwd=FEED, env=tool_env(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           universal_newlines=True)
 
 
