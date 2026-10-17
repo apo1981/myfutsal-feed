@@ -119,10 +119,19 @@ def secret_problems(feed: str) -> List[str]:
     return problems
 
 
+def published_files(feed: str) -> List[str]:
+    """Ficheros versionados (`git ls-files`): lo que se publica; sin git, recorre el arbol (S-1 de US-007b1)."""
+    result = subprocess.run(["git", "-C", feed, "ls-files", "-z"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    if result.returncode != 0:
+        return walk_files(feed)
+    names = result.stdout.decode("utf-8", "surrogateescape").split("\0")
+    return sorted(name for name in names if name and os.path.isfile(os.path.join(feed, name)))
+
+
 def local_path_problems(feed: str) -> List[str]:
-    """Ningun fichero del repositorio puede llevar una ruta local (B-1 de la revision de US-007b1): nombra fichero:linea."""
+    """Ningun fichero versionado puede llevar una ruta local (B-1 de la revision de US-007b1): nombra fichero:linea."""
     problems = []
-    for relative in walk_files(feed):
+    for relative in published_files(feed):
         with open(os.path.join(feed, relative), "rb") as handle:
             for number, line in enumerate(handle.read().splitlines(), start=1):
                 for marker in LOCAL_PATH_MARKERS:

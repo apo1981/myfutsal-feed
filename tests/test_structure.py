@@ -181,11 +181,17 @@ class LocalPaths(StructureTestCase):
 
     def test_us007b1_b1_a_mac_path_fails_and_names_file_and_line(self) -> None:
         self.put("notas.md", "uno\ncd %s\n" % self.MAC_PATH)
+        git(self.feed, "add", "notas.md")
         self.assert_only("sin-rutas-locales", "notas.md:2")
 
     def test_us007b1_b1_a_linux_path_fails_and_names_file_and_line(self) -> None:
         self.put("docs/notas.md", "cd %s\n" % self.LINUX_PATH)
+        git(self.feed, "add", "docs/notas.md")
         self.assert_only("sin-rutas-locales", "docs/notas.md:1")
+
+    def test_us007b1_s1_an_untracked_file_is_not_published_so_it_is_not_checked(self) -> None:
+        self.put("local-notes.md", "cd %s\n" % self.MAC_PATH)
+        self.assertEqual(structure.local_path_problems(self.feed), [])
 
     def test_us007b1_b1_relative_paths_pass(self) -> None:
         self.put("notas.md", "cd myfutsal-feed\nUsers y home sin barras\n")
