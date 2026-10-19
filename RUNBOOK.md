@@ -196,6 +196,66 @@ Datos de ejecución real, no estimaciones. Fecha de las comprobaciones: 2026-10-
 | A8. El push de `.github/workflows/` exige el permiso Workflows | El push funcionó con un token con Contents y Workflows en lectura y escritura; no se probó sin Workflows | Sin refutar |
 | 8. URL base | `https://apo1981.github.io/myfutsal-feed` (ver «URL base para la app») | Hecho |
 
+## Registro de evidencias de US-007b2b
+
+Carga inicial de la temporada 2026-27 sobre el commit `a13f601`, comprobada con `scripts/check-initial-load --cutoff 2026-10-17` (corte fijado por el humano, D-152). Los partidos `unknown` son los resultados que hay que poner al día con «Publicar un resultado» (NFR-011, ≤ 12 h):
+
+```
+temporada 2026-27, corte 2026-10-17: 16 equipos, 240 partidos, 3767 bytes con gzip (maximo 102400)
+apertura: 15 jornadas, 120 partidos
+clausura: 15 jornadas, 120 partidos
+partidos unknown para el runbook: 42
+  a01-01 (2026-09-13)
+  a01-02 (2026-09-13)
+  a01-03 (2026-09-13)
+  a01-04 (2026-09-13)
+  a01-05 (2026-09-13)
+  a01-06 (2026-09-13)
+  a01-07 (2026-09-13)
+  a01-08 (2026-09-13)
+  a02-01 (2026-09-20)
+  a02-02 (2026-09-20)
+  a02-03 (2026-09-20)
+  a02-04 (2026-09-20)
+  a02-05 (2026-09-20)
+  a02-06 (2026-09-20)
+  a02-07 (2026-09-20)
+  a02-08 (2026-09-20)
+  a03-01 (2026-09-27)
+  a03-02 (2026-09-27)
+  a03-03 (2026-09-27)
+  a03-04 (2026-09-27)
+  a03-05 (2026-09-27)
+  a03-06 (2026-09-27)
+  a03-07 (2026-09-27)
+  a03-08 (2026-09-27)
+  a04-01 (2026-10-04)
+  a04-02 (2026-10-04)
+  a04-03 (2026-10-04)
+  a04-04 (2026-10-04)
+  a04-05 (2026-10-04)
+  a04-06 (2026-10-04)
+  a04-07 (2026-10-04)
+  a04-08 (2026-10-04)
+  a05-01 (2026-10-11)
+  a05-02 (2026-10-11)
+  a05-03 (2026-10-11)
+  a05-04 (2026-10-11)
+  a05-05 (2026-10-11)
+  a05-06 (2026-10-11)
+  a05-07 (2026-10-11)
+  a05-08 (2026-10-11)
+  a07-01 (2026-09-29)
+  a07-08 (2026-09-29)
+carga inicial correcta
+```
+
+**Fechas provisionales (UFCL).** Los 8 partidos de Barça y ElPozo Murcia que siguen `scheduled` en jornadas con ventana de dos días llevan el primer día de la ventana, sin hora. Confirmar con el horario de la RFEF y corregir con «Cambiar hora, aplazar o suspender un partido»:
+- a09-01 y a09-06 (17-11-2026)
+- a11-01 y a11-02 (15-12-2026)
+- c05-01 y c05-02 (23-02-2027)
+- c07-07 y c07-08 (06-04-2027)
+
 ## Verificación en el iPhone
 
 1. Abre la app y haz *pull to refresh* en la pantalla de resultados.
