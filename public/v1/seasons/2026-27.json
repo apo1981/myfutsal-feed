@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-10-17T15:37:12Z",
+  "updatedAt": "2026-10-19T11:19:58Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -783,9 +783,9 @@
               "id": "a07-01",
               "homeTeamId": "barca",
               "awayTeamId": "o-parrulo-ferrol",
-              "status": "scheduled",
+              "status": "unknown",
               "kickoff": {
-                "date": "2026-11-01",
+                "date": "2026-09-29",
                 "time": null
               },
               "score": null,
@@ -874,9 +874,9 @@
               "id": "a07-08",
               "homeTeamId": "wanapix-sala-10",
               "awayTeamId": "elpozo-murcia",
-              "status": "scheduled",
+              "status": "unknown",
               "kickoff": {
-                "date": "2026-11-01",
+                "date": "2026-09-29",
                 "time": null
               },
               "score": null,
@@ -1007,7 +1007,7 @@
               "awayTeamId": "cordoba-patrimonio",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-22",
+                "date": "2026-11-17",
                 "time": null
               },
               "score": null,
@@ -1072,7 +1072,7 @@
               "awayTeamId": "elpozo-murcia",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-22",
+                "date": "2026-11-17",
                 "time": null
               },
               "score": null,
@@ -1229,7 +1229,7 @@
               "awayTeamId": "jaen-paraiso-interior",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-12-06",
+                "date": "2026-12-15",
                 "time": null
               },
               "score": null,
@@ -1242,7 +1242,7 @@
               "awayTeamId": "elpozo-murcia",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-12-06",
+                "date": "2026-12-15",
                 "time": null
               },
               "score": null,
@@ -2236,7 +2236,7 @@
               "awayTeamId": "barca",
               "status": "scheduled",
               "kickoff": {
-                "date": "2027-02-07",
+                "date": "2027-02-23",
                 "time": null
               },
               "score": null,
@@ -2249,7 +2249,7 @@
               "awayTeamId": "elpozo-murcia",
               "status": "scheduled",
               "kickoff": {
-                "date": "2027-02-07",
+                "date": "2027-02-23",
                 "time": null
               },
               "score": null,
@@ -2536,7 +2536,7 @@
               "awayTeamId": "palma-futsal",
               "status": "scheduled",
               "kickoff": {
-                "date": "2027-02-21",
+                "date": "2027-04-06",
                 "time": null
               },
               "score": null,
@@ -2549,7 +2549,7 @@
               "awayTeamId": "barca",
               "status": "scheduled",
               "kickoff": {
-                "date": "2027-02-21",
+                "date": "2027-04-06",
                 "time": null
               },
               "score": null,
