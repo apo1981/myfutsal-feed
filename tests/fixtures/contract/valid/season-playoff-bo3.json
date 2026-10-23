@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "seasonId": "2026-27",
+  "competitionName": "Primera División de fútbol sala (datos de ejemplo, mejor de 3)",
+  "updatedAt": "2027-06-12T21:00:00Z",
+  "teams": [
+    {
+      "id": "bar",
+      "name": "Barça",
+      "shortName": "BAR",
+      "crestURL": null
+    },
+    {
+      "id": "elp",
+      "name": "ElPozo Murcia Costa Cálida",
+      "shortName": "ELP",
+      "crestURL": null
+    },
+    {
+      "id": "int",
+      "name": "Inter Movistar",
+      "shortName": "INT",
+      "crestURL": null
+    },
+    {
+      "id": "pal",
+      "name": "Palma Futsal",
+      "shortName": "PAL",
+      "crestURL": null
+    },
+    {
+      "id": "jim",
+      "name": "Jimbee Cartagena",
+      "shortName": "JIM",
+      "crestURL": null
+    },
+    {
+      "id": "bet",
+      "name": "Real Betis Futsal",
+      "shortName": "BET",
+      "crestURL": null
+    },
+    {
+      "id": "cor",
+      "name": "Córdoba Patrimonio de la Humanidad",
+      "shortName": "COR",
+      "crestURL": null
+    },
+    {
+      "id": "noi",
+      "name": "Noia Portus Apostoli",
+      "shortName": "NOI",
+      "crestURL": null
+    }
+  ],
+  "phases": [
+    {
+      "id": "playoff",
+      "name": "Campeón de Temporada",
+      "kind": "knockout",
+      "order": 3,
+      "rounds": [
+        {
+          "id": "playoff-qf",
+          "number": 1,
+          "name": "Cuartos de final",
+          "matches": [
+            {
+              "id": "b-qf1-1",
+              "homeTeamId": "bar",
+              "awayTeamId": "noi",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-22",
+                "time": "2027-05-22T17:00:00Z"
+              },
+              "score": {
+                "home": 4,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": "Partido 1"
+            },
+            {
+              "id": "b-qf2-1",
+              "homeTeamId": "elp",
+              "awayTeamId": "cor",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-22",
+                "time": "2027-05-22T19:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Partido 1"
+            },
+            {
+              "id": "b-qf3-1",
+              "homeTeamId": "int",
+              "awayTeamId": "bet",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-23",
+                "time": "2027-05-23T17:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 0
+              },
+              "decidedBy": null,
+              "note": "Partido 1"
+            },
+            {
+              "id": "b-qf4-1",
+              "homeTeamId": "pal",
+              "awayTeamId": "jim",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-23",
+                "time": "2027-05-23T19:00:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Partido 1"
+            },
+            {
+              "id": "b-qf1-2",
+              "homeTeamId": "noi",
+              "awayTeamId": "bar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-25",
+                "time": "2027-05-25T17:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 3
+              },
+              "decidedBy": null,
+              "note": "Partido 2"
+            },
+            {
+              "id": "b-qf2-2",
+              "homeTeamId": "cor",
+              "awayTeamId": "elp",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-25",
+                "time": "2027-05-25T19:00:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Partido 2"
+            },
+            {
+              "id": "b-qf3-2",
+              "homeTeamId": "bet",
+              "awayTeamId": "int",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-26",
+                "time": "2027-05-26T17:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": "Partido 2"
+            },
+            {
+              "id": "b-qf4-2",
+              "homeTeamId": "jim",
+              "awayTeamId": "pal",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-26",
+                "time": "2027-05-26T19:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Partido 2"
+            },
+            {
+              "id": "b-qf2-3",
+              "homeTeamId": "elp",
+              "awayTeamId": "cor",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-28",
+                "time": "2027-05-28T17:00:00Z"
+              },
+              "score": {
+                "home": 4,
+                "away": 3
+              },
+              "decidedBy": "extraTime",
+              "note": "Partido 3"
+            },
+            {
+              "id": "b-qf4-3",
+              "homeTeamId": "pal",
+              "awayTeamId": "jim",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-05-28",
+                "time": "2027-05-28T19:00:00Z"
+              },
+              "score": {
+                "home": 1,
+                "away": 1
+              },
+              "decidedBy": "penalties",
+              "penalties": {
+                "home": 4,
+                "away": 3
+              },
+              "note": "Partido 3"
+            }
+          ]
+        },
+        {
+          "id": "playoff-sf",
+          "number": 2,
+          "name": "Semifinales",
+          "matches": [
+            {
+              "id": "b-sf1-1",
+              "homeTeamId": "bar",
+              "awayTeamId": "elp",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-06-01",
+                "time": "2027-06-01T17:00:00Z"
+              },
+              "score": {
+                "home": 3,
+                "away": 2
+              },
+              "decidedBy": null,
+              "note": "Partido 1"
+            },
+            {
+              "id": "b-sf2-1",
+              "homeTeamId": "int",
+              "awayTeamId": "pal",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-06-01",
+                "time": "2027-06-01T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": "Partido 1"
+            },
+            {
+              "id": "b-sf1-2",
+              "homeTeamId": "elp",
+              "awayTeamId": "bar",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-06-04",
+                "time": "2027-06-04T17:00:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Partido 2"
+            },
+            {
+              "id": "b-sf2-2",
+              "homeTeamId": "pal",
+              "awayTeamId": "int",
+              "status": "scheduled",
+              "kickoff": {
+                "date": "2027-06-04",
+                "time": "2027-06-04T19:00:00Z"
+              },
+              "score": null,
+              "decidedBy": null,
+              "note": "Partido 2"
+            }
+          ]
+        },
+        {
+          "id": "playoff-f",
+          "number": 3,
+          "name": "Final",
+          "matches": [
+            {
+              "id": "b-f-1",
+              "homeTeamId": "bar",
+              "awayTeamId": "int",
+              "status": "finished",
+              "kickoff": {
+                "date": "2027-06-12",
+                "time": "2027-06-12T17:00:00Z"
+              },
+              "score": {
+                "home": 2,
+                "away": 1
+              },
+              "decidedBy": null,
+              "note": "Partido 1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

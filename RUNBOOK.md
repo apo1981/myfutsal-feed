@@ -58,6 +58,8 @@ El historial anterior, con `feed@example.invalid`, no se reescribe.
    ```
 6. Espera a que termine el workflow (normalmente unos minutos) y comprueba el iPhone (ver «Verificación en el iPhone»).
 
+**Puerta de publicación del playoff:** No se cargan partidos en las rondas del playoff (`kind: knockout`) del feed real hasta que haya en TestFlight un build con US-009e (D-429).
+
 ## Cambiar hora, aplazar o suspender un partido
 
 - **Cambio de hora:** edita `kickoff.time` (instante UTC con `Z`) **y** `kickoff.date` (fecha local de Madrid, `AAAA-MM-DD`). Deben ser coherentes: el 31 de octubre a las 19:00 en Madrid es `2026-10-31T18:00:00Z` (CET, UTC+1) y el 15 de julio a las 19:00 es `2026-07-15T17:00:00Z` (CEST, UTC+2). Una hora a las 00:30 en Madrid cae en el día anterior en UTC: la puerta lo comprueba.
