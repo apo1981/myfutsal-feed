@@ -3,7 +3,7 @@
 Solo biblioteca estandar, Python 3.9. Todo o nada: si una fila es invalida no se escribe nada.
   - `home` y `away` vacios: la fila se ignora y el partido queda como esta (nunca se inventa un resultado).
   - Solo uno de los dos vacio, no entero o negativo, id desconocido o repetido: error.
-  - Solo se aplica a partidos `unknown`, `scheduled` o `live` de fases de liga; un partido ya `finished`,
+  - Solo se aplica a partidos `unknown`, `live` o `scheduled` con fecha anterior a hoy (Madrid), de fases de liga; un partido ya `finished`,
     aplazado, suspendido o de eliminatoria se edita a mano (ver el runbook).
 Pone `status: finished`, `score` y un `updatedAt` nuevo (UTC, estrictamente posterior al actual).
 Las columnas extra del CSV (jornada, fecha, local, visitante) se ignoran. La verificacion posterior la hace
@@ -65,7 +65,13 @@ def read_rows(path: str) -> List[Tuple[str, int, int]]:
         return rows
 
 
-def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated_at: str) -> int:
+def has_been_played_by(match: Dict[str, Any], today: datetime.date) -> bool:
+    """Un `scheduled` solo se cierra si su fecha es anterior a hoy en Madrid (misma regla que los pendientes)."""
+    date = match["kickoff"].get("date")
+    return bool(date) and datetime.datetime.strptime(date, round_sheet.DATE_FORMAT).date() < today
+
+
+def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated_at: str, today: datetime.date) -> int:
     """Modifica `season` en memoria. Lanza ApplyError sin haber cambiado nada si alguna fila no es aplicable."""
     current = datetime.datetime.strptime(season["updatedAt"], UPDATED_AT_FORMAT)
     if datetime.datetime.strptime(updated_at, UPDATED_AT_FORMAT) <= current:
@@ -80,6 +86,8 @@ def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated
             raise ApplyError("%s: es de una eliminatoria; edita a mano (decidedBy)" % identifier)
         if match["status"] not in APPLICABLE_STATUSES:
             raise ApplyError("%s: esta %s; edita a mano" % (identifier, match["status"]))
+        if match["status"] == "scheduled" and not has_been_played_by(match, today):
+            raise ApplyError("%s: aun no se ha jugado (fecha %s); revisa el id" % (identifier, match["kickoff"].get("date") or "sin fecha"))
         changes.append((match, home, away))
     for match, home, away in changes:
         match["status"] = "finished"
@@ -97,6 +105,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Aplica resultados en bloque (US-007b2c)")
     parser.add_argument("--feed", required=True)
     parser.add_argument("csv", help="CSV con columnas id,home,away")
+    parser.add_argument("--today", help="AAAA-MM-DD; por defecto, hoy en Europe/Madrid (solo para pruebas)")
     parser.add_argument("--updated-at", help="AAAA-MM-DDTHH:MM:SSZ; por defecto, ahora en UTC")
     return parser.parse_args(argv)
 
@@ -108,7 +117,8 @@ def main(argv: List[str]) -> int:
         season = round_sheet.load_season(args.feed)
         with open(os.path.join(args.feed, round_sheet.INDEX_PATH), "r", encoding="utf-8") as handle:
             season_path = os.path.join(args.feed, round_sheet.SEASON_PATH, json.load(handle)["currentSeasonId"] + ".json")
-        applied = apply_rows(season, rows, args.updated_at or now_utc())
+        today = datetime.datetime.strptime(args.today, round_sheet.DATE_FORMAT).date() if args.today else round_sheet.madrid_today()
+        applied = apply_rows(season, rows, args.updated_at or now_utc(), today)
     except (OSError, ValueError, KeyError, ApplyError) as error:
         print("FALLO resultados: %s. No se ha escrito nada." % error, file=sys.stderr)
         return 1
@@ -116,7 +126,7 @@ def main(argv: List[str]) -> int:
         print("Sin cambios: ninguna fila tiene marcador. El feed no se ha tocado.")
         return 0
     with open(season_path, "w", encoding="utf-8") as handle:
-        json.dump(season, handle, indent=2, ensure_ascii=False)
+        handle.write(json.dumps(season, indent=2, ensure_ascii=False) + "\n")
     print("Aplicados %d resultados; updatedAt = %s" % (applied, season["updatedAt"]))
     return 0
 

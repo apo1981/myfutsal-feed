@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import datetime
+import difflib
 import json
 import os
 from typing import Any, Dict, List
@@ -35,6 +36,8 @@ def season() -> Dict[str, Any]:
             {"id": "liga-02", "number": 2, "name": "Jornada 2", "matches": [
                 match("m-03", "bbb", "ccc", "scheduled", "2026-10-10"),
                 match("m-04", "aaa", "ccc", "scheduled", "2026-10-25"),
+                match("m-05", "bbb", "aaa", "scheduled", None),
+                match("m-06", "ccc", "bbb", "postponed", None),
             ]},
         ]},
         {"id": "playoff", "name": "Playoff", "kind": "knockout", "order": 2, "rounds": [
@@ -64,8 +67,8 @@ class RoundSheet(SheetCase):
         result = self.run_sheet("--round", "1")
         self.assertEqual(result.returncode, 0, result.stderr)
         lines = [" ".join(line.split()) for line in result.stdout.splitlines()]
-        self.assertIn("m-01 2026-10-03 sin hora Equipo A - Equipo B [unknown] pendiente", lines)
-        self.assertIn("m-02 2026-10-04 16:00 Equipo C - Equipo A [finished] 3-1", lines)
+        self.assertTrue(any(line.startswith("m-01 2026-10-03 sin hora Equipo A - Equipo B [unknown] pendiente L") for line in lines), lines)
+        self.assertTrue(any(line.startswith("m-02 2026-10-04 16:00 Equipo C - Equipo A [finished] 3-1 L") for line in lines), lines)
 
     def test_us007b2c_c7_winter_time_uses_utc_plus_one(self) -> None:
         self.assertEqual(round_sheet.kickoff_label({"date": "2026-12-05", "time": "2026-12-05T14:00:00Z"}), "2026-12-05 15:00")
@@ -117,7 +120,7 @@ class ApplyResults(SheetCase):
         return path
 
     def apply(self, text: str) -> Any:
-        return run_main(apply_results.main, ["--feed", self.feed, self.write_csv(text), "--updated-at", NEW_UPDATED_AT])
+        return run_main(apply_results.main, ["--feed", self.feed, self.write_csv(text), "--updated-at", NEW_UPDATED_AT, "--today", TODAY.isoformat()])
 
     def assert_untouched(self) -> None:
         self.assertEqual(self.stored(), season())
@@ -149,6 +152,8 @@ class ApplyResults(SheetCase):
             "id desconocido": "id,home,away\nm-01,2,2\nm-99,1,1\n",
             "repetido": "id,home,away\nm-01,2,2\nm-01,1,1\n",
             "ya finalizado": "id,home,away\nm-01,2,2\nm-02,1,1\n",
+            "scheduled futuro": "id,home,away\nm-01,2,2\nm-04,1,0\n",
+            "scheduled sin fecha": "id,home,away\nm-05,1,0\n",
             "eliminatoria": "id,home,away\nm-01,2,2\np-01,1,0\n",
             "faltan columnas": "id,home\nm-01,2\n",
         }
@@ -160,13 +165,69 @@ class ApplyResults(SheetCase):
                 self.assert_untouched()
 
     def test_us007b2c_c8_updated_at_not_after_the_current_one_fails(self) -> None:
-        result = run_main(apply_results.main, ["--feed", self.feed, self.write_csv("id,home,away\nm-01,1,1\n"), "--updated-at", OLD_UPDATED_AT])
+        result = run_main(apply_results.main, ["--feed", self.feed, self.write_csv("id,home,away\nm-01,1,1\n"), "--updated-at", OLD_UPDATED_AT, "--today", TODAY.isoformat()])
         self.assertEqual(result.returncode, 1)
         self.assertIn("no es posterior", result.stderr)
         self.assert_untouched()
 
-    def test_us007b2c_c8_the_applied_feed_keeps_the_exact_file_format(self) -> None:
-        self.apply("id,home,away\nm-01,1,0\n")
+    def test_us007b2c_c8_the_applied_feed_keeps_the_exact_file_format_and_only_changes_three_fields(self) -> None:
+        with open(self.season_path, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(season(), indent=2, ensure_ascii=False) + "\n")
+        with open(self.season_path, encoding="utf-8") as handle:
+            before = handle.read().splitlines()
+        self.assertEqual(self.apply("id,home,away\nm-01,1,0\n").returncode, 0)
         with open(self.season_path, encoding="utf-8") as handle:
             raw = handle.read()
-        self.assertEqual(raw, json.dumps(json.loads(raw), indent=2, ensure_ascii=False))
+        self.assertTrue(raw.endswith("}\n"))
+        self.assertEqual(raw, json.dumps(json.loads(raw), indent=2, ensure_ascii=False) + "\n")
+        changed = [line[2:].strip() for line in difflib.ndiff(before, raw.splitlines()) if line[:2] in ("- ", "+ ")]
+        self.assertTrue(all(line.split(":")[0] in ('"status"', '"score"', '"updatedAt"', '"home"', '"away"', '}', '},') for line in changed), changed)
+
+
+class MissingDates(SheetCase):
+    def test_us007b2c_c7_pending_and_sheet_survive_matches_without_a_date(self) -> None:
+        pending = run_main(round_sheet.main, ["--feed", self.feed, "--pending", "--today", TODAY.isoformat()])
+        self.assertEqual(pending.returncode, 0, pending.stderr)
+        self.assertNotIn("m-06", pending.stdout)  # postponed
+        self.assertNotIn("m-05", pending.stdout)  # scheduled sin fecha
+        csv_result = run_main(round_sheet.main, ["--feed", self.feed, "--pending", "--csv", "--today", TODAY.isoformat()])
+        self.assertEqual(csv_result.returncode, 0, csv_result.stderr)
+        sheet = run_main(round_sheet.main, ["--feed", self.feed, "--round", "2", "--phase", "liga"])
+        self.assertIn("sin fecha", sheet.stdout)
+        self.assertNotIn("None", sheet.stdout)
+
+
+class LineNumbers(SheetCase):
+    def test_us007b2c_s1_sheet_shows_the_line_of_each_match_in_the_json_file(self) -> None:
+        with open(self.season_path, encoding="utf-8") as handle:
+            file_lines = handle.read().splitlines()
+        sheet = run_main(round_sheet.main, ["--feed", self.feed, "--round", "2", "--phase", "liga"]).stdout
+        for line in sheet.splitlines():
+            if line.strip().startswith("m-03"):
+                number = int(line.split()[-1].lstrip("L"))
+                self.assertIn('"id": "m-03"', file_lines[number - 1])
+                return
+        self.fail("m-03 no aparece en la hoja")
+
+
+class RestoreOnVerifyFailure(SheetCase):
+    def test_us007b2c_c8_when_verify_fails_after_applying_the_season_is_restored(self) -> None:
+        root = os.path.join(self.tmp, "myfutsal-feed")
+        support.copy_feed(root)
+        build_public(root, season())
+        with open(os.path.join(root, "public", "v1", "calendario.pdf"), "w") as handle:
+            handle.write("hace fallar verify")
+        season_path = os.path.join(root, "public", "v1", "seasons", "%s.json" % support.SEASON_ID)
+        with open(season_path, encoding="utf-8") as handle:
+            before = handle.read()
+        csv_path = os.path.join(self.tmp, "r.csv")
+        with open(csv_path, "w", encoding="utf-8") as handle:
+            handle.write("id,home,away\nm-01,1,0\n")
+        env = support.tool_env({"FEED_TOOLS_VENV": os.path.normpath(os.path.join(support.FEED, "..", ".venv-tools")),
+                                "FEED_VERIFY_NESTED": "1", "GIT_CONFIG_GLOBAL": os.devnull})
+        result = support.run_script([os.path.join(root, "scripts", "apply-results"), csv_path], cwd=self.tmp, env=env)
+        self.assertEqual(result.returncode, 1, support.output_of(result))
+        self.assertIn("Aplicados 1 resultados", result.stdout)
+        self.assertIn("restaurado la temporada", result.stderr)
+        with open(season_path, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), before)

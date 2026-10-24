@@ -179,8 +179,8 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 ### A. Publicar un resultado desde la web de GitHub y medir la propagación (criterios 6 y 7c(ii))
 
 1. Apunta la hora de inicio (para el tiempo total). En el navegador (móvil o escritorio; si en el móvil el editor no se muestra bien, pide «Versión de escritorio») abre <https://github.com/apo1981/myfutsal-feed/blob/main/public/v1/seasons/2026-27.json> y pulsa el lápiz («Edit this file»).
-2. Busca el partido por su `id` (por ejemplo `a01-01`; en el editor, Ctrl/Cmd+F). Cambia `"status": "unknown"` (o `"scheduled"`) por `"status": "finished"` y `"score": null` por `"score": { "home": 4, "away": 2 }` (goles del local y del visitante). `decidedBy` y `note` quedan en `null`.
-3. Cambia `"updatedAt"` (cerca del principio del fichero) al instante actual en **UTC**, formato `AAAA-MM-DDTHH:MM:SSZ`. La hora de Madrid menos 2 h hasta el 25-10-2026 (horario de verano) y menos 1 h después. Debe ser posterior al anterior; si no, la puerta rechaza el cambio.
+2. Localiza el partido. Sin teclado (móvil) no hay búsqueda fiable en el editor, y el fichero tiene unas 3.450 líneas: ejecuta `scripts/round-sheet --round 1 --phase apertura` y mira la columna `L<línea>` del partido; abre `https://github.com/apo1981/myfutsal-feed/blob/main/public/v1/seasons/2026-27.json#L<línea>`, comprueba que es el partido y pulsa el lápiz. Para el ensayo basta un partido de la jornada 1 del Apertura (primeras ~250 líneas). En escritorio también sirve Ctrl/Cmd+F con el `id` (por ejemplo `a01-01`). Cambia `"status": "unknown"` (o `"scheduled"`) por `"status": "finished"` y `"score": null` por `"score": { "home": 4, "away": 2 }` (goles del local y del visitante). `decidedBy` y `note` quedan en `null`.
+3. Cambia `"updatedAt"` (cerca del principio del fichero) al instante actual en **UTC**, formato `AAAA-MM-DDTHH:MM:SSZ`. Hasta las 03:00 del domingo 25-10-2026 (hora de Madrid) resta 2 h; desde ese momento, resta 1 h. Ejemplo: el 25-10 a las 10:00 en Madrid es `2026-10-25T09:00:00Z`. Si dudas, abre <https://time.is/UTC>. Debe ser posterior al anterior, y **no pongas una hora futura**: la puerta no lo detecta y el siguiente `apply-results` fallará (si pasa, usa `--updated-at` con un instante posterior).
 4. Pulsa «Commit changes…», deja «Commit directly to the `main` branch» y confirma. **Apunta la hora exacta de ese clic (hora t0)**; el mensaje puede llevar el tiempo, como en «Anotar el tiempo».
 5. Mide la propagación (NFR-011, máximo 15 min). Desde Terminal, repite cada 30 s hasta que `updatedAt` sea el que has escrito (la hora t1 es la de la primera salida correcta):
    ```
@@ -214,14 +214,14 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 2. **Pocos partidos (hasta unos 5):** edítalos en la web como en A (un solo commit con varios partidos y un solo `updatedAt` nuevo).
 3. **Muchos partidos (los 42 `unknown`):** genera la plantilla, rellénala y aplícala.
    ```
-   mkdir -p local-data
-   scripts/round-sheet --pending --csv > local-data/resultados.csv
+   mkdir -p ../local-data
+   scripts/round-sheet --pending --csv > ../local-data/resultados.csv
    ```
-   Abre `local-data/resultados.csv` en una hoja de cálculo o editor y rellena solo las columnas `home` y `away` (goles del local y del visitante tal como están en el feed; las demás columnas son de contexto). Una fila con `home` y `away` vacíos se ignora y el partido queda como está: **nunca rellenes un marcador que no conozcas**. `local-data/` no se versiona. Después:
+   Abre `../local-data/resultados.csv` en una hoja de cálculo o editor y rellena solo las columnas `home` y `away` (goles del local y del visitante tal como están en el feed; las demás columnas son de contexto). Una fila con `home` y `away` vacíos se ignora y el partido queda como está: **nunca rellenes un marcador que no conozcas**. `../local-data/` (en el repositorio de la app, como en la carga inicial) no se versiona; el `.gitignore` de este repositorio también ignora `local-data/` por si acaso. Después:
    ```
-   scripts/apply-results local-data/resultados.csv
+   scripts/apply-results ../local-data/resultados.csv
    ```
-   El comando pone `finished`, el marcador y un `updatedAt` nuevo, y ejecuta `scripts/verify`. Es todo o nada: si una fila es inválida (un solo gol, no numérico, id desconocido, partido ya finalizado, partido de eliminatoria) no escribe nada y dice la fila. Revisa el cambio con `git diff --stat` y publica con los pasos 5 y 6 de «Publicar un resultado» (`git add`, `git commit` con el tiempo y `git push origin main`).
+   El comando pone `finished`, el marcador y un `updatedAt` nuevo, y ejecuta `scripts/verify`. Si una fila es inválida (un solo gol, no numérico, id desconocido, partido ya finalizado, partido que aún no se ha jugado o sin fecha, partido de eliminatoria) no escribe nada y dice la fila. Si después `verify` falla, el propio comando restaura la temporada tal como estaba: no hagas commit y avisa al equipo. Revisa el cambio con `git diff --stat` y publica con los pasos 5 y 6 de «Publicar un resultado» (`git add`, `git commit` con el tiempo y `git push origin main`).
 4. Cuando estén publicados, comprueba que ya no quedan pendientes: `scripts/round-sheet --pending`.
 5. **Localía (D-178):** el primer resultado que contrastes con la RFEF debe coincidir en local y visitante. Si no coincide, avisa al equipo antes de seguir publicando.
 

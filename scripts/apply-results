@@ -1,8 +1,17 @@
 #!/bin/sh
 # Aplica en bloque un CSV `id,home,away` rellenado por el operador y verifica el resultado (US-007b2c, D-180).
 # Uso: scripts/apply-results <fichero.csv> [--updated-at AAAA-MM-DDTHH:MM:SSZ]
+# Si `verify` falla, restaura la temporada tal como estaba (el feed queda sin cambios).
 # No hace commit ni push: despues, `git diff`, `git commit` (con el tiempo) y `git push origin main`.
 set -eu
 . "$(dirname "$0")/_env.sh"
+SEASONS="$FEED/public/v1/seasons"
+BACKUP=$(mktemp -d "${TMPDIR:-/tmp}/apply-results.XXXXXX")
+trap 'rm -rf "$BACKUP"' EXIT
+cp "$SEASONS"/*.json "$BACKUP"/
 run_python "$FEED/scripts/apply_results.py" --feed "$FEED" "$@"
-"$FEED/scripts/verify"
+if ! "$FEED/scripts/verify"; then
+    cp "$BACKUP"/*.json "$SEASONS"/
+    echo "FALLO: verify no ha pasado. Se ha restaurado la temporada tal como estaba; no hagas commit y avisa al equipo." >&2
+    exit 1
+fi

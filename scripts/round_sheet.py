@@ -22,6 +22,7 @@ TIMEZONE = ZoneInfo("Europe/Madrid")
 SEASON_PATH = os.path.join("public", "v1", "seasons")
 INDEX_PATH = os.path.join("public", "v1", "index.json")
 NO_TIME_LABEL = "sin hora"
+NO_DATE_LABEL = "sin fecha"
 PENDING_SCORE_LABEL = "pendiente"
 UNPLAYED_BUT_PAST = "scheduled"
 UNKNOWN_STATUS = "unknown"
@@ -31,10 +32,13 @@ DATE_FORMAT = "%Y-%m-%d"
 Entry = Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]  # (fase, jornada, partido)
 
 
-def load_season(feed: str) -> Dict[str, Any]:
+def current_season_id(feed: str) -> str:
     with open(os.path.join(feed, INDEX_PATH), "r", encoding="utf-8") as handle:
-        season_id = json.load(handle)["currentSeasonId"]
-    with open(os.path.join(feed, SEASON_PATH, season_id + ".json"), "r", encoding="utf-8") as handle:
+        return json.load(handle)["currentSeasonId"]
+
+
+def load_season(feed: str) -> Dict[str, Any]:
+    with open(os.path.join(feed, SEASON_PATH, current_season_id(feed) + ".json"), "r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -44,6 +48,8 @@ def team_names(season: Dict[str, Any]) -> Dict[str, str]:
 
 def kickoff_label(kickoff: Dict[str, Any]) -> str:
     """Fecha y hora en Europe/Madrid. `time` es un instante UTC; sin hora se muestra la fecha y «sin hora»."""
+    if not kickoff.get("date"):
+        return NO_DATE_LABEL
     if kickoff.get("time"):
         instant = datetime.datetime.strptime(kickoff["time"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
         local = instant.astimezone(TIMEZONE)
@@ -58,13 +64,25 @@ def score_label(match: Dict[str, Any]) -> str:
     return "%d-%d" % (score["home"], score["away"])
 
 
-def match_line(match: Dict[str, Any], names: Dict[str, str]) -> str:
+def line_numbers(feed: str) -> Dict[str, int]:
+    """Numero de linea del `"id"` de cada partido en el fichero de la temporada (para `#L<linea>` en la web)."""
+    with open(os.path.join(feed, SEASON_PATH, current_season_id(feed) + ".json"), "r", encoding="utf-8") as handle:
+        found = {}  # type: Dict[str, int]
+        for number, line in enumerate(handle, start=1):
+            parts = line.split('"id": "')
+            if len(parts) == 2:
+                found.setdefault(parts[1].split('"')[0], number)
+        return found
+
+
+def match_line(match: Dict[str, Any], names: Dict[str, str], lines: Optional[Dict[str, int]] = None) -> str:
+    where = "  L%d" % lines[match["id"]] if lines and match["id"] in lines else ""
     return "%-6s  %-16s  %s  -  %s  [%s]  %s" % (
         match["id"], kickoff_label(match["kickoff"]), names[match["homeTeamId"]], names[match["awayTeamId"]],
-        match["status"], score_label(match))
+        match["status"], score_label(match)) + where
 
 
-def round_sheet(season: Dict[str, Any], number: int, phase_id: Optional[str]) -> List[str]:
+def round_sheet(season: Dict[str, Any], number: int, phase_id: Optional[str], file_lines: Optional[Dict[str, int]] = None) -> List[str]:
     names = team_names(season)
     lines = []  # type: List[str]
     for phase in season["phases"]:
@@ -73,9 +91,9 @@ def round_sheet(season: Dict[str, Any], number: int, phase_id: Optional[str]) ->
         for round_ in phase["rounds"]:
             if round_["number"] != number:
                 continue
-            lines.append("%s - %s (%s): %d partidos. Local - visitante tal como esta en el feed; fechas en Europe/Madrid"
+            lines.append("%s - %s (%s): %d partidos. Local - visitante tal como esta en el feed; fechas en Europe/Madrid; Lnnn = linea en el JSON"
                          % (phase["name"], round_["name"], round_["id"], len(round_["matches"])))
-            lines.extend("  " + match_line(match, names) for match in round_["matches"])
+            lines.extend("  " + match_line(match, names, file_lines) for match in round_["matches"])
             lines.append("")
     return lines
 
@@ -83,8 +101,10 @@ def round_sheet(season: Dict[str, Any], number: int, phase_id: Optional[str]) ->
 def is_pending(match: Dict[str, Any], today: datetime.date) -> bool:
     if match["status"] == UNKNOWN_STATUS:
         return True
+    if match["status"] != UNPLAYED_BUT_PAST or not match["kickoff"].get("date"):
+        return False
     kickoff_day = datetime.datetime.strptime(match["kickoff"]["date"], DATE_FORMAT).date()
-    return match["status"] == UNPLAYED_BUT_PAST and kickoff_day < today
+    return kickoff_day < today
 
 
 def pending_entries(season: Dict[str, Any], today: datetime.date) -> List[Entry]:
@@ -92,7 +112,7 @@ def pending_entries(season: Dict[str, Any], today: datetime.date) -> List[Entry]
             for match in round_["matches"] if is_pending(match, today)]
 
 
-def pending_report(season: Dict[str, Any], today: datetime.date) -> List[str]:
+def pending_report(season: Dict[str, Any], today: datetime.date, file_lines: Optional[Dict[str, int]] = None) -> List[str]:
     names = team_names(season)
     entries = pending_entries(season, today)
     lines = ["Pendientes de resultado a %s: %d partidos (`unknown` o `scheduled` con fecha pasada)" % (today.isoformat(), len(entries))]
@@ -101,7 +121,7 @@ def pending_report(season: Dict[str, Any], today: datetime.date) -> List[str]:
         if round_["id"] != current:
             current = round_["id"]
             lines.append("%s - %s" % (phase["name"], round_["name"]))
-        lines.append("  " + match_line(match, names))
+        lines.append("  " + match_line(match, names, file_lines))
     return lines
 
 
@@ -141,16 +161,16 @@ def main(argv: List[str]) -> int:
     try:
         today = datetime.datetime.strptime(args.today, DATE_FORMAT).date() if args.today else madrid_today()
         season = load_season(args.feed)
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, ValueError, KeyError, TypeError) as error:
         print("FALLO: %s" % error, file=sys.stderr)
         return 1
     if args.pending:
         if args.csv:
             pending_csv(season, today, sys.stdout)
         else:
-            print("\n".join(pending_report(season, today)))
+            print("\n".join(pending_report(season, today, line_numbers(args.feed))))
         return 0
-    lines = round_sheet(season, args.round_number, args.phase)
+    lines = round_sheet(season, args.round_number, args.phase, line_numbers(args.feed))
     if not lines:
         print("FALLO: no hay jornada %d%s" % (args.round_number, " en la fase %s" % args.phase if args.phase else ""), file=sys.stderr)
         return 1
