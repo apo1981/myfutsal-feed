@@ -172,6 +172,80 @@ El commit cambia `phases[0].kind` de `league` a `legue` (un valor fuera del enum
 4. Cuando `smoke` salga en verde, copia al equipo la línea `smoke-check correcto: version ... servida tras N s` del log (si no tienes sesión para ver los logs, sirven las marcas de tiempo de la API pública de GitHub): es el dato de NFR-011 (ver «Registro de evidencias»).
 5. Limpieza: `git branch -d ensayo-puerta` (la rama ya está fusionada).
 
+## Ensayo del operador (US-007b2c)
+
+Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado real desde el navegador, **B** comparar una jornada con la fuente oficial y **C** poner al día los resultados pendientes. Anota todo en la tabla del final. El token de push caduca hacia 2026-11-15: haz A antes; después puedes borrarlo (Settings → Developer settings → Fine-grained tokens → Delete). El editor web no necesita token.
+
+### A. Publicar un resultado desde la web de GitHub y medir la propagación (criterios 6 y 7c(ii))
+
+1. Apunta la hora de inicio (para el tiempo total). En el navegador (móvil o escritorio; si en el móvil el editor no se muestra bien, pide «Versión de escritorio») abre <https://github.com/apo1981/myfutsal-feed/blob/main/public/v1/seasons/2026-27.json> y pulsa el lápiz («Edit this file»).
+2. Busca el partido por su `id` (por ejemplo `a01-01`; en el editor, Ctrl/Cmd+F). Cambia `"status": "unknown"` (o `"scheduled"`) por `"status": "finished"` y `"score": null` por `"score": { "home": 4, "away": 2 }` (goles del local y del visitante). `decidedBy` y `note` quedan en `null`.
+3. Cambia `"updatedAt"` (cerca del principio del fichero) al instante actual en **UTC**, formato `AAAA-MM-DDTHH:MM:SSZ`. La hora de Madrid menos 2 h hasta el 25-10-2026 (horario de verano) y menos 1 h después. Debe ser posterior al anterior; si no, la puerta rechaza el cambio.
+4. Pulsa «Commit changes…», deja «Commit directly to the `main` branch» y confirma. **Apunta la hora exacta de ese clic (hora t0)**; el mensaje puede llevar el tiempo, como en «Anotar el tiempo».
+5. Mide la propagación (NFR-011, máximo 15 min). Desde Terminal, repite cada 30 s hasta que `updatedAt` sea el que has escrito (la hora t1 es la de la primera salida correcta):
+   ```
+   while true; do date +%T; curl -s "https://apo1981.github.io/myfutsal-feed/v1/seasons/2026-27.json?t=$(date +%s)" | grep '"updatedAt"'; sleep 30; done
+   ```
+   Si no tienes Terminal, abre esa URL en el navegador y recarga. Propagación = t1 − t0. En la pestaña Actions de GitHub se ve el flujo `validate` → `deploy` → `smoke`; si `validate` falla (rojo), se sigue sirviendo la versión anterior y se trata como en «Qué hacer si falla `validate`».
+6. Comprueba la app: «Verificación en el iPhone».
+7. **Committer web (criterio 7c(ii)).** En la carpeta del repositorio del feed, trae el commit y ejecuta la comprobación de estructura (comprueba que las direcciones del historial están permitidas, incluida `noreply@github.com` de las ediciones web):
+   ```
+   git pull --ff-only
+   scripts/check-structure
+   ```
+   Si pasa, anótalo. Si falla nombrando otra dirección distinta de `noreply@github.com`, **no la cambies tú**: pásala al equipo (hay que ajustar la lista permitida y registrarlo en `decisions.md`).
+
+### B. Comparar una jornada con la fuente oficial (criterio 7)
+
+1. Elige una jornada (cualquiera, mejor una con resultados que conozcas) y obtén la hoja:
+   ```
+   scripts/round-sheet --round 3 --phase apertura
+   ```
+   (`--phase clausura` para la segunda vuelta; sin `--phase` salen las dos fases que tengan esa jornada.) Cada línea trae: id, fecha y hora en Europe/Madrid (o «sin hora»), local, visitante, estado y marcador (o «pendiente»).
+2. Compara línea a línea con la web de la RFEF: fecha, hora, **quién es local y quién visitante**, y marcador. La localía invertida es el riesgo conocido (D-178): la columna local/visitante del PDF original no tenía rótulo. Si el local de la RFEF es el visitante del feed en un partido, la localía está invertida: anota el id y avisa al equipo (se regenera el CSV invirtiendo y se republica; no corrijas a mano 240 partidos).
+3. Cada diferencia de fecha, hora o marcador es una discrepancia: corrígela con «Publicar un resultado» o «Cambiar hora, aplazar o suspender un partido» y repite la comparación hasta 0 discrepancias.
+
+### C. Poner al día los resultados pendientes (criterio 8)
+
+1. Lista lo que falta, por jornada (`unknown` y `scheduled` con fecha ya pasada):
+   ```
+   scripts/round-sheet --pending
+   ```
+2. **Pocos partidos (hasta unos 5):** edítalos en la web como en A (un solo commit con varios partidos y un solo `updatedAt` nuevo).
+3. **Muchos partidos (los 42 `unknown`):** genera la plantilla, rellénala y aplícala.
+   ```
+   mkdir -p local-data
+   scripts/round-sheet --pending --csv > local-data/resultados.csv
+   ```
+   Abre `local-data/resultados.csv` en una hoja de cálculo o editor y rellena solo las columnas `home` y `away` (goles del local y del visitante tal como están en el feed; las demás columnas son de contexto). Una fila con `home` y `away` vacíos se ignora y el partido queda como está: **nunca rellenes un marcador que no conozcas**. `local-data/` no se versiona. Después:
+   ```
+   scripts/apply-results local-data/resultados.csv
+   ```
+   El comando pone `finished`, el marcador y un `updatedAt` nuevo, y ejecuta `scripts/verify`. Es todo o nada: si una fila es inválida (un solo gol, no numérico, id desconocido, partido ya finalizado, partido de eliminatoria) no escribe nada y dice la fila. Revisa el cambio con `git diff --stat` y publica con los pasos 5 y 6 de «Publicar un resultado» (`git add`, `git commit` con el tiempo y `git push origin main`).
+4. Cuando estén publicados, comprueba que ya no quedan pendientes: `scripts/round-sheet --pending`.
+5. **Localía (D-178):** el primer resultado que contrastes con la RFEF debe coincidir en local y visitante. Si no coincide, avisa al equipo antes de seguir publicando.
+
+**Registro de evidencias de US-007b2c** (rellénalo tú; el equipo lo pasa a la historia):
+
+| Dato | Valor |
+|---|---|
+| Fecha del ensayo | |
+| Dispositivo y navegador (móvil o escritorio) | |
+| Partido publicado (id y marcador) | |
+| t0 (clic en «Commit changes») | |
+| t1 (primer `curl` con el `updatedAt` nuevo) | |
+| Propagación t1 − t0 (máximo 15 min) | |
+| Estado de `validate`, `deploy` y `smoke` | |
+| Tiempo total dedicado al ensayo A | |
+| `git pull --ff-only` y `scripts/check-structure` (resultado y dirección del committer web) | |
+| Ambigüedades o dudas del runbook | |
+| Jornada comparada (fase y número) | |
+| Discrepancias encontradas y corregidas (id y qué) | |
+| Discrepancias tras repetir (objetivo 0) | |
+| Localía confirmada con el primer resultado contrastado (sí/no, id) | |
+| Pendientes antes y después de C (`scripts/round-sheet --pending`) | |
+| Tiempo total dedicado a B y C | |
+
 ## URL base para la app
 
 La app (US-005) usará como valor de configuración la URL base **con ruta**:
@@ -297,6 +371,8 @@ git log --grep='tiempo:' --format='%ad %s' --date=short
 | `scripts/check-invariants` | Invariantes que el esquema no expresa |
 | `scripts/check-updated-at` | Comprueba que `updatedAt` avanza respecto a `HEAD` |
 | `scripts/convert-csv` | Convierte los CSV de equipos y partidos en el JSON de temporada |
+| `scripts/round-sheet` | Hoja de una jornada (`--round N`) y lista de pendientes (`--pending`, `--csv`); solo lectura |
+| `scripts/apply-results` | Aplica en bloque un CSV `id,home,away` rellenado por el operador y ejecuta `verify` |
 | `scripts/check-allowlist` | Solo `v1/index.json`, `privacy.html` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
 | `scripts/check-workflow` | Comprobación estática del workflow |
 | `scripts/smoke-check` | Comprobación posterior al despliegue (feed y `privacy.html`) |

@@ -25,9 +25,9 @@ class RealRunbook(unittest.TestCase):
 
     def test_us007a_c8_the_required_sections_cover_the_story(self) -> None:
         names = [name for name, _heading, _concepts in runbook_check.REQUIRED_SECTIONS]
-        self.assertEqual(len(names), 12)
+        self.assertEqual(len(names), 13)
         for fragment in ("primera vez", "publicar", "aplazar", "carga inicial", "validate", "posterior", "rollback", "iPhone", "tiempo",
-                         "ensayo de la puerta", "url base", "registro de evidencias"):
+                         "ensayo de la puerta", "ensayo del operador", "url base", "registro de evidencias"):
             self.assertTrue(any(fragment.lower() in name.lower() for name in names), fragment)
 
     def test_us007a_c8_first_time_section_mentions_the_local_identity_change(self) -> None:

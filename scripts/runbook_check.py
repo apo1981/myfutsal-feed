@@ -23,6 +23,8 @@ REQUIRED_SECTIONS = [
     ("falla la comprobacion posterior", r"falla la comprobaci[oó]n posterior", [r"scripts/smoke-check", r"600"]),
     ("revertir (rollback)", r"revertir|rollback", [r"git revert --no-commit", r"updatedAt"]),
     ("ensayo de la puerta", r"ensayo de la puerta", [r"scripts/prepare-gate-rehearsal", r"ensayo-puerta", r"git revert --no-commit", r"servida tras"]),
+    ("ensayo del operador", r"ensayo del operador", [r"scripts/round-sheet", r"scripts/apply-results", r"curl", r"updatedAt", r"git pull --ff-only", r"scripts/check-structure",
+                                                      r"noreply@github\.com", r"github\.io/myfutsal-feed", r"NFR-011", r"D-178"]),
     ("url base para la app", r"url base", [r"github\.io/myfutsal-feed", r"US-005"]),
     ("registro de evidencias", r"registro de evidencias", [r"NFR-011", r"I-2", r"S-4"]),
     ("verificacion en el iPhone", r"iPhone", [r"pull to refresh"]),
