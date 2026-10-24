@@ -17,6 +17,9 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 MAX_COMPRESSED_BYTES = 100 * 1024
 LIVE_OR_FINISHED = ("live", "finished")
+KNOCKOUT_KIND = "knockout"
+DECIDED_BY_PENALTIES = "penalties"
+MAX_NOTE_LENGTH = 140
 INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 CET_OFFSET_HOURS = 1
 CEST_OFFSET_HOURS = 2
@@ -153,6 +156,45 @@ def match_violations(match: Dict[str, Any], team_ids: List[str]) -> List[Violati
     return found
 
 
+def has_winner(match: Dict[str, Any]) -> bool:
+    """Hay ganador si el marcador no esta empatado, o si lo esta y `decidedBy` es `penalties` con una tanda no empatada."""
+    score = match.get("score") or {}
+    if score.get("home") != score.get("away"):
+        return True
+    shootout = match.get("penalties") or {}
+    return match.get("decidedBy") == DECIDED_BY_PENALTIES and shootout.get("home") != shootout.get("away") \
+        and shootout.get("home") is not None and shootout.get("away") is not None
+
+
+def knockout_violations(season: Dict[str, Any]) -> List[Violation]:
+    """US-012: un partido `finished` de una fase `knockout` necesita ganador. En liga un empate es valido."""
+    found = []  # type: List[Violation]
+    for phase in season.get("phases", []):
+        if phase.get("kind") != KNOCKOUT_KIND:
+            continue
+        for rnd in phase.get("rounds", []):
+            for match in rnd.get("matches", []):
+                if match.get("status") == "finished" and match.get("score") is not None and not has_winner(match):
+                    found.append(Violation(
+                        "eliminatoria-sin-ganador", match.get("id", "?"),
+                        "partido finished de la fase %s con marcador empatado y sin desenlace por penaltis valido" % phase.get("id", "?")))
+    return found
+
+
+def note_warnings(season: Dict[str, Any]) -> List[str]:
+    """US-012: avisa (no falla) de una `note` de mas de MAX_NOTE_LENGTH caracteres o con saltos de linea."""
+    warnings = []  # type: List[str]
+    for match in iter_matches(season):
+        note = match.get("note")
+        if not isinstance(note, str):
+            continue
+        if len(note) > MAX_NOTE_LENGTH:
+            warnings.append("aviso nota-larga: %s: la note tiene %d caracteres (maximo recomendado %d)" % (match.get("id", "?"), len(note), MAX_NOTE_LENGTH))
+        if "\n" in note or "\r" in note:
+            warnings.append("aviso nota-multilinea: %s: la note tiene saltos de linea" % match.get("id", "?"))
+    return warnings
+
+
 def season_violations(season: Dict[str, Any]) -> List[Violation]:
     found = unique_ids(season)
     team_ids = [team.get("id") for team in season.get("teams", [])]
@@ -161,6 +203,7 @@ def season_violations(season: Dict[str, Any]) -> List[Violation]:
             found.append(Violation("crest-url-no-nulo", team.get("id", "?"), "crestURL debe ser null hasta tener permiso (NFR-010)"))
     for match in iter_matches(season):
         found.extend(match_violations(match, team_ids))
+    found.extend(knockout_violations(season))
     return found
 
 
@@ -306,6 +349,7 @@ def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optiona
     for identifier, path in paths:
         season = load(path)
         found.extend(season_violations(season))
+        log.extend(note_warnings(season))
         found.extend(example_id_violations(season, examples))
         size = size_violation(path)
         if size:

@@ -18,6 +18,10 @@ def load_json(path: str) -> Dict[str, Any]:
         return json.load(handle)
 
 
+# Fixtures canonicos del contrato con empates tolerados en eliminatoria; no se modifican (D-425).
+TOLERATED_TIES_FIXTURES = ("season-finished.json", "season-playoff.json")
+
+
 class InvariantsCliTestCase(TempDirTestCase):
     def check(self, season: Optional[Dict[str, Any]] = None, index: Optional[Dict[str, Any]] = None,
               previous: Optional[Dict[str, Any]] = None):
@@ -55,7 +59,13 @@ class ValidFeed(InvariantsCliTestCase):
             write_json(os.path.join(public, "public", "v1", "index.json"), index)
             write_json(os.path.join(public, "public", "v1", "seasons", season["seasonId"] + ".json"), season)
             result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", os.path.join(public, "public")])
-            self.assertEqual(result.returncode, 0, "%s: %s" % (name, output_of(result)))
+            if name in TOLERATED_TIES_FIXTURES:
+                # US-012, criterio 5: el contrato tolera empates sin desenlace; solo la comprobacion de eliminatoria los senala.
+                self.assertNotEqual(result.returncode, 0, name)
+                self.assertTrue(all("invariante eliminatoria-sin-ganador" in line
+                                    for line in result.stderr.splitlines() if line.startswith("FALLO")), output_of(result))
+            else:
+                self.assertEqual(result.returncode, 0, "%s: %s" % (name, output_of(result)))
 
 
 class DuplicateIds(InvariantsCliTestCase):
@@ -322,6 +332,92 @@ class ExampleIds(InvariantsCliTestCase):
         result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", public])
         self.assertEqual(result.returncode, 1, output_of(result))
         self.assertIn("FALLO invariantes: no se pudo leer el feed", result.stderr)
+
+
+class KnockoutWinner(InvariantsCliTestCase):
+    """US-012, criterios 1 a 3: un partido finished de eliminatoria necesita ganador."""
+
+    @staticmethod
+    def knockout(score: Dict[str, int], decided_by: Optional[str] = None,
+                 penalties: Optional[Dict[str, int]] = None, kind: str = "knockout", status: str = "finished"):
+        def mutate(season: Dict[str, Any]) -> None:
+            season["phases"][0]["kind"] = kind
+            match = match_of(season, "m-01")
+            match.update(status=status, score=score, decidedBy=decided_by)
+            if penalties is not None:
+                match["penalties"] = penalties
+        return mutate
+
+    def test_us012_c1_unbroken_score_passes(self) -> None:
+        result = self.check(season_with(self.knockout({"home": 3, "away": 2})))
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def test_us012_c1_draw_decided_by_penalties_with_a_winner_passes(self) -> None:
+        mutate = self.knockout({"home": 2, "away": 2}, "penalties", {"home": 4, "away": 3})
+        result = self.check(season_with(mutate))
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def test_us012_c2_draw_without_decided_by_fails_and_names_the_match(self) -> None:
+        self.assert_fails_with(self.knockout({"home": 2, "away": 2}), "eliminatoria-sin-ganador", "m-01")
+
+    def test_us012_c2_draw_decided_by_extra_time_fails(self) -> None:
+        self.assert_fails_with(self.knockout({"home": 2, "away": 2}, "extraTime"), "eliminatoria-sin-ganador", "m-01")
+
+    def test_us012_c2_draw_decided_by_penalties_without_shootout_fails(self) -> None:
+        self.assert_fails_with(self.knockout({"home": 2, "away": 2}, "penalties"), "eliminatoria-sin-ganador", "m-01")
+
+    def test_us012_c2_draw_decided_by_penalties_with_a_tied_shootout_fails(self) -> None:
+        mutate = self.knockout({"home": 2, "away": 2}, "penalties", {"home": 3, "away": 3})
+        self.assert_fails_with(mutate, "eliminatoria-sin-ganador", "m-01")
+
+    def test_us012_c2_unfinished_drawn_knockout_match_is_not_checked(self) -> None:
+        result = self.check(season_with(self.knockout({"home": 1, "away": 1}, status="live")))
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def test_us012_c3_draw_in_a_league_phase_passes(self) -> None:
+        result = self.check(season_with(self.knockout({"home": 1, "away": 1}, kind="league")))
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def test_us012_c5_the_canonical_playoff_fixture_is_unchanged_and_only_trips_this_check(self) -> None:
+        season = load_json(os.path.join(support.FIXTURES, "valid", "season-playoff.json"))
+        self.assertTrue(invariants.knockout_violations(season))
+        self.assertEqual([v for v in invariants.season_violations(season) if v.invariant != "eliminatoria-sin-ganador"], [])
+
+
+class LongNotes(InvariantsCliTestCase):
+    """US-012, criterio 4: una note larga o con saltos de linea es un aviso, no un error."""
+
+    def note(self, text: Optional[str]) -> Callable[[Dict[str, Any]], None]:
+        return lambda season: match_of(season, "m-01").update(note=text)
+
+    def assert_warns(self, text: str, warning: str) -> None:
+        result = self.check(season_with(self.note(text)))
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("%s: m-01" % warning, result.stdout)
+        self.assertIn("invariantes correctas", result.stdout)
+
+    def test_us012_c4_note_over_140_characters_warns_and_names_the_match(self) -> None:
+        self.assert_warns("x" * 141, "aviso nota-larga")
+
+    def test_us012_c4_note_with_line_breaks_warns_and_names_the_match(self) -> None:
+        self.assert_warns("Primera linea\nSegunda", "aviso nota-multilinea")
+
+    def test_us012_c4_note_of_exactly_140_characters_does_not_warn(self) -> None:
+        result = self.check(season_with(self.note("x" * 140)))
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertNotIn("aviso", result.stdout)
+
+    def test_us012_c4_short_or_null_note_does_not_warn(self) -> None:
+        for text in ("Ida", None):
+            self.assertNotIn("aviso", self.check(season_with(self.note(text))).stdout)
+
+    def test_us012_c4_a_warning_does_not_hide_an_error(self) -> None:
+        def mutate(season: Dict[str, Any]) -> None:
+            match_of(season, "m-01").update(note="x" * 141)
+            match_of(season, "m-02")["awayTeamId"] = "zzz"
+        result = self.check(season_with(mutate))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("aviso nota-larga: m-01", result.stdout)
 
 
 class MalformedInput(InvariantsCliTestCase):
