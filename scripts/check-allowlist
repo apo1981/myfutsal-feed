@@ -1,5 +1,5 @@
 #!/bin/sh
-# Comprueba que public/ solo contiene v1/index.json y v1/seasons/<id>.json (<id> = AAAA-AA).
+# Comprueba que public/ solo contiene v1/index.json, privacy.html y v1/seasons/<id>.json (<id> = AAAA-AA).
 # Uso: scripts/check-allowlist [--public <dir>]
 set -eu
 . "$(dirname "$0")/_env.sh"

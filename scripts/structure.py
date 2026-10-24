@@ -16,12 +16,14 @@ import sys
 from typing import Dict, List, Optional
 
 SEASON_FILE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}\.json$")
-ALLOWED_INDEX = os.path.join("v1", "index.json")
+PRIVACY_PAGE = "privacy.html"
+ALLOWED_FILES = {os.path.join("v1", "index.json"), PRIVACY_PAGE}
 SEASONS_DIR = os.path.join("v1", "seasons")
 EXAMPLE_TEAMS = os.path.join("examples", "initial-load", "equipos.csv")
 
 REQUIRED_FILES = [
     os.path.join("public", "v1", "index.json"),
+    os.path.join("public", PRIVACY_PAGE),
     os.path.join("schema", "league-feed-v1.season.schema.json"),
     os.path.join("schema", "league-feed-v1.index.schema.json"),
     os.path.join("schema", "SHA256SUMS"),
@@ -84,11 +86,11 @@ def allowlist_problems(public_dir: str) -> List[str]:
     problems = []
     for relative in walk_files(public_dir, skip_ignored=False):
         directory, name = os.path.split(relative)
-        if relative == ALLOWED_INDEX:
+        if relative in ALLOWED_FILES:
             continue
         if directory == SEASONS_DIR and SEASON_FILE_PATTERN.match(name):
             continue
-        problems.append("public/%s no esta en la lista permitida (solo v1/index.json y v1/seasons/AAAA-AA.json)" % relative)
+        problems.append("public/%s no esta en la lista permitida (solo v1/index.json, privacy.html y v1/seasons/AAAA-AA.json)" % relative)
     return problems
 
 

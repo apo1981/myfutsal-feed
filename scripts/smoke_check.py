@@ -2,7 +2,8 @@
 
 Pide `index.json` y la temporada vigente a la URL base y comprueba: 200, `Content-Type` JSON,
 `ETag`, `304` ante `If-None-Match` y que el `updatedAt` servido es el esperado (el de `public/`).
-Solo `updatedAt` se reintenta, porque la CDN puede servir la version anterior unos minutos;
+Tambien pide `privacy.html` (US-008b, criterio b4): 200 sin redireccion, `text/html`, menciona GitHub e IP e
+identica byte a byte a la local. Se reintenta junto con `updatedAt`, porque la CDN puede servir la version anterior unos minutos;
 el resto de fallos son inmediatos. Solo biblioteca estandar, compatible con Python 3.9.
 """
 from __future__ import annotations
@@ -21,6 +22,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 DEFAULT_INTERVAL_SECONDS = 60.0
 DEFAULT_TIMEOUT_SECONDS = 12 * 60.0
 REQUEST_TIMEOUT_SECONDS = 30.0
+PRIVACY_PATH = "/privacy.html"
+PRIVACY_REQUIRED_TERMS = ("GitHub", "IP")
+HTML_CONTENT_TYPE = re.compile(r"^text/html\s*(;.*)?$", re.IGNORECASE)
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost")
 JSON_CONTENT_TYPE = re.compile(r"^application/(.+\+)?json\s*(;.*)?$", re.IGNORECASE)
 
@@ -85,6 +89,27 @@ def check_revalidation(url: str, etag: str) -> None:
         raise SmokeFailure("%s: con If-None-Match %s respondio %d y se esperaba 304" % (url, etag, status))
 
 
+def fetch_privacy_page(base: str) -> bytes:
+    """200 sin redireccion, `Content-Type` HTML y los terminos que la politica debe mencionar. Devuelve el cuerpo."""
+    url = base + PRIVACY_PATH
+    status, headers, body = fetch(url)
+    if status != 200:
+        raise SmokeFailure("%s respondio %d y se esperaba 200" % (url, status))
+    content_type = headers.get("content-type", "")
+    if not HTML_CONTENT_TYPE.match(content_type):
+        raise SmokeFailure("%s: Content-Type %r no es text/html" % (url, content_type))
+    text = body.decode("utf-8", "replace")
+    for term in PRIVACY_REQUIRED_TERMS:
+        if term not in text:
+            raise SmokeFailure("%s: la politica no menciona %r" % (url, term))
+    return body
+
+
+def read_privacy_page(public_dir: str) -> bytes:
+    with open(os.path.join(public_dir, "privacy.html"), "rb") as handle:
+        return handle.read()
+
+
 def read_expectation(public_dir: str) -> Tuple[str, str]:
     """(temporada vigente, updatedAt esperado) segun los ficheros locales de public/."""
     with open(os.path.join(public_dir, "v1", "index.json"), "r", encoding="utf-8") as handle:
@@ -93,7 +118,7 @@ def read_expectation(public_dir: str) -> Tuple[str, str]:
         return season_id, json.load(handle)["updatedAt"]
 
 
-def run_smoke(base: str, season_id: str, expected: str, interval: float, timeout: float,
+def run_smoke(base: str, season_id: str, expected: str, expected_privacy: bytes, interval: float, timeout: float,
               clock: Callable[[], float] = time.monotonic, sleep: Callable[[float], None] = time.sleep,
               log: Callable[[str], None] = print) -> float:
     """Devuelve los segundos hasta servir la version esperada; lanza SmokeFailure si falla."""
@@ -106,12 +131,15 @@ def run_smoke(base: str, season_id: str, expected: str, interval: float, timeout
         index_headers, _index = fetch_json_document(index_url)
         season_headers, season = fetch_json_document(season_url)
         served = season.get("updatedAt") if isinstance(season, dict) else None
-        if served == expected:
+        privacy_matches = fetch_privacy_page(base) == expected_privacy
+        if served == expected and privacy_matches:
             break
         elapsed = clock() - started
-        log("intento %d: updatedAt servido %r, esperado %r (%.0f s)" % (attempt, served, expected, elapsed))
+        log("intento %d: updatedAt servido %r, esperado %r; politica %s (%.0f s)"
+            % (attempt, served, expected, "igual" if privacy_matches else "distinta de la local", elapsed))
         if elapsed + interval > timeout:
-            raise SmokeFailure("updatedAt servido %r no coincide con el esperado %r tras %.0f s" % (served, expected, elapsed))
+            raise SmokeFailure("updatedAt servido %r (esperado %r) o politica %s tras %.0f s"
+                               % (served, expected, "igual" if privacy_matches else "distinta de la local", elapsed))
         sleep(interval)
     check_revalidation(index_url, index_headers["etag"])
     check_revalidation(season_url, season_headers["etag"])
@@ -132,15 +160,16 @@ def main(argv: List[str]) -> int:
     args = parse_args(argv)
     try:
         base = check_base_url(args.base)
-        season_id, expected = read_expectation(args.public or os.path.join(args.feed, "public"))
-        elapsed = run_smoke(base, season_id, expected, args.interval, args.timeout)
+        public_dir = args.public or os.path.join(args.feed, "public")
+        season_id, expected = read_expectation(public_dir)
+        elapsed = run_smoke(base, season_id, expected, read_privacy_page(public_dir), args.interval, args.timeout)
     except SmokeFailure as failure:
         print("FALLO smoke-check: %s" % failure, file=sys.stderr)
         return 1
     except (OSError, ValueError, KeyError) as error:
         print("FALLO smoke-check: no se pudo leer lo esperado en public/: %s: %s" % (type(error).__name__, error), file=sys.stderr)
         return 1
-    print("smoke-check correcto: version %s servida tras %.1f s" % (expected, elapsed))
+    print("smoke-check correcto: version %s servida tras %.1f s (politica servida)" % (expected, elapsed))
     return 0
 
 

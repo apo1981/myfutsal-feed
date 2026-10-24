@@ -108,6 +108,12 @@ class RequiredFiles(StructureTestCase):
         os.remove(os.path.join(self.feed, "public", "v1", "seasons", "2026-27.json"))
         self.assertIn("falta public/v1/seasons/<id>.json para la temporada", structure.missing_files(self.feed))
 
+    def test_us008b_b5_privacy_page_is_required(self) -> None:
+        self.assertIn(os.path.join("public", "privacy.html"), structure.REQUIRED_FILES)
+        os.remove(os.path.join(self.feed, "public", "privacy.html"))
+        self.assertIn("falta public/privacy.html", structure.missing_files(self.feed))
+        self.assert_only("ficheros-obligatorios", "public/privacy.html")
+
     def test_us007a_c1_fixture_directories_are_required(self) -> None:
         shutil.rmtree(os.path.join(self.feed, "tests", "fixtures", "contract", "invalid"))
         self.assertIn("falta tests/fixtures/contract/invalid/", structure.missing_files(self.feed))
@@ -140,6 +146,17 @@ class Allowlist(StructureTestCase):
     def test_us007a_c1_second_season_with_valid_name_is_allowed(self) -> None:
         self.put("public/v1/seasons/2027-28.json", "{}")
         self.assertEqual(structure.allowlist_problems(os.path.join(self.feed, "public")), [])
+
+    def test_us008b_b5_privacy_page_at_the_root_of_public_is_allowed(self) -> None:
+        self.assertTrue(os.path.isfile(os.path.join(self.feed, "public", "privacy.html")))
+        self.assertEqual(structure.allowlist_problems(os.path.join(self.feed, "public")), [])
+
+    def test_us008b_b5_other_html_paths_are_rejected(self) -> None:
+        for relative in ("public/v1/privacy.html", "public/other.html", "public/privacy.htm", "public/en/privacy.html"):
+            with self.subTest(relative):
+                self.put(relative, "<html></html>")
+                self.assertTrue(any(relative in p for p in structure.allowlist_problems(os.path.join(self.feed, "public"))))
+                os.remove(os.path.join(self.feed, relative))
 
     def test_us007a_c1_missing_public_directory_fails(self) -> None:
         self.assertEqual(structure.allowlist_problems(os.path.join(self.tmp, "nada")), ["public/ no existe"])

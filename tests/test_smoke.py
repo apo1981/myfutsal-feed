@@ -10,10 +10,14 @@ from unittest import mock
 import support
 import smoke_check
 from fake_pages import FakePages
+from fake_pages import JSON_TYPE
 from support import SEASON_ID, TempDirTestCase, output_of, run_script, season_with
 
 NEW_UPDATED_AT = "2026-10-02T10:00:00Z"
 OLD_UPDATED_AT = "2026-10-01T10:00:00Z"
+HTML_TYPE = "text/html; charset=utf-8"
+PRIVACY = support.PRIVACY_PAGE.encode("utf-8")
+OLD_PRIVACY = PRIVACY.replace(b"GitHub", b"GitHub (antes)")
 FAST = ["--interval", "0.05", "--timeout", "2"]
 
 
@@ -31,6 +35,7 @@ class SmokeTestCase(TempDirTestCase):
         self.pages = FakePages()
         self.pages.publish("/v1/index.json", self.index)
         self.pages.publish("/v1/seasons/%s.json" % SEASON_ID, self.new_season)
+        self.pages.publish("/privacy.html", PRIVACY, content_type=HTML_TYPE)
         self.pages.start()
         self.addCleanup(self.pages.stop)
 
@@ -40,7 +45,7 @@ class SmokeTestCase(TempDirTestCase):
 
     def in_process(self, **kwargs):
         with mock.patch.dict(os.environ, support.tool_env(), clear=True):
-            return smoke_check.run_smoke(self.pages.base_url(), SEASON_ID, NEW_UPDATED_AT, log=lambda _line: None, **kwargs)
+            return smoke_check.run_smoke(self.pages.base_url(), SEASON_ID, NEW_UPDATED_AT, PRIVACY, log=lambda _line: None, **kwargs)
 
 
 class Passes(SmokeTestCase):
@@ -113,8 +118,35 @@ class Fails(SmokeTestCase):
         self.assert_fails_with(result, "no se pudo pedir")
         self.assertEqual([r for r in self.pages.requests if "github" in r[1]], [])
 
+    def test_us008b_b4_privacy_page_missing_is_a_404_failure(self) -> None:
+        self.pages.versions.pop("/myfutsal-feed/privacy.html")
+        self.assert_fails_with(self.smoke(), "privacy.html respondio 404")
+
+    def test_us008b_b4_privacy_page_content_type_must_be_html(self) -> None:
+        self.pages.publish("/privacy.html", PRIVACY, content_type=JSON_TYPE)
+        self.assert_fails_with(self.smoke(), "no es text/html")
+
+    def test_us008b_b4_privacy_page_must_mention_ip(self) -> None:
+        self.pages.publish("/privacy.html", PRIVACY.replace(b"IP", b"direccion"), content_type=HTML_TYPE)
+        self.assert_fails_with(self.smoke(), "no menciona 'IP'")
+
+    def test_us008b_b4_privacy_page_must_mention_github(self) -> None:
+        self.pages.publish("/privacy.html", PRIVACY.replace(b"GitHub", b"Alojamiento"), content_type=HTML_TYPE)
+        self.assert_fails_with(self.smoke(), "no menciona 'GitHub'")
+
+    def test_us008b_b4_privacy_page_differing_from_local_fails_after_the_deadline(self) -> None:
+        self.pages.publish("/privacy.html", OLD_PRIVACY, content_type=HTML_TYPE)
+        self.assert_fails_with(self.smoke(), "politica distinta de la local")
+
 
 class Retries(SmokeTestCase):
+    def test_us008b_b4_old_privacy_page_then_new_retries_and_passes(self) -> None:
+        self.pages.publish("/privacy.html", OLD_PRIVACY, OLD_PRIVACY, PRIVACY, content_type=HTML_TYPE)
+        result = self.smoke()
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("politica distinta de la local", result.stdout)
+        self.assertIn("(politica servida)", result.stdout)
+
     def test_us007a_c6_serves_old_then_new_retries_passes_and_prints_elapsed(self) -> None:
         self.pages.publish("/v1/seasons/%s.json" % SEASON_ID, self.old_season, self.old_season, self.new_season)
         result = self.smoke()

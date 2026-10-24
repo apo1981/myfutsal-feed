@@ -87,11 +87,16 @@ def match_of(season: Dict[str, Any], identifier: str) -> Dict[str, Any]:
     raise KeyError(identifier)
 
 
+PRIVACY_PAGE = "<!DOCTYPE html>\n<html lang=\"es\"><head><title>Politica</title></head><body><p>GitHub puede ver tu IP.</p></body></html>\n"
+
+
 def build_public(root: str, season: Optional[Dict[str, Any]] = None, index: Optional[Dict[str, Any]] = None) -> str:
     """Escribe `<root>/public/v1/...` con el indice y la temporada dados. Devuelve public/."""
     public = os.path.join(root, "public")
     write_json(os.path.join(public, "v1", "index.json"), index or BASE_INDEX)
     write_json(os.path.join(public, "v1", "seasons", SEASON_ID + ".json"), season or BASE_SEASON)
+    with open(os.path.join(public, "privacy.html"), "w", encoding="utf-8") as handle:
+        handle.write(PRIVACY_PAGE)
     return public
 
 

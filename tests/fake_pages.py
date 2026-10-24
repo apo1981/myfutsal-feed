@@ -29,6 +29,7 @@ class FakePages:
         self.send_etag = True
         self.honor_conditional = True
         self.content_type = JSON_TYPE
+        self.content_types = {}  # type: Dict[str, str]  # por ruta (relativa a la base); si falta, `content_type`
         self.redirect_to = None  # type: Optional[str]
         self._lock = threading.Lock()
         self._server = HTTPServer((LOOPBACK, 0), self._handler())
@@ -46,8 +47,10 @@ class FakePages:
     def base_url(self, host: str = LOOPBACK) -> str:
         return "http://%s:%d%s" % (host, self.port, self.prefix)
 
-    def publish(self, path: str, *versions: bytes) -> None:
+    def publish(self, path: str, *versions: bytes, content_type: Optional[str] = None) -> None:
         """`path` relativo a la base, p. ej. `/v1/index.json`. Cada 200 sirve la version siguiente."""
+        if content_type:
+            self.content_types[path] = content_type
         self.versions[self.prefix + path] = list(versions)
         self.served[self.prefix + path] = 0
 
@@ -97,7 +100,7 @@ class FakePages:
                 return
             self.served[handler.path] += 1
             handler.send_response(200)
-            handler.send_header("Content-Type", self.content_type)
+            handler.send_header("Content-Type", self.content_types.get(handler.path[len(self.prefix):], self.content_type))
             if self.send_etag:
                 handler.send_header("ETag", etag_of(body))
             handler.send_header("Cache-Control", "max-age=600")

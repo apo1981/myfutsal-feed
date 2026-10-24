@@ -3,7 +3,7 @@
 Operador: el propio humano (ADR-004). Este repositorio es la fuente de verdad del feed que lee la app; GitHub Pages sirve `public/`.
 Todo cambio en `main` pasa por la puerta de `.github/workflows/publish.yml`: `validate` → `deploy` → `smoke`. Si `validate` falla, no se despliega y se sigue sirviendo la última versión buena.
 
-Solo hay tres sitios donde editar: `public/v1/index.json`, `public/v1/seasons/<id>.json` y, en la carga inicial, los datos de la temporada. El esquema (`schema/`) **no se edita aquí**: la copia canónica está en el repositorio de la app.
+Solo hay tres sitios donde editar: `public/v1/index.json`, `public/v1/seasons/<id>.json` y, en la carga inicial, los datos de la temporada (la política `public/privacy.html` se actualiza según «Actualizar la política»). El esquema (`schema/`) **no se edita aquí**: la copia canónica está en el repositorio de la app.
 
 ## Primera vez
 
@@ -258,6 +258,16 @@ carga inicial correcta
 - c05-01 y c05-02 (23-02-2027)
 - c07-07 y c07-08 (06-04-2027)
 
+## Actualizar la política
+
+La política de privacidad se publica en `<URL base>/privacy.html` (US-008b). El texto de referencia es `docs/legal/privacy-policy.md` del repositorio de la app; `public/privacy.html` es una copia a mano, fiel y con la misma fecha.
+
+1. Edita el `.md` en el repositorio de la app y cambia «Última actualización».
+2. Copia el cambio a `public/privacy.html` (mismas secciones y misma fecha). Sin scripts ni recursos de terceros.
+3. Comprueba que no hay correos, nombres reales ni rutas locales; solo se admite el usuario público de GitHub `apo1981`.
+4. Ejecuta `scripts/verify`. El fichero es obligatorio: borrarlo hace fallar `ficheros-obligatorios`.
+5. Haz commit y push. `smoke` pide la página y exige 200, `text/html`, que mencione «GitHub» e «IP» y que sea idéntica byte a byte a la local; si la CDN aún sirve la versión anterior, reintenta como con `updatedAt`.
+
 ## Verificación en el iPhone
 
 1. Abre la app y haz *pull to refresh* en la pantalla de resultados.
@@ -287,7 +297,7 @@ git log --grep='tiempo:' --format='%ad %s' --date=short
 | `scripts/check-invariants` | Invariantes que el esquema no expresa |
 | `scripts/check-updated-at` | Comprueba que `updatedAt` avanza respecto a `HEAD` |
 | `scripts/convert-csv` | Convierte los CSV de equipos y partidos en el JSON de temporada |
-| `scripts/check-allowlist` | Solo `v1/index.json` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
+| `scripts/check-allowlist` | Solo `v1/index.json`, `privacy.html` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
 | `scripts/check-workflow` | Comprobación estática del workflow |
-| `scripts/smoke-check` | Comprobación posterior al despliegue |
+| `scripts/smoke-check` | Comprobación posterior al despliegue (feed y `privacy.html`) |
 | `scripts/prepare-gate-rehearsal` | Prepara en local, sin publicar, el commit inválido del ensayo de la puerta |
