@@ -92,6 +92,8 @@ unit 7-conversor-pruebas test_convert.py
 
 unit 7b-carga-inicial-pruebas test_initial_load.py
 
+unit 7c-hoja-de-jornada-y-resultados-pruebas test_round_sheet.py
+
 run 8-runbook "$FEED/scripts/check-runbook"
 unit 8-runbook-pruebas test_runbook.py
 
