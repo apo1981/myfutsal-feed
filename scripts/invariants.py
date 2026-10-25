@@ -21,6 +21,7 @@ KNOCKOUT_KIND = "knockout"
 DECIDED_BY_PENALTIES = "penalties"
 MAX_NOTE_LENGTH = 140
 INSTANT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+FUTURE_TOLERANCE = datetime.timedelta(minutes=15)  # D-544: cubre redondear a mano al minuto siguiente
 CET_OFFSET_HOURS = 1
 CEST_OFFSET_HOURS = 2
 EU_TRANSITION_HOUR_UTC = 1
@@ -285,11 +286,32 @@ def readable_previous(path: str, log: List[str]) -> Optional[Dict[str, Any]]:
     return previous
 
 
-def updated_at_violation(season: Dict[str, Any], previous: Dict[str, Any], log: List[str]) -> Optional[Violation]:
-    """`updatedAt` debe avanzar cuando el contenido cambia (la app lo usa para la antiguedad de los datos)."""
+def is_future(value: Any, now: datetime.datetime) -> bool:
+    return parse_instant(value) > now + FUTURE_TOLERANCE
+
+
+def future_violation(season: Dict[str, Any], now: datetime.datetime) -> Optional[Violation]:
+    """D-544: `updatedAt` no puede estar en el futuro (mas alla de la tolerancia). Se aplica siempre."""
+    if is_future(season.get("updatedAt"), now):
+        return Violation("updated-at-en-el-futuro", str(season.get("seasonId")),
+                         "updatedAt %s esta mas de %d min por delante de la hora actual (%s UTC); recuerda escribirlo en UTC" % (
+                             season.get("updatedAt"), FUTURE_TOLERANCE.seconds // 60, now.strftime(INSTANT_FORMAT)))
+    return None
+
+
+def updated_at_violation(season: Dict[str, Any], previous: Dict[str, Any], log: List[str],
+                         now: datetime.datetime) -> Optional[Violation]:
+    """`updatedAt` debe avanzar cuando el contenido cambia (la app lo usa para la antiguedad de los datos).
+
+    D-544: si la version anterior estaba en el futuro (error ya publicado), se acepta bajar a cualquier
+    valor que no este en el futuro.
+    """
     subject = str(season.get("seasonId"))
     if canonical_without_updated_at(season) == canonical_without_updated_at(previous):
         log.append("updatedAt: contenido sin cambios respecto a la version anterior")
+        return None
+    if is_future(previous.get("updatedAt"), now):
+        log.append("updatedAt: corrige un updatedAt futuro de la version anterior")
         return None
     if parse_instant(season.get("updatedAt")) <= parse_instant(previous.get("updatedAt")):
         return Violation("updated-at-sin-avanzar", subject,
@@ -299,18 +321,25 @@ def updated_at_violation(season: Dict[str, Any], previous: Dict[str, Any], log: 
     return None
 
 
-def updated_at_check(season: Dict[str, Any], previous_path: Optional[str], log: List[str]) -> Optional[Violation]:
+def updated_at_check(season: Dict[str, Any], previous_path: Optional[str], log: List[str],
+                     now: datetime.datetime) -> List[Violation]:
     """Aplica la invariante de `updatedAt` segun haya, no haya o sea ilegible la version anterior.
 
     S-12: una version anterior ilegible solo se avisa; no es ademas una «primera publicacion».
     """
+    found = []  # type: List[Violation]
+    future = future_violation(season, now)
+    if future:
+        found.append(future)
     if previous_path is None:
         log.append("updatedAt: primera publicacion (sin version anterior)")
-        return None
+        return found
     previous = readable_previous(previous_path, log)
-    if previous is None:
-        return None
-    return updated_at_violation(season, previous, log)
+    if previous is not None:
+        violation = updated_at_violation(season, previous, log, now)
+        if violation:
+            found.append(violation)
+    return found
 
 
 # --------------------------------------------------------------------------
@@ -329,7 +358,8 @@ def season_paths(v1_dir: str) -> List[Tuple[str, str]]:
     return [(name[:-len(".json")], os.path.join(directory, name)) for name in sorted(os.listdir(directory)) if name.endswith(".json")]
 
 
-def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optional[str], log: List[str]) -> List[Violation]:
+def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optional[str], log: List[str],
+               now: datetime.datetime) -> List[Violation]:
     v1_dir = os.path.join(public_dir, "v1")
     index = load(os.path.join(v1_dir, "index.json"))
     found = index_violations(index, v1_dir)
@@ -355,9 +385,7 @@ def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optiona
         if size:
             found.append(size)
         if identifier == target_id:
-            violation = updated_at_check(season, previous_path, log)
-            if violation:
-                found.append(violation)
+            found.extend(updated_at_check(season, previous_path, log, now))
     return found
 
 
@@ -367,6 +395,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--public", help="directorio public/ (por defecto <feed>/public)")
     parser.add_argument("--season", help="temporada a la que se aplica --previous (por defecto currentSeasonId)")
     parser.add_argument("--previous", help="version anterior de seasons/<id>.json; sin ella, primera publicacion")
+    parser.add_argument("--now", help=argparse.SUPPRESS)  # AAAA-MM-DDTHH:MM:SSZ; solo para pruebas (D-544)
     return parser.parse_args(argv)
 
 
@@ -375,7 +404,8 @@ def main(argv: List[str]) -> int:
     public_dir = args.public or os.path.join(args.feed, "public")
     log = []  # type: List[str]
     try:
-        violations = check_feed(public_dir, args.season, args.previous, log)
+        now = parse_instant(args.now) if args.now else datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None, microsecond=0)
+        violations = check_feed(public_dir, args.season, args.previous, log, now)
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         print("FALLO invariantes: no se pudo leer el feed (valide antes el esquema): %s: %s" % (type(error).__name__, error), file=sys.stderr)
         return 1

@@ -5,7 +5,8 @@ Solo biblioteca estandar, Python 3.9. Todo o nada: si una fila es invalida no se
   - Solo uno de los dos vacio, no entero o negativo, id desconocido o repetido: error.
   - Solo se aplica a partidos `unknown`, `live` o `scheduled` con fecha anterior a hoy (Madrid), de fases de liga; un partido ya `finished`,
     aplazado, suspendido o de eliminatoria se edita a mano (ver el runbook).
-Pone `status: finished`, `score` y un `updatedAt` nuevo (UTC, estrictamente posterior al actual).
+Pone `status: finished`, `score` y un `updatedAt` nuevo (UTC, estrictamente posterior al actual y
+nunca futuro, D-544; si el actual ya esta en el futuro usa la hora actual y lo avisa).
 Las columnas extra del CSV (jornada, fecha, local, visitante) se ignoran. La verificacion posterior la hace
 `scripts/apply-results`.
 """
@@ -19,6 +20,7 @@ import os
 import sys
 from typing import Any, Dict, List, Tuple
 
+import invariants
 import round_sheet
 
 UPDATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -71,10 +73,16 @@ def has_been_played_by(match: Dict[str, Any], today: datetime.date) -> bool:
     return bool(date) and datetime.datetime.strptime(date, round_sheet.DATE_FORMAT).date() < today
 
 
-def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated_at: str, today: datetime.date) -> int:
+def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated_at: str, today: datetime.date,
+               now: datetime.datetime) -> int:
     """Modifica `season` en memoria. Lanza ApplyError sin haber cambiado nada si alguna fila no es aplicable."""
     current = datetime.datetime.strptime(season["updatedAt"], UPDATED_AT_FORMAT)
-    if datetime.datetime.strptime(updated_at, UPDATED_AT_FORMAT) <= current:
+    future = invariants.future_violation({"seasonId": season.get("seasonId"), "updatedAt": updated_at}, now)
+    if future:
+        raise ApplyError("%s" % future.detail)
+    if invariants.is_future(season["updatedAt"], now):
+        print("AVISO: el updatedAt actual %s esta en el futuro; se corrige con %s" % (season["updatedAt"], updated_at), file=sys.stderr)
+    elif datetime.datetime.strptime(updated_at, UPDATED_AT_FORMAT) <= current:
         raise ApplyError("el updatedAt nuevo %s no es posterior al actual %s" % (updated_at, season["updatedAt"]))
     index = {match["id"]: (phase, match) for phase in season["phases"] for round_ in phase["rounds"] for match in round_["matches"]}
     changes = []
@@ -97,8 +105,8 @@ def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated
     return len(changes)
 
 
-def now_utc() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).strftime(UPDATED_AT_FORMAT)
+def now_utc() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None, microsecond=0)
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
@@ -106,6 +114,7 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--feed", required=True)
     parser.add_argument("csv", help="CSV con columnas id,home,away")
     parser.add_argument("--today", help="AAAA-MM-DD; por defecto, hoy en Europe/Madrid (solo para pruebas)")
+    parser.add_argument("--now", help=argparse.SUPPRESS)  # AAAA-MM-DDTHH:MM:SSZ; solo para pruebas (D-544)
     parser.add_argument("--updated-at", help="AAAA-MM-DDTHH:MM:SSZ; por defecto, ahora en UTC")
     return parser.parse_args(argv)
 
@@ -118,7 +127,8 @@ def main(argv: List[str]) -> int:
         with open(os.path.join(args.feed, round_sheet.INDEX_PATH), "r", encoding="utf-8") as handle:
             season_path = os.path.join(args.feed, round_sheet.SEASON_PATH, json.load(handle)["currentSeasonId"] + ".json")
         today = datetime.datetime.strptime(args.today, round_sheet.DATE_FORMAT).date() if args.today else round_sheet.madrid_today()
-        applied = apply_rows(season, rows, args.updated_at or now_utc(), today)
+        now = datetime.datetime.strptime(args.now, UPDATED_AT_FORMAT) if args.now else now_utc()
+        applied = apply_rows(season, rows, args.updated_at or now.strftime(UPDATED_AT_FORMAT), today, now)
     except (OSError, ValueError, KeyError, ApplyError) as error:
         print("FALLO resultados: %s. No se ha escrito nada." % error, file=sys.stderr)
         return 1

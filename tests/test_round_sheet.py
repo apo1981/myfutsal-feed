@@ -184,6 +184,40 @@ class ApplyResults(SheetCase):
         self.assertTrue(all(line.split(":")[0] in ('"status"', '"score"', '"updatedAt"', '"home"', '"away"', '}', '},') for line in changed), changed)
 
 
+class FutureUpdatedAt(SheetCase):
+    NOW = "2026-10-25T10:00:00Z"
+
+    def write_csv(self, text: str) -> str:
+        path = os.path.join(self.tmp, "resultados.csv")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        return path
+
+    def assert_untouched(self) -> None:
+        self.assertEqual(self.stored(), season())
+
+    def apply_now(self, text: str, *extra: str) -> Any:
+        return run_main(apply_results.main, ["--feed", self.feed, self.write_csv(text), "--today", TODAY.isoformat(), "--now", self.NOW] + list(extra))
+
+    def test_d544_future_updated_at_argument_is_rejected_and_nothing_is_written(self) -> None:
+        result = self.apply_now("id,home,away\nm-01,1,0\n", "--updated-at", "2026-11-25T09:35:00Z")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("No se ha escrito nada", result.stderr)
+        self.assertIn("updatedAt", result.stderr)
+        self.assert_untouched()
+
+    def test_d544_current_future_updated_at_is_replaced_by_now_with_a_warning(self) -> None:
+        doc = season()
+        doc["updatedAt"] = "2026-11-25T09:35:00Z"
+        write_season = json.dumps(doc, indent=2, ensure_ascii=False)
+        with open(self.season_path, "w", encoding="utf-8") as handle:
+            handle.write(write_season)
+        result = self.apply_now("id,home,away\nm-01,1,0\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("esta en el futuro", result.stderr)
+        self.assertEqual(self.stored()["updatedAt"], self.NOW)
+
+
 class MissingDates(SheetCase):
     def test_us007b2c_c7_pending_and_sheet_survive_matches_without_a_date(self) -> None:
         pending = run_main(round_sheet.main, ["--feed", self.feed, "--pending", "--today", TODAY.isoformat()])

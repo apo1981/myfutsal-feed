@@ -180,7 +180,7 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 
 1. Apunta la hora de inicio (para el tiempo total). En el navegador (móvil o escritorio; si en el móvil el editor no se muestra bien, pide «Versión de escritorio») abre <https://github.com/apo1981/myfutsal-feed/blob/main/public/v1/seasons/2026-27.json> y pulsa el lápiz («Edit this file»).
 2. Localiza el partido. Sin teclado (móvil) no hay búsqueda fiable en el editor, y el fichero tiene unas 3.450 líneas: ejecuta `scripts/round-sheet --round 1 --phase apertura` y mira la columna `L<línea>` del partido; abre `https://github.com/apo1981/myfutsal-feed/blob/main/public/v1/seasons/2026-27.json#L<línea>`, comprueba que es el partido y pulsa el lápiz. Para el ensayo basta un partido de la jornada 1 del Apertura (primeras ~250 líneas). En escritorio también sirve Ctrl/Cmd+F con el `id` (por ejemplo `a01-01`). Cambia `"status": "unknown"` (o `"scheduled"`) por `"status": "finished"` y `"score": null` por `"score": { "home": 4, "away": 2 }` (goles del local y del visitante). `decidedBy` y `note` quedan en `null`.
-3. Cambia `"updatedAt"` (cerca del principio del fichero) al instante actual en **UTC**, formato `AAAA-MM-DDTHH:MM:SSZ`. Hasta las 03:00 del domingo 25-10-2026 (hora de Madrid) resta 2 h; desde ese momento, resta 1 h. Ejemplo: el 25-10 a las 10:00 en Madrid es `2026-10-25T09:00:00Z`. Si dudas, abre <https://time.is/UTC>. Debe ser posterior al anterior, y **no pongas una hora futura**: la puerta no lo detecta y el siguiente `apply-results` fallará (si pasa, usa `--updated-at` con un instante posterior).
+3. Cambia `"updatedAt"` (cerca del principio del fichero) al instante actual en **UTC**, formato `AAAA-MM-DDTHH:MM:SSZ`. Hasta las 03:00 del domingo 25-10-2026 (hora de Madrid) resta 2 h; desde ese momento, resta 1 h. Ejemplo: el 25-10 a las 10:00 en Madrid es `2026-10-25T09:00:00Z`. Si dudas, abre <https://time.is/UTC>. Debe ser posterior al anterior, y **no pongas una hora futura**: la puerta lo rechaza (`updated-at-en-el-futuro`, más de 15 min por delante de la hora real) y `apply-results` también. Si ya se publicó un `updatedAt` futuro, corrígelo con un commit que lo baje a la hora real: la puerta lo acepta, y `apply-results` usa la hora actual y lo avisa.
 4. Pulsa «Commit changes…», deja «Commit directly to the `main` branch» y confirma. **Apunta la hora exacta de ese clic (hora t0)**; el mensaje puede llevar el tiempo, como en «Anotar el tiempo».
 5. Mide la propagación (NFR-011, máximo 15 min). Desde Terminal, repite cada 30 s hasta que `updatedAt` sea el que has escrito (la hora t1 es la de la primera salida correcta):
    ```
@@ -239,6 +239,7 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 | Tiempo total dedicado al ensayo A | |
 | `git pull --ff-only` y `scripts/check-structure` (resultado y dirección del committer web) | |
 | Ambigüedades o dudas del runbook | |
+| Incidente `da845c4`: `updatedAt` publicado con `2026-11-25T09:35:00Z` (un mes en el futuro) en el ensayo web; la puerta lo aceptó. Corrección: `updatedAt` a `2026-10-25T09:35:00Z` (D-543, D-544) | Pendiente de anotar el hash de la corrección |
 | Jornada comparada (fase y número) | |
 | Discrepancias encontradas y corregidas (id y qué) | |
 | Discrepancias tras repetir (objetivo 0) | |

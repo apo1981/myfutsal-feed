@@ -24,9 +24,11 @@ TOLERATED_TIES_FIXTURES = ("season-finished.json", "season-playoff.json")
 
 class InvariantsCliTestCase(TempDirTestCase):
     def check(self, season: Optional[Dict[str, Any]] = None, index: Optional[Dict[str, Any]] = None,
-              previous: Optional[Dict[str, Any]] = None):
+              previous: Optional[Dict[str, Any]] = None, now: Optional[str] = None):
         public = support.build_public(self.tmp, season, index)
         args = ["--feed", self.tmp, "--public", public]
+        if now is not None:
+            args += ["--now", now]
         if previous is not None:
             previous_path = os.path.join(self.tmp, "previous.json")
             write_json(previous_path, previous)
@@ -58,7 +60,8 @@ class ValidFeed(InvariantsCliTestCase):
             public = os.path.join(self.tmp, name)
             write_json(os.path.join(public, "public", "v1", "index.json"), index)
             write_json(os.path.join(public, "public", "v1", "seasons", season["seasonId"] + ".json"), season)
-            result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", os.path.join(public, "public")])
+            # Los fixtures del contrato llevan fechas de ejemplo futuras (2027): se fija un "ahora" posterior (D-544).
+            result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", os.path.join(public, "public"), "--now", "2030-01-01T00:00:00Z"])
             if name in TOLERATED_TIES_FIXTURES:
                 # US-012, criterio 5: el contrato tolera empates sin desenlace; solo la comprobacion de eliminatoria los senala.
                 self.assertNotEqual(result.returncode, 0, name)
@@ -241,12 +244,59 @@ class UpdatedAt(InvariantsCliTestCase):
         result = self.check(reordered, previous=support.BASE_SEASON)
         self.assertEqual(result.returncode, 0, output_of(result))
 
-    def check_with_previous_text(self, text: str, season: Optional[Dict[str, Any]] = None):
+    def check_with_previous_text(self, text: str, season: Optional[Dict[str, Any]] = None, now: Optional[str] = None):
         public = support.build_public(self.tmp, season)
         previous_path = os.path.join(self.tmp, "previous.json")
         with open(previous_path, "w", encoding="utf-8") as handle:
             handle.write(text)
-        return support.run_main(invariants.main, ["--feed", self.tmp, "--public", public, "--previous", previous_path])
+        args = ["--feed", self.tmp, "--public", public, "--previous", previous_path]
+        if now is not None:
+            args += ["--now", now]
+        return support.run_main(invariants.main, args)
+
+    # D-544: un updatedAt futuro (mas de 15 min por delante de la hora actual) no pasa la puerta.
+    NOW = "2026-10-25T10:00:00Z"
+    FUTURE = "2026-11-25T09:35:00Z"
+
+    def test_d544_future_updated_at_fails_on_first_publication(self) -> None:
+        result = self.check(season_with(lambda s: s.update(updatedAt=self.FUTURE)), now=self.NOW)
+        self.assert_fails(result, "updated-at-en-el-futuro", SEASON_ID)
+
+    def test_d544_future_updated_at_fails_with_unchanged_content(self) -> None:
+        result = self.check(season_with(lambda s: s.update(updatedAt=self.FUTURE)), previous=support.BASE_SEASON, now=self.NOW)
+        self.assert_fails(result, "updated-at-en-el-futuro", SEASON_ID)
+
+    def test_d544_future_updated_at_fails_with_unreadable_previous(self) -> None:
+        result = self.check_with_previous_text("{", season_with(lambda s: s.update(updatedAt=self.FUTURE)), now=self.NOW)
+        self.assert_fails(result, "updated-at-en-el-futuro", SEASON_ID)
+
+    def test_d544_within_tolerance_passes(self) -> None:
+        ok = self.check(season_with(lambda s: s.update(updatedAt="2026-10-25T10:14:00Z")), now=self.NOW)
+        self.assertEqual(ok.returncode, 0, output_of(ok))
+        self.assert_fails(self.check(season_with(lambda s: s.update(updatedAt="2026-10-25T10:16:00Z")), now=self.NOW),
+                          "updated-at-en-el-futuro", SEASON_ID)
+
+    def with_future_previous(self, updated_at: str, previous_updated_at: str):
+        previous = season_with(lambda s: s.update(updatedAt=previous_updated_at))
+        current = season_with(lambda s: (self.changed(s), s.update(updatedAt=updated_at)))
+        return self.check(current, previous=previous, now=self.NOW)
+
+    def test_d544_lowering_from_a_future_previous_passes_with_changed_content(self) -> None:
+        result = self.with_future_previous("2026-10-25T09:50:00Z", self.FUTURE)
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertIn("corrige un updatedAt futuro", result.stdout)
+
+    def test_d544_lowering_from_a_future_previous_to_another_future_value_fails(self) -> None:
+        self.assert_fails(self.with_future_previous("2026-11-01T00:00:00Z", self.FUTURE), "updated-at-en-el-futuro", SEASON_ID)
+
+    def test_d544_lowering_from_a_past_previous_still_fails(self) -> None:
+        self.assert_fails(self.with_future_previous("2026-10-23T10:00:00Z", "2026-10-24T10:00:00Z"), "updated-at-sin-avanzar", SEASON_ID)
+
+    def test_d544_real_correction_of_da845c4_passes(self) -> None:
+        previous = season_with(lambda s: (match_of(s, "m-02").update(status="finished", score={"home": 2, "away": 6}), s.update(updatedAt=self.FUTURE)))
+        current = season_with(lambda s: (match_of(s, "m-02").update(status="finished", score={"home": 2, "away": 6}), s.update(updatedAt="2026-10-25T09:35:00Z")))
+        result = self.check(current, previous=previous, now=self.NOW)
+        self.assertEqual(result.returncode, 0, output_of(result))
 
     def test_us007a_c4_unreadable_previous_version_is_skipped_with_a_notice(self) -> None:
         # B-1: la version anterior es de un commit que no paso la puerta; la correccion debe poder publicarse.
