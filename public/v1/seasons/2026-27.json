@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-10-25T09:35:00Z",
+  "updatedAt": "2026-10-25T10:11:56Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -122,7 +122,10 @@
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": { "home": 2, "away": 6 },
+              "score": {
+                "home": 2,
+                "away": 6
+              },
               "decidedBy": null,
               "note": null
             },
@@ -130,12 +133,15 @@
               "id": "a01-02",
               "homeTeamId": "sur-seed-el-ejido",
               "awayTeamId": "cordoba-patrimonio",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 4,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -143,12 +149,15 @@
               "id": "a01-03",
               "homeTeamId": "fs-garcia",
               "awayTeamId": "palma-futsal",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             },
@@ -156,12 +165,15 @@
               "id": "a01-04",
               "homeTeamId": "noia-portus-apostoli",
               "awayTeamId": "elpozo-murcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 4,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             },
@@ -169,12 +181,15 @@
               "id": "a01-05",
               "homeTeamId": "osasuna-magna",
               "awayTeamId": "jaen-paraiso-interior",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 1,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -182,12 +197,15 @@
               "id": "a01-06",
               "homeTeamId": "o-parrulo-ferrol",
               "awayTeamId": "quesos-el-hidalgo-manzanares",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             },
@@ -195,12 +213,15 @@
               "id": "a01-07",
               "homeTeamId": "vina-albali-valdepenas",
               "awayTeamId": "barca",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 5
+              },
               "decidedBy": null,
               "note": null
             },
@@ -208,12 +229,15 @@
               "id": "a01-08",
               "homeTeamId": "wanapix-sala-10",
               "awayTeamId": "servigroup-peniscola",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 5
+              },
               "decidedBy": null,
               "note": null
             }
@@ -228,12 +252,15 @@
               "id": "a02-01",
               "homeTeamId": "barca",
               "awayTeamId": "servigroup-peniscola",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -241,12 +268,15 @@
               "id": "a02-02",
               "homeTeamId": "jimbee-cartagena",
               "awayTeamId": "wanapix-sala-10",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 0
+              },
               "decidedBy": null,
               "note": null
             },
@@ -254,12 +284,15 @@
               "id": "a02-03",
               "homeTeamId": "cordoba-patrimonio",
               "awayTeamId": "quesos-el-hidalgo-manzanares",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -267,12 +300,15 @@
               "id": "a02-04",
               "homeTeamId": "inter-jp-financial",
               "awayTeamId": "sur-seed-el-ejido",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 2
+              },
               "decidedBy": null,
               "note": null
             },
@@ -280,12 +316,15 @@
               "id": "a02-05",
               "homeTeamId": "jaen-paraiso-interior",
               "awayTeamId": "noia-portus-apostoli",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -293,12 +332,15 @@
               "id": "a02-06",
               "homeTeamId": "palma-futsal",
               "awayTeamId": "elpozo-murcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 8,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -306,12 +348,15 @@
               "id": "a02-07",
               "homeTeamId": "o-parrulo-ferrol",
               "awayTeamId": "fs-garcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 5,
+                "away": 5
+              },
               "decidedBy": null,
               "note": null
             },
@@ -319,12 +364,15 @@
               "id": "a02-08",
               "homeTeamId": "vina-albali-valdepenas",
               "awayTeamId": "osasuna-magna",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-20",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 0
+              },
               "decidedBy": null,
               "note": null
             }
@@ -339,12 +387,15 @@
               "id": "a03-01",
               "homeTeamId": "barca",
               "awayTeamId": "jimbee-cartagena",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 2
+              },
               "decidedBy": null,
               "note": null
             },
@@ -352,12 +403,15 @@
               "id": "a03-02",
               "homeTeamId": "jaen-paraiso-interior",
               "awayTeamId": "inter-jp-financial",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -365,12 +419,15 @@
               "id": "a03-03",
               "homeTeamId": "quesos-el-hidalgo-manzanares",
               "awayTeamId": "fs-garcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 5,
+                "away": 0
+              },
               "decidedBy": null,
               "note": null
             },
@@ -378,12 +435,15 @@
               "id": "a03-04",
               "homeTeamId": "noia-portus-apostoli",
               "awayTeamId": "sur-seed-el-ejido",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 0
+              },
               "decidedBy": null,
               "note": null
             },
@@ -391,12 +451,15 @@
               "id": "a03-05",
               "homeTeamId": "osasuna-magna",
               "awayTeamId": "palma-futsal",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 7
+              },
               "decidedBy": null,
               "note": null
             },
@@ -404,12 +467,15 @@
               "id": "a03-06",
               "homeTeamId": "servigroup-peniscola",
               "awayTeamId": "vina-albali-valdepenas",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -417,12 +483,15 @@
               "id": "a03-07",
               "homeTeamId": "elpozo-murcia",
               "awayTeamId": "cordoba-patrimonio",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -430,12 +499,15 @@
               "id": "a03-08",
               "homeTeamId": "wanapix-sala-10",
               "awayTeamId": "o-parrulo-ferrol",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-27",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             }
@@ -450,12 +522,15 @@
               "id": "a04-01",
               "homeTeamId": "cordoba-patrimonio",
               "awayTeamId": "jaen-paraiso-interior",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -463,12 +538,15 @@
               "id": "a04-02",
               "homeTeamId": "sur-seed-el-ejido",
               "awayTeamId": "osasuna-magna",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 9,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -476,12 +554,15 @@
               "id": "a04-03",
               "homeTeamId": "fs-garcia",
               "awayTeamId": "wanapix-sala-10",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 1,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -489,12 +570,15 @@
               "id": "a04-04",
               "homeTeamId": "inter-jp-financial",
               "awayTeamId": "elpozo-murcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 0,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -502,12 +586,15 @@
               "id": "a04-05",
               "homeTeamId": "quesos-el-hidalgo-manzanares",
               "awayTeamId": "jimbee-cartagena",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 8,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -528,12 +615,15 @@
               "id": "a04-07",
               "homeTeamId": "palma-futsal",
               "awayTeamId": "servigroup-peniscola",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 4,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -541,12 +631,15 @@
               "id": "a04-08",
               "homeTeamId": "o-parrulo-ferrol",
               "awayTeamId": "vina-albali-valdepenas",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 0,
+                "away": 0
+              },
               "decidedBy": null,
               "note": null
             }
@@ -561,12 +654,15 @@
               "id": "a05-01",
               "homeTeamId": "barca",
               "awayTeamId": "osasuna-magna",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 8,
+                "away": 0
+              },
               "decidedBy": null,
               "note": null
             },
@@ -574,12 +670,15 @@
               "id": "a05-02",
               "homeTeamId": "jimbee-cartagena",
               "awayTeamId": "noia-portus-apostoli",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 1,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -587,12 +686,15 @@
               "id": "a05-03",
               "homeTeamId": "jaen-paraiso-interior",
               "awayTeamId": "sur-seed-el-ejido",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 2
+              },
               "decidedBy": null,
               "note": null
             },
@@ -600,12 +702,15 @@
               "id": "a05-04",
               "homeTeamId": "palma-futsal",
               "awayTeamId": "o-parrulo-ferrol",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 7,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null
             },
@@ -613,12 +718,15 @@
               "id": "a05-05",
               "homeTeamId": "servigroup-peniscola",
               "awayTeamId": "cordoba-patrimonio",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             },
@@ -626,12 +734,15 @@
               "id": "a05-06",
               "homeTeamId": "elpozo-murcia",
               "awayTeamId": "quesos-el-hidalgo-manzanares",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 4,
+                "away": 6
+              },
               "decidedBy": null,
               "note": null
             },
@@ -639,12 +750,15 @@
               "id": "a05-07",
               "homeTeamId": "vina-albali-valdepenas",
               "awayTeamId": "fs-garcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -652,12 +766,15 @@
               "id": "a05-08",
               "homeTeamId": "wanapix-sala-10",
               "awayTeamId": "inter-jp-financial",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-10-11",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             }
@@ -783,12 +900,15 @@
               "id": "a07-01",
               "homeTeamId": "barca",
               "awayTeamId": "o-parrulo-ferrol",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-29",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null
             },
@@ -874,12 +994,15 @@
               "id": "a07-08",
               "homeTeamId": "wanapix-sala-10",
               "awayTeamId": "elpozo-murcia",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-29",
                 "time": null
               },
-              "score": null,
+              "score": {
+                "home": 3,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null
             }
