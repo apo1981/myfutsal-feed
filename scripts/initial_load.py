@@ -189,7 +189,7 @@ def main(argv: List[str]) -> int:
         season = invariants.load(season_path)
         findings = season_findings(season, args.cutoff)
         problems = schema_problems(public_dir, season_path, os.path.join(args.feed, "scripts", "validate-schema"))
-        rules = invariants.check_feed(public_dir, None, None, [])
+        rules = invariants.check_feed(public_dir, None, None, [], invariants.utc_now())
         size = invariants.compressed_size(season_path)
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         print("FALLO carga-inicial: no se pudo leer el feed: %s: %s" % (type(error).__name__, error), file=sys.stderr)

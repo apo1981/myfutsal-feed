@@ -83,7 +83,7 @@ class UpdatedAtAgainstHead(CopiedFeed):
 
     def test_us007a2_c8_changed_content_with_a_later_updated_at_passes(self) -> None:
         self.init_repo()
-        self.edit(updated_at="2099-01-01T00:00:00Z")
+        self.edit(updated_at="2026-10-02T10:00:00Z")
         result = self.verify()
         self.assertEqual(result.returncode, 0, output_of(result))
         self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
@@ -96,7 +96,7 @@ class UpdatedAtAgainstHead(CopiedFeed):
 
     def test_us007a2_c8_unchanged_content_with_a_different_updated_at_passes(self) -> None:
         self.init_repo()
-        self.edit(updated_at="2099-01-01T00:00:00Z", change_content=False)
+        self.edit(updated_at="2026-10-02T10:00:00Z", change_content=False)
         self.assertEqual(self.verify().returncode, 0)
         self.edit(updated_at="2000-01-01T00:00:00Z", change_content=False)
         self.assertEqual(self.verify().returncode, 0)
@@ -127,7 +127,7 @@ class UpdatedAtAgainstHead(CopiedFeed):
         git(self.feed, "commit", "-q", "-am", "broken")
         with open(os.path.join(self.feed, SEASON_PATH), "w", encoding="utf-8") as handle:
             handle.write(good)
-        self.edit(updated_at="2099-01-01T00:00:00Z")
+        self.edit(updated_at="2026-10-02T10:00:00Z")
         result = self.verify()
         self.assertIn("[ OK ] 4b-updated-at-frente-a-head", result.stdout)
         self.assertIn("version anterior ilegible", result.stdout)

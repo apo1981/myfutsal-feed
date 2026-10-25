@@ -286,6 +286,10 @@ def readable_previous(path: str, log: List[str]) -> Optional[Dict[str, Any]]:
     return previous
 
 
+def utc_now() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None, microsecond=0)
+
+
 def is_future(value: Any, now: datetime.datetime) -> bool:
     return parse_instant(value) > now + FUTURE_TOLERANCE
 
@@ -404,7 +408,7 @@ def main(argv: List[str]) -> int:
     public_dir = args.public or os.path.join(args.feed, "public")
     log = []  # type: List[str]
     try:
-        now = parse_instant(args.now) if args.now else datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None, microsecond=0)
+        now = parse_instant(args.now) if args.now else utc_now()
         violations = check_feed(public_dir, args.season, args.previous, log, now)
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
         print("FALLO invariantes: no se pudo leer el feed (valide antes el esquema): %s: %s" % (type(error).__name__, error), file=sys.stderr)

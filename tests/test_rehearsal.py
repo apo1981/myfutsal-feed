@@ -138,7 +138,9 @@ class Rehearsal(TempDirTestCase):
         with open(path, "r", encoding="utf-8") as handle:
             text = handle.read()
         with open(path, "w", encoding="utf-8") as handle:
-            handle.write(gate_rehearsal.UPDATED_AT_PATTERN.sub(r'\1"2099-12-31T23:59:59Z"', text, count=1))
+            # Posterior al updatedAt del commit invalido (la hora actual) pero dentro de la tolerancia de D-544.
+            soon = (datetime.datetime.utcnow() + datetime.timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            handle.write(gate_rehearsal.UPDATED_AT_PATTERN.sub(r'\1"%s"' % soon, text, count=1))
         git(self.feed, "add", SEASON)
         verify = run_script([os.path.join(self.feed, "scripts", "verify")], cwd=self.tmp,
                             env=tool_env({"GIT_CONFIG_GLOBAL": os.devnull, "FEED_VERIFY_NESTED": "1", "FEED_TOOLS_VENV": REAL_VENV}))

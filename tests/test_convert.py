@@ -21,7 +21,7 @@ CONVERT = os.path.join(FEED, "scripts", "convert-csv")
 VALIDATE = os.path.join(FEED, "scripts", "validate-schema")
 CHECK_INVARIANTS = os.path.join(FEED, "scripts", "check-invariants")
 EXAMPLES = os.path.join(FEED, "examples", "initial-load")
-UPDATED_AT = "2026-10-31T20:00:00Z"
+UPDATED_AT = "2026-10-02T10:00:00Z"  # pasado: la puerta rechaza un updatedAt futuro (D-544)
 TEAM_COLUMNS = ["id", "name", "shortName"]
 MATCH_COLUMNS = ["id", "phaseId", "phaseName", "phaseKind", "phaseOrder", "roundId", "roundNumber", "roundName",
                  "homeTeamId", "awayTeamId", "status", "date", "time", "homeScore", "awayScore", "decidedBy", "note"]

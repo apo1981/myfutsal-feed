@@ -106,7 +106,7 @@ def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated
 
 
 def now_utc() -> datetime.datetime:
-    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None, microsecond=0)
+    return invariants.utc_now()
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
