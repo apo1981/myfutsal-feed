@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-10-25T10:11:56Z",
+  "updatedAt": "2026-10-25T10:22:43Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -602,14 +602,14 @@
               "id": "a04-06",
               "homeTeamId": "noia-portus-apostoli",
               "awayTeamId": "barca",
-              "status": "unknown",
+              "status": "postponed",
               "kickoff": {
                 "date": "2026-10-04",
                 "time": null
               },
               "score": null,
               "decidedBy": null,
-              "note": null
+              "note": "Aplazado"
             },
             {
               "id": "a04-07",
