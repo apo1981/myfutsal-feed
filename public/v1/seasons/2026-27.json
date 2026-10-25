@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-10-19T11:19:58Z",
+  "updatedAt": "2026-11-25T09:35:00Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -117,12 +117,12 @@
               "id": "a01-01",
               "homeTeamId": "jimbee-cartagena",
               "awayTeamId": "inter-jp-financial",
-              "status": "unknown",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-09-13",
                 "time": null
               },
-              "score": null,
+              "score": { "home": 2, "away": 6 },
               "decidedBy": null,
               "note": null
             },
