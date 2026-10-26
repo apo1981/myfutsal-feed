@@ -74,5 +74,25 @@
   "kickoff-empty.json": {
     "path": "$.phases[0].rounds[0].matches[0].kickoff",
     "contains": "'date' is a required property"
+  },
+  "kit-bad-hex.json": {
+    "path": "$.teams[0].kits.home.shirt",
+    "contains": "does not match"
+  },
+  "kit-unknown-pattern.json": {
+    "path": "$.teams[0].kits.home.pattern",
+    "contains": "is not one of"
+  },
+  "kit-stripes-without-accent.json": {
+    "path": "$.teams[0].kits.home",
+    "contains": "'accent' is a required property"
+  },
+  "kit-missing-home.json": {
+    "path": "$.teams[0].kits",
+    "contains": "'home' is a required property"
+  },
+  "kit-unknown-key.json": {
+    "path": "$.teams[0].kits",
+    "contains": "Additional properties are not allowed"
   }
 }

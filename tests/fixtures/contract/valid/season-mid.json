@@ -8,25 +8,53 @@
       "id": "bar",
       "name": "Barça",
       "shortName": "BAR",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#A50044",
+          "shorts": "#004D98",
+          "accent": "#004D98",
+          "pattern": "stripes"
+        },
+        "away": {
+          "shirt": "#FFFFFF",
+          "shorts": "#FFFFFF"
+        }
+      }
     },
     {
       "id": "elp",
       "name": "ElPozo Murcia Costa Cálida",
       "shortName": "ELP",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#D71920",
+          "shorts": "#FFFFFF",
+          "accent": "#FFFFFF",
+          "pattern": "solid"
+        }
+      }
     },
     {
       "id": "int",
       "name": "Inter Movistar",
       "shortName": "INT",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#0033A0",
+          "shorts": "#0033A0",
+          "accent": null
+        }
+      }
     },
     {
       "id": "pal",
       "name": "Palma Futsal",
       "shortName": "PAL",
-      "crestURL": null
+      "crestURL": null,
+      "kits": null
     },
     {
       "id": "jim",

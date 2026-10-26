@@ -123,6 +123,9 @@
             "null"
           ],
           "pattern": "^https://[^ ]+$"
+        },
+        "kits": {
+          "$ref": "#/$defs/kits"
         }
       }
     },
@@ -257,6 +260,82 @@
           "items": {
             "$ref": "#/$defs/round"
           }
+        }
+      }
+    },
+    "hexColor": {
+      "description": "Color #RRGGBB en mayúsculas.",
+      "type": "string",
+      "pattern": "^#[0-9A-F]{6}$"
+    },
+    "kit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shirt",
+        "shorts"
+      ],
+      "properties": {
+        "shirt": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "shorts": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "accent": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^#[0-9A-F]{6}$"
+        },
+        "pattern": {
+          "enum": [
+            "solid",
+            "stripes"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "pattern"
+            ],
+            "properties": {
+              "pattern": {
+                "const": "stripes"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "accent"
+            ],
+            "properties": {
+              "accent": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "kits": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "home"
+      ],
+      "properties": {
+        "home": {
+          "$ref": "#/$defs/kit"
+        },
+        "away": {
+          "$ref": "#/$defs/kit"
         }
       }
     }
