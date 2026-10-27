@@ -62,7 +62,19 @@
       "id": "barca",
       "name": "Barça",
       "shortName": "BAR",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#004D98",
+          "accent": "#A50044",
+          "pattern": "stripes",
+          "shorts": "#004D98"
+        },
+        "away": {
+          "shirt": "#3B1F5C",
+          "shorts": "#3B1F5C"
+        }
+      }
     },
     {
       "id": "wanapix-sala-10",
