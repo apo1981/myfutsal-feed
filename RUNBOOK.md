@@ -88,6 +88,7 @@ Forma del campo, dentro del equipo en `public/v1/seasons/<id>.json`:
 ```
 
 1. Edita el equipo en `public/v1/seasons/<id>.json` (misma mecánica que «Publicar un resultado»).
+   Los `kits` van **dentro del objeto del equipo** (en `teams[]`), en el mismo fichero de la temporada. **No crees ficheros nuevos en `public/`**: la app solo lee `2026-27.json` y la lista permitida rechaza cualquier otro fichero, así que `validate` falla y no se despliega nada.
 2. Reglas: `home` es obligatoria y `away` opcional. Cada equipación necesita `shirt` y `shorts`. Los colores van en `#RRGGBB` con **mayúsculas**. `accent` es opcional (`null` o ausente = sin valor). `pattern` es `solid` (por defecto) o `stripes`; con `stripes` el `accent` es obligatorio y es el segundo color de la raya.
 3. Cambia `updatedAt` al instante actual en UTC (obligatorio, igual que con un resultado).
 4. Si trabajas en local, antes de confirmar:
