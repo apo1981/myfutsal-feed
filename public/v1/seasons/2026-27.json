@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-10-27T14:07:37Z",
+  "updatedAt": "2026-10-27T15:22:35Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -18,6 +18,7 @@
         },
         "away": {
           "shirt": "#000000",
+          "accent": "#D71920",
           "shorts": "#000000"
         }
       }
@@ -26,37 +27,109 @@
       "id": "sur-seed-el-ejido",
       "name": "Sur Seed CD El Ejido Futsal",
       "shortName": "EJI",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#75AADB",
+          "accent": "#FFFFFF",
+          "pattern": "stripes",
+          "shorts": "#FFFFFF"
+        },
+        "away": {
+          "shirt": "#000000",
+          "shorts": "#000000"
+        }
+      }
     },
     {
       "id": "fs-garcia",
-      "name": "FS García",
+      "name": "Catgas Energia",
       "shortName": "GAR",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFFFFF",
+          "accent": "#1F4E9C",
+          "pattern": "solid",
+          "shorts": "#1F4E9C"
+        },
+        "away": {
+          "shirt": "#C8102E",
+          "shorts": "#C8102E"
+        }
+      }
     },
     {
       "id": "noia-portus-apostoli",
       "name": "Noia Portus Apostoli",
       "shortName": "NOI",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFFFFF",
+          "accent": "#6CB4E4",
+          "pattern": "solid",
+          "shorts": "#FFFFFF"
+        },
+        "away": {
+          "shirt": "#2B2B2B",
+          "shorts": "#2B2B2B"
+        }
+      }
     },
     {
       "id": "osasuna-magna",
       "name": "C.A. Osasuna Magna",
       "shortName": "OSA",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#8CC63F",
+          "pattern": "solid",
+          "shorts": "#8CC63F"
+        },
+        "away": {
+          "shirt": "#D71920",
+          "shorts": "#D71920"
+        }
+      }
     },
     {
       "id": "o-parrulo-ferrol",
       "name": "O Parrulo Ferrol F.S.",
       "shortName": "FER",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFFFFF",
+          "accent": "#1F5AA6",
+          "pattern": "solid",
+          "shorts": "#1F5AA6"
+        },
+        "away": {
+          "shirt": "#1B2A4A",
+          "shorts": "#1B2A4A"
+        }
+      }
     },
     {
       "id": "vina-albali-valdepenas",
       "name": "Viña Albali Valdepeñas",
       "shortName": "VAL",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#1B2A4A",
+          "accent": "#FFFFFF",
+          "pattern": "solid",
+          "shorts": "#1B2A4A"
+        },
+        "away": {
+          "shirt": "#FFFFFF",
+          "accent": "#1B2A4A",
+          "shorts": "#FFFFFF"
+        }
+      }
     },
     {
       "id": "barca",
@@ -78,51 +151,148 @@
     },
     {
       "id": "wanapix-sala-10",
-      "name": "Wanapix AD Sala 10",
+      "name": "Wanapix",
       "shortName": "SAL",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFFFFF",
+          "accent": "#D71920",
+          "pattern": "solid",
+          "shorts": "#FFFFFF"
+        },
+        "away": {
+          "shirt": "#D71920",
+          "accent": "#000000",
+          "pattern": "stripes",
+          "shorts": "#000000"
+        }
+      }
     },
     {
       "id": "inter-jp-financial",
       "name": "Inter JP Financial",
       "shortName": "INT",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#0091D5",
+          "pattern": "solid",
+          "shorts": "#0091D5"
+        },
+        "away": {
+          "shirt": "#FFFFFF",
+          "shorts": "#FFFFFF"
+        }
+      }
     },
     {
       "id": "cordoba-patrimonio",
       "name": "Córdoba Patrimonio De La Humanidad",
       "shortName": "COR",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFFFFF",
+          "accent": "#00843D",
+          "pattern": "solid",
+          "shorts": "#FFFFFF"
+        },
+        "away": {
+          "shirt": "#00843D",
+          "accent": "#FFFFFF",
+          "shorts": "#00843D"
+        }
+      }
     },
     {
       "id": "palma-futsal",
       "name": "Illes Balears Palma Futsal",
       "shortName": "PAL",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#00A651",
+          "accent": "#000000",
+          "pattern": "solid",
+          "shorts": "#000000"
+        },
+        "away": {
+          "shirt": "#5B2C83",
+          "accent": "#00A651",
+          "shorts": "#5B2C83"
+        }
+      }
     },
     {
       "id": "elpozo-murcia",
       "name": "ElPozo Murcia Costa Cálida",
       "shortName": "ELP",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFFFFF",
+          "accent": "#C8A96A",
+          "pattern": "solid",
+          "shorts": "#FFFFFF"
+        },
+        "away": {
+          "shirt": "#E30613",
+          "shorts": "#E30613"
+        }
+      }
     },
     {
       "id": "jaen-paraiso-interior",
       "name": "Jaén Paraiso Interior F.S.",
       "shortName": "JAE",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#FFD200",
+          "pattern": "solid",
+          "shorts": "#FFD200"
+        },
+        "away": {
+          "shirt": "#556B2F",
+          "shorts": "#556B2F"
+        }
+      }
     },
     {
       "id": "quesos-el-hidalgo-manzanares",
       "name": "Quesos El Hidalgo Manzanares FS",
       "shortName": "MAN",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#0047AB",
+          "pattern": "solid",
+          "shorts": "#0047AB"
+        },
+        "away": {
+          "shirt": "#FFFFFF",
+          "shorts": "#FFFFFF"
+        }
+      }
     },
     {
       "id": "servigroup-peniscola",
       "name": "Servigroup Peñiscola FS",
       "shortName": "PEN",
-      "crestURL": null
+      "crestURL": null,
+      "kits": {
+        "home": {
+          "shirt": "#1F5AA6",
+          "accent": "#FFFFFF",
+          "pattern": "solid",
+          "shorts": "#1F5AA6"
+        },
+        "away": {
+          "shirt": "#FFFFFF",
+          "shorts": "#FFFFFF"
+        }
+      }
     }
   ],
   "phases": [
