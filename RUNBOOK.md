@@ -68,6 +68,40 @@ El historial anterior, con `feed@example.invalid`, no se reescribe.
 - **Suspendido:** `status: "suspended"` y `score: null`. El marcador parcial no se publica: la puerta rechaza un `score` con un estado distinto de `live` y `finished`.
 - Cambia siempre `updatedAt`.
 
+## Cambiar las equipaciones de un equipo
+
+La app dibuja una camiseta con los colores de `teams[].kits` (ADR-010). Los escudos no se usan: `crestURL` sigue a `null`. Si `kits` falta o es `null`, la app muestra una camiseta gris neutra.
+
+Dónde está cada cosa (rutas desde la raíz del repo de la app, no de este repo):
+
+- Valores acordados por equipo (home y away, con sus supuestos): `docs/product/kits-2026-27.md`. Apunta ahí cualquier cambio de color antes o a la vez que lo publicas.
+- Decisión y formato: `docs/arch/ADR-010-colores-equipacion-y-navegacion.md` (Enmienda 2026-10-26).
+- Contrato del campo: `docs/arch/contracts/league-feed-v1.md`. Reglas ejecutables: `schema/league-feed-v1.season.schema.json` (`$defs/kits` y `$defs/kit`).
+
+Forma del campo, dentro del equipo en `public/v1/seasons/<id>.json`:
+
+```json
+"kits": {
+  "home": { "shirt": "#004D98", "accent": "#A50044", "pattern": "stripes", "shorts": "#004D98" },
+  "away": { "shirt": "#3B1F5C", "shorts": "#3B1F5C" }
+}
+```
+
+1. Edita el equipo en `public/v1/seasons/<id>.json` (misma mecánica que «Publicar un resultado»).
+2. Reglas: `home` es obligatoria y `away` opcional. Cada equipación necesita `shirt` y `shorts`. Los colores van en `#RRGGBB` con **mayúsculas**. `accent` es opcional (`null` o ausente = sin valor). `pattern` es `solid` (por defecto) o `stripes`; con `stripes` el `accent` es obligatorio y es el segundo color de la raya.
+3. Cambia `updatedAt` al instante actual en UTC (obligatorio, igual que con un resultado).
+4. Si trabajas en local, antes de confirmar:
+   ```
+   scripts/verify
+   ```
+5. Confirma y publica con el tiempo dedicado en el mensaje (ver «Anotar el tiempo»):
+   ```
+   git add public/v1/seasons/<id>.json
+   git commit -m "Equipaciones: <equipo> (tiempo: 5 min)"
+   git push origin main
+   ```
+6. Tras el despliegue, tira para refrescar en la app y comprueba la camiseta (ver «Verificación en el iPhone»).
+
 ## Carga inicial
 
 Se hace una sola vez, con los datos de la temporada completa (US-007b2). Nunca se escribe el JSON a mano: se transcribe a CSV y se convierte. **El PDF oficial del calendario no se sube nunca a este repositorio** (ni a `public/`, ni a ningún otro sitio: la lista permitida lo rechaza). Se lee fuera del repositorio y solo se transcriben los datos.
