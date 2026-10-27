@@ -1,3 +1,6 @@
 .venv/
 __pycache__/
 local-data/
+.DS_Store
+public/.DS_Store
+public/v1/.DS_Store
