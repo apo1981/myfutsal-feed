@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "note": "datateam de la RFEF -> teamId del feed. Solo claves de casado: sin nombres de patrocinador (D-017).",
+  "aliases": {
+    "4": "cordoba-patrimonio",
+    "9": "quesos-el-hidalgo-manzanares",
+    "10": "noia-portus-apostoli",
+    "18": "barca",
+    "20": "osasuna-magna",
+    "21": "jimbee-cartagena",
+    "22": "elpozo-murcia",
+    "23": "wanapix-sala-10",
+    "24": "fs-garcia",
+    "25": "jaen-paraiso-interior",
+    "27": "inter-jp-financial",
+    "29": "o-parrulo-ferrol",
+    "30": "palma-futsal",
+    "31": "servigroup-peniscola",
+    "32": "vina-albali-valdepenas",
+    "2883": "sur-seed-el-ejido"
+  }
+}
