@@ -209,7 +209,8 @@ class TableUnavailableTests(AutoApplyTestCase):
         body = self.doc_bytes()
         result, _, _ = self.launch([(200, body), (200, body), (429, b"")])
         self.assertEqual(result.returncode, fetch.EXIT_STOPPED)
-        self.assert_untouched(1)
+        self.assertEqual(self.season_bytes(), self.original)  # el 429 desactiva el interruptor (US-038): config.json cambia
+        self.assertEqual(self.commits(), 1)
 
 
 class NoChangeTests(AutoApplyTestCase):

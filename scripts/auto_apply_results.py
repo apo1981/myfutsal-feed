@@ -10,7 +10,9 @@ Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura), US-03
   - Si `verify` falla tras aplicar, restaura el JSON anterior byte a byte.
   - El commit exige identidad git `noreply`, solo incluye el JSON de la temporada y lleva URL, instante UTC y SHA-256 de las
     tres respuestas. Nunca hace push.
-Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, tabla no disponible, verify, red); 3 anomalia; 4 parada de la RFEF.
+Interruptor (US-038): `enabled` false = sin peticiones (salida 5); 403/429, robots que veta o 2 anomalias seguidas lo ponen a false.
+Informe: lista las diferencias no aplicadas (fecha, hora, estado, aplazados, adelantados) en la salida de error.
+Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, tabla no disponible, verify, red); 3 anomalia; 4 parada de la RFEF; 5 deshabilitada.
 """
 from __future__ import annotations
 
@@ -29,6 +31,7 @@ from typing import Any, Callable, List, Optional, Tuple
 import apply_results
 import cross_check
 import fetch_rfef_results as fetch
+import rfef_switch
 import round_sheet
 import structure
 
@@ -88,6 +91,7 @@ def read_table(transport: fetch.Transport, year: str, round_number: int) -> byte
 def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transport], sleep: Callable[[float], None],
         now: Callable[[], datetime.datetime], stdout: Any, stderr: Any, verify_runner: VerifyRunner = default_verify) -> int:
     feed = args.feed
+    rfef_switch.ensure_enabled(feed)  # antes de cualquier otra cosa: deshabilitada = ninguna peticion
     require_noreply_identity(feed)
     season = round_sheet.load_season(feed)
     season_path = os.path.join(round_sheet.SEASON_PATH, round_sheet.current_season_id(feed) + ".json")
@@ -127,13 +131,15 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     unmatched = fetch.resolve_teams(matches, aliases)
     if unmatched:
         raise fetch.ToolError("\n".join(unmatched))
-    plan = fetch.build_plan(matches, round_data, aliases)
+    plan = fetch.build_plan(matches, round_data, aliases, fetch.later_rounds(season, args.phase, args.round))
+    report = fetch.report_lines(plan, args.phase, args.round, matches_url, [(read[1], read[2]) for read in reads[:2]])
 
     if not plan.rows:
         # Sin cambios: no hace falta la tabla ni el commit (idempotencia y jornada sin partidos nuevos).
         print("Sin cambios: %s. El JSON no se ha tocado y no hay commit." % (
             "el lote ya estaba aplicado (%d partidos publicados iguales)" % plan.already_published if plan.already_published
             else "no hay partidos finalizados nuevos"), file=stderr)
+        print_report(report, stderr)
         return fetch.EXIT_OK
 
     sleep(fetch.REQUEST_INTERVAL_SECONDS)
@@ -151,8 +157,15 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
         raise fetch.AnomalyError(found)
 
     commit = apply_and_commit(args, plan, reads, now(), today, season_path, verify_runner, stderr)
+    print_report(report, stderr)
     print("Aplicados %d resultados de %s jornada %d; commit %s (sin push)" % (len(plan.rows), args.phase, args.round, commit), file=stdout)
     return fetch.EXIT_OK
+
+
+def print_report(lines: List[str], stderr: Any) -> None:
+    """Informe de diferencias no aplicadas (fecha, hora, estado, aplazados, adelantados): solo informa, nunca cambia el JSON."""
+    for line in lines:
+        print(line, file=stderr)
 
 
 def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read], instant: datetime.datetime, today: datetime.date,
@@ -216,18 +229,49 @@ def main(argv: List[str], transport_factory: Callable[[], fetch.Transport] = fet
     err = stderr if stderr is not None else sys.stderr
     args = parse_args(argv)
     try:
-        return run(args, transport_factory, sleep, now, out, err, verify_runner)
+        code = run(args, transport_factory, sleep, now, out, err, verify_runner)
+        reset_anomaly_streak(args, err)
+        return code
+    except rfef_switch.DisabledError as error:
+        print("DESHABILITADA: %s" % error, file=err)
+        return fetch.EXIT_DISABLED
     except fetch.AnomalyError as error:
         print("ANOMALIA: no se ha modificado nada ni hay commit", file=err)
         for line in error.anomalies:
             print("  " + line, file=err)
+        count_anomaly(args, err)
         return fetch.EXIT_ANOMALY
     except fetch.StoppedError as error:
         print("PARADA: %s" % error, file=err)
+        if isinstance(error, fetch.BlockedError):
+            print(fetch.disable_after_block(args.feed, error), file=err)
         return fetch.EXIT_STOPPED
-    except (fetch.ToolError, OSError, KeyError, ValueError) as error:
+    except (fetch.ToolError, rfef_switch.SwitchError, OSError, KeyError, ValueError) as error:
         print("FALLO: %s. El JSON queda como estaba y no hay commit." % error, file=err)
         return fetch.EXIT_ERROR
+
+
+def count_anomaly(args: argparse.Namespace, stderr: Any) -> None:
+    """Suma una anomalia; a la segunda seguida desactiva el interruptor. La cuenta es local (fuera del repositorio)."""
+    try:
+        state_dir = fetch.raw_directory(args.feed, args.raw_dir)
+        streak = rfef_switch.record_anomaly(state_dir)
+        if streak >= rfef_switch.ANOMALY_LIMIT:
+            rfef_switch.disable(args.feed, "%d anomalias seguidas" % streak)
+            print("Interruptor: %d anomalias seguidas; enabled puesto a false en %s. Solo el humano lo reactiva." % (
+                streak, rfef_switch.CONFIG_PATH), file=stderr)
+        else:
+            print("Anomalias seguidas: %d de %d (una ejecucion en verde reinicia la cuenta)." % (streak, rfef_switch.ANOMALY_LIMIT),
+                  file=stderr)
+    except (fetch.ToolError, rfef_switch.SwitchError, OSError) as error:
+        print("AVISO: no se ha podido registrar la anomalia ni actualizar el interruptor: %s" % error, file=stderr)
+
+
+def reset_anomaly_streak(args: argparse.Namespace, stderr: Any) -> None:
+    try:
+        rfef_switch.reset_streak(fetch.raw_directory(args.feed, args.raw_dir))
+    except (fetch.ToolError, OSError) as error:
+        print("AVISO: no se ha podido reiniciar la cuenta de anomalias: %s" % error, file=stderr)
 
 
 if __name__ == "__main__":
