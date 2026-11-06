@@ -96,6 +96,8 @@ unit 7c-hoja-de-jornada-y-resultados-pruebas test_round_sheet.py
 
 unit 7d-extraccion-rfef-pruebas test_fetch_rfef.py
 
+unit 7e-verificacion-cruzada-pruebas test_cross_check.py
+
 run 8-runbook "$FEED/scripts/check-runbook"
 unit 8-runbook-pruebas test_runbook.py
 
