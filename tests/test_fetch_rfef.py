@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import support  # debe ir antes que fetch_rfef_results: anade scripts/ al sys.path
 import fetch_rfef_results as tool
+import rfef_switch
 from support import FEED, TempDirTestCase, run_script
 
 TODAY = "2026-10-20"
@@ -103,6 +104,11 @@ class FetchTestCase(TempDirTestCase):
         self.write_feed([feed_match(i) for i in range(1, 9)])
         aliases = {"version": 1, "aliases": {DATATEAM[t]: t for t in TEAM_IDS}}
         support.write_json(os.path.join(self.feed, tool.ALIASES_PATH), aliases)
+        support.write_json(os.path.join(self.feed, rfef_switch.CONFIG_PATH), {"enabled": True})
+
+    def enable_switch(self) -> None:
+        """Un bloqueo (403/429) desactiva el interruptor; las pruebas que repiten estados lo reactivan como lo haria el humano."""
+        support.write_json(os.path.join(self.feed, rfef_switch.CONFIG_PATH), {"enabled": True})
 
     def write_feed(self, matches: List[Dict[str, Any]]) -> None:
         support.build_public(self.feed, feed_season(matches))
@@ -403,11 +409,13 @@ class NetworkTests(FetchTestCase):
 
     def test_US034_stops_on_403_429_and_5xx_without_csv(self) -> None:
         for status in (403, 429, 500, 503):
+            self.enable_switch()
             transport = FakeTransport(data=(status, b""))
             result = self.invoke([], transport)
             self.assertEqual(result.returncode, tool.EXIT_STOPPED, status)
             self.assertEqual(result.stdout, "")
             self.assertEqual(len(transport.calls), 2, "sin reintentos ni segunda lectura")
+        self.enable_switch()
         blocked_robots = FakeTransport(robots=(429, b""))
         self.assertEqual(self.invoke([], blocked_robots).returncode, tool.EXIT_STOPPED)
         self.assertEqual(len(blocked_robots.calls), 1)
@@ -580,6 +588,7 @@ class DoubleReadTests(FetchTestCase):
     def test_US037_stops_on_403_429_5xx_in_the_second_read_without_retry_or_csv(self) -> None:
         good = (200, body_of(standard_matches()))
         for status in (403, 429, 500, 503):
+            self.enable_switch()
             transport = FakeTransport(data=[good, (status, b"")], clock=Clock())
             result = self.invoke([], transport)
             self.assertEqual(result.returncode, tool.EXIT_STOPPED, status)

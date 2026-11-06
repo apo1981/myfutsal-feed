@@ -240,14 +240,30 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 2. Compara línea a línea con la web de la RFEF: fecha, hora, **quién es local y quién visitante**, y marcador. La localía invertida es el riesgo conocido (D-178): la columna local/visitante del PDF original no tenía rótulo. Si el local de la RFEF es el visitante del feed en un partido, la localía está invertida: anota el id y avisa al equipo (se regenera el CSV invirtiendo y se republica; no corrijas a mano 240 partidos).
 3. Cada diferencia de fecha, hora o marcador es una discrepancia: corrígela con «Publicar un resultado» o «Cambiar hora, aplazar o suspender un partido» y repite la comparación hasta 0 discrepancias.
 
-### C. Poner al día los resultados pendientes (criterio 8)
+### C. Poner al día los resultados (US-038)
 
-1. Lista lo que falta, por jornada (`unknown` y `scheduled` con fecha ya pasada):
-   ```
-   scripts/round-sheet --pending
-   ```
-2. **Pocos partidos (hasta unos 5):** edítalos en la web como en A (un solo commit con varios partidos y un solo `updatedAt` nuevo).
-3. **Muchos partidos (los 42 `unknown`):** genera la plantilla, rellénala y aplícala.
+**Cuándo lanzar.** Dentro de las 12 h siguientes al final de cada partido (NFR-011), una jornada cada vez y a mano, sin cron. Con la RFEF solo se leen los partidos finalizados; lo que aún no tiene marcador final queda pendiente, nunca 0-0.
+
+**Comando** (necesita red, identidad `noreply` y la temporada sin cambios sin commitear; tarda al menos 15 min por la espera entre lecturas):
+```
+scripts/auto-apply-results --phase apertura --round 3
+```
+(`--phase clausura` para la segunda vuelta). Lee dos veces los partidos de la jornada (separadas ≥ 15 min) y una vez la clasificación, comprueba cordura, estabilidad y que la clasificación cuadra con el lote, aplica con `apply-results`, ejecuta `scripts/verify` y hace **un commit local** con la URL, el instante UTC y el SHA-256 de las tres respuestas. Nunca hace push. Las respuestas crudas van a `../local-data/rfef/` (fuera del repositorio).
+
+**Informe de diferencias no aplicadas.** Al terminar escribe un informe en la salida de error. Lista, con el valor del feed y el de la RFEF, los partidos con fecha u hora distinta, los aplazados o suspendidos en el feed y los adelantados de jornadas posteriores. Es solo informativo: no cambia ningún estado ni fecha, y esos cambios se hacen a mano con «Cambiar hora, aplazar o suspender un partido». Con una página coherente con el feed dice «sin diferencias» y el número de partidos nuevos. Solo la lectura sin aplicar es `scripts/fetch-rfef-results --phase apertura --round 3 --pretty` (misma lectura doble y mismo interruptor).
+
+**Política de anomalías.** Ante cualquier anomalía (cordura, lecturas inestables, marcador distinto de uno ya publicado, clasificación que no cuadra) no se modifica nada, no hay commit y la salida lo detalla (código 3). No hay modo degradado: si falta una de las tres comprobaciones no se aplica. Si el commit sale bien, revísalo (`git show --stat`) y sigue el flujo normal.
+
+**Push y vigilancia de Actions.** El push y la vigilancia son tuyos: `git push origin main` y espera a que `validate`, `deploy` y `smoke` terminen en verde (pasos 5 y 6 de «Publicar un resultado»; si `smoke` falla, «Revertir»). Después comprueba el iPhone («Verificación en el iPhone»).
+
+**Interruptor.** `scripts/rfef/config.json` lleva `"enabled"`. Con `false` la herramienta termina sin hacer ninguna petición y lo dice (código 5). La propia herramienta lo pone a `false` (y anota `disabledReason`) y se detiene sin aplicar nada ante: un 403 o 429 de la RFEF, un `robots.txt` que veta la ruta, o **2 ejecuciones consecutivas con anomalía**. La cuenta de anomalías seguidas se guarda en `../local-data/rfef/anomaly-streak.json` y una ejecución en verde (también la que no tiene partidos nuevos) la reinicia a 0. Un 5xx o un fallo de red paran esa ejecución pero no desactivan el interruptor.
+
+**Reactivación.** Solo la haces tú, editando a mano `scripts/rfef/config.json` (`"enabled": true`) tras entender el motivo (`disabledReason` y la salida de la ejecución) y, si procede, avisar al equipo. La herramienta nunca lo pone a `true`. Haz commit del cambio del interruptor.
+
+**Vuelta al CSV manual.** Con el interruptor en `false`, o si no te fías del resultado, se vuelve al método manual, que sigue siendo válido y no depende de la RFEF:
+
+1. **Pocos partidos (hasta unos 5):** edítalos en la web como en A (un solo commit con varios partidos y un solo `updatedAt` nuevo).
+2. **Muchos partidos (los 42 `unknown`):** genera la plantilla, rellénala y aplícala.
    ```
    mkdir -p ../local-data
    scripts/round-sheet --pending --csv > ../local-data/resultados.csv
@@ -257,8 +273,15 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
    scripts/apply-results ../local-data/resultados.csv
    ```
    El comando pone `finished`, el marcador y un `updatedAt` nuevo, y ejecuta `scripts/verify`. Si una fila es inválida (un solo gol, no numérico, id desconocido, partido ya finalizado, partido que aún no se ha jugado o sin fecha, partido de eliminatoria) no escribe nada y dice la fila. Si después `verify` falla, el propio comando restaura la temporada tal como estaba: no hagas commit y avisa al equipo. Revisa el cambio con `git diff --stat` y publica con los pasos 5 y 6 de «Publicar un resultado» (`git add`, `git commit` con el tiempo y `git push origin main`).
-4. Cuando estén publicados, comprueba que ya no quedan pendientes: `scripts/round-sheet --pending`.
-5. **Localía (D-178):** el primer resultado que contrastes con la RFEF debe coincidir en local y visitante. Si no coincide, avisa al equipo antes de seguir publicando.
+3. Cuando estén publicados, comprueba que ya no quedan pendientes: `scripts/round-sheet --pending`.
+
+**Cuándo retirar la herramienta (disparadores).**
+- ADR-011: (1) se reabre el App Store público o se distribuye a terceros (puerta NFR-010): se retira o se valida jurídicamente; (2) la RFEF lo prohíbe (robots.txt, aviso legal, petición) o bloquea el acceso; (3) 2 jornadas seguidas con fallo de parseo; (4) fin de la temporada 2026/27.
+- ADR-012, además de los anteriores: (1) la primera ejecución real sobre Clausura o sobre una jornada con aplazados (la semántica de la clasificación no está verificada); (2) 2 anomalías de verificación cruzada seguidas; (3) la RFEF cambia `get_table_round` o `get_matchs_round`.
+
+**Estreno.** La primera vez, sobre una jornada ya jugada, compara el resultado con la web de la RFEF (muestreo de NFR-011) y anota el resultado en el registro de evidencias.
+
+### Registro de evidencias de US-007b2c
 
 **Registro de evidencias de US-007b2c** (rellénalo tú; el equipo lo pasa a la historia):
 
@@ -409,6 +432,8 @@ git log --grep='tiempo:' --format='%ad %s' --date=short
 | `scripts/convert-csv` | Convierte los CSV de equipos y partidos en el JSON de temporada |
 | `scripts/round-sheet` | Hoja de una jornada (`--round N`) y lista de pendientes (`--pending`, `--csv`); solo lectura |
 | `scripts/apply-results` | Aplica en bloque un CSV `id,home,away` rellenado por el operador y ejecuta `verify` |
+| `scripts/fetch-rfef-results` | Lee una jornada de la RFEF (dos lecturas) y genera el CSV; informa de diferencias; respeta el interruptor |
+| `scripts/auto-apply-results` | Lee, verifica, aplica, ejecuta `verify` y hace un commit local; respeta el interruptor; sin push |
 | `scripts/check-allowlist` | Solo `v1/index.json`, `privacy.html` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
 | `scripts/check-workflow` | Comprobación estática del workflow |
 | `scripts/smoke-check` | Comprobación posterior al despliegue (feed y `privacy.html`) |

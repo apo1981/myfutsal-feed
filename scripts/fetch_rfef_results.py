@@ -8,9 +8,10 @@ Solo biblioteca estandar, Python 3.9. Una lectura de `POST /futsal_xhr/get_match
   - La respuesta cruda se guarda solo fuera del repositorio (../local-data/rfef/).
 Doble lectura (US-037): dos POST separados >= 15 min que deben coincidir en par, estado, goles, fecha y hora; la segunda es la base.
 Presupuesto: robots.txt + 2 lecturas de partidos (la de la tabla es de US-036), >= 10 s entre peticiones, sin reintentos.
-Con --from-file solo hay una lectura (sin peticiones ni espera). La clasificacion y el interruptor son de US-035/US-036.
+Con --from-file solo hay una lectura (sin peticiones ni espera). La clasificacion es de US-035/US-036.
 
-Codigos de salida: 0 correcto; 2 error (uso, parseo, equipo o partido sin casar, red); 3 anomalia; 4 parada por la RFEF.
+Codigos de salida: 0 correcto; 2 error (uso, parseo, equipo o partido sin casar, red); 3 anomalia; 4 parada por la RFEF; 5 deshabilitada
+(interruptor `enabled` de scripts/rfef/config.json, US-038; 403/429 o robots que veta lo ponen a false).
 """
 from __future__ import annotations
 
@@ -31,6 +32,7 @@ import urllib.robotparser
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+import rfef_switch
 import round_sheet
 
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -61,7 +63,7 @@ REQUIRED_MATCH_KEYS = ("team_local", "team_visit", "datateam1", "datateam2", "st
                        "hour", "no_hour", "league_id", "group_code", "category", "year")
 CSV_COLUMNS = ["id", "home", "away"]
 
-EXIT_OK, EXIT_ERROR, EXIT_ANOMALY, EXIT_STOPPED = 0, 2, 3, 4
+EXIT_OK, EXIT_ERROR, EXIT_ANOMALY, EXIT_STOPPED, EXIT_DISABLED = 0, 2, 3, 4, 5
 
 
 class ToolError(Exception):
@@ -74,6 +76,10 @@ class ParseError(ToolError):
 
 class StoppedError(ToolError):
     """La RFEF veta la ruta, limita o falla: hay que parar."""
+
+
+class BlockedError(StoppedError):
+    """La RFEF bloquea (403/429) o veta la ruta (robots.txt): ademas de parar, hay que desactivar el interruptor."""
 
 
 class AnomalyError(ToolError):
@@ -234,6 +240,14 @@ def feed_round(season: Dict[str, Any], phase_id: str, number: int) -> Dict[str, 
     raise ToolError("el feed no tiene la jornada %d de la fase %s" % (number, phase_id))
 
 
+def later_rounds(season: Dict[str, Any], phase_id: str, number: int) -> List[Dict[str, Any]]:
+    """Jornadas posteriores de la fase: un partido de la RFEF casado con una de ellas es un partido adelantado."""
+    for phase in season["phases"]:
+        if phase["id"] == phase_id:
+            return [candidate for candidate in phase["rounds"] if candidate["number"] > number]
+    return []
+
+
 def madrid_time(kickoff: Dict[str, Any]) -> Optional[str]:
     if not kickoff.get("time"):
         return None
@@ -252,8 +266,11 @@ class Plan:
         self.warnings = []  # type: List[str]
 
 
-def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Dict[str, str]) -> Plan:
-    """Casa por par local-visitante (nunca por posicion). Lanza ToolError (partido ausente) o AnomalyError (marcador distinto)."""
+def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Dict[str, str],
+               later: Optional[List[Dict[str, Any]]] = None) -> Plan:
+    """Casa por par local-visitante (nunca por posicion). Lanza ToolError (partido ausente) o AnomalyError (marcador distinto).
+
+    Un par que el feed tiene en una jornada posterior (`later`) es un partido adelantado: se informa y no se aplica."""
     by_pair = {(m["homeTeamId"], m["awayTeamId"]): m for m in round_data["matches"]}
     plan = Plan()
     missing = []  # type: List[str]
@@ -262,6 +279,13 @@ def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Di
         pair = (aliases[match.home_datateam], aliases[match.away_datateam])
         feed_match = by_pair.get(pair)
         if feed_match is None:
+            advanced = find_advanced(later or [], pair)
+            if advanced is not None:
+                plan.differences.append("%s: adelantado, el feed lo tiene en la jornada %d (fecha=%s, estado=%s) y la RFEF en la jornada %s "
+                                        "(fecha=%s, %s); no se aplica" % (
+                                            advanced[1]["id"], advanced[0], advanced[1]["kickoff"].get("date"), advanced[1]["status"],
+                                            round_data["number"], match.day, match.status_text))
+                continue
             missing.append("partido no encontrado en el feed (%s, jornada %s): %s - %s" % (
                 round_data["id"], round_data["number"], pair[0], pair[1]))
             continue
@@ -292,6 +316,14 @@ def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Di
     return plan
 
 
+def find_advanced(later: List[Dict[str, Any]], pair: Tuple[str, str]) -> Optional[Tuple[int, Dict[str, Any]]]:
+    for candidate in later:
+        for feed_match in candidate["matches"]:
+            if (feed_match["homeTeamId"], feed_match["awayTeamId"]) == pair:
+                return candidate["number"], feed_match
+    return None
+
+
 def add_differences(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, score: Optional[Tuple[int, int]]) -> None:
     kickoff = feed_match["kickoff"]
     if kickoff.get("date") != match.day:
@@ -299,6 +331,9 @@ def add_differences(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, sc
     if (madrid_time(kickoff) or None) != match.hour:
         plan.differences.append("%s: hora feed=%s, RFEF=%s" % (feed_match["id"], madrid_time(kickoff) or NO_TIME,
                                                                match.hour or NO_TIME))
+    if feed_match["status"] in ("postponed", "suspended"):
+        plan.differences.append("%s: estado feed=%s, RFEF=%s (%s %s); no se cambia" % (
+            feed_match["id"], feed_match["status"], match.status_text, match.day, match.hour or NO_TIME))
     if feed_match["status"] == "finished" and score is None:
         plan.differences.append("%s: estado feed=finished, RFEF=%s sin marcador final" % (feed_match["id"], match.status_text))
 
@@ -379,7 +414,7 @@ def report_lines(plan: Plan, phase: str, number: int, source: str, reads: List[T
         lines.append("diferencias con el feed (solo informativas, no cambian el CSV):")
         lines.extend("  " + difference for difference in plan.differences)
     else:
-        lines.append("sin diferencias de fecha, hora ni estado con el feed")
+        lines.append("sin diferencias de fecha, hora ni estado con el feed; partidos nuevos: %d" % len(plan.rows))
     return lines
 
 
@@ -410,7 +445,9 @@ class Transport:
 
 
 def check_status(status: int, what: str) -> None:
-    if status in STOP_STATUSES or status >= 500:
+    if status in STOP_STATUSES:
+        raise BlockedError("la RFEF respondio %d a %s: se detiene sin generar CSV" % (status, what))
+    if status >= 500:
         raise StoppedError("la RFEF respondio %d a %s: se detiene sin generar CSV" % (status, what))
     if status != 200:
         raise ToolError("la RFEF respondio %d a %s" % (status, what))
@@ -424,7 +461,7 @@ def ensure_robots_allow(transport: Transport) -> None:
     parser = urllib.robotparser.RobotFileParser()
     parser.parse(body.decode("utf-8", "replace").splitlines())
     if not parser.can_fetch(USER_AGENT, BASE_URL + ENDPOINT_PATH):
-        raise StoppedError("robots.txt veta %s: no se hace la peticion" % ENDPOINT_PATH)
+        raise BlockedError("robots.txt veta %s: no se hace la peticion" % ENDPOINT_PATH)
 
 
 def request_body(phase: str, number: int, year: str) -> bytes:
@@ -458,12 +495,18 @@ def download_again(transport: Transport, phase: str, number: int, year: str, sle
     return post_round(transport, phase, number, year)
 
 
-def save_raw(feed: str, raw_dir: Optional[str], phase: str, number: int, fetched_at: str, body: bytes) -> str:
-    """Guarda la respuesta cruda solo fuera del repositorio del feed (nunca versionada)."""
+def raw_directory(feed: str, raw_dir: Optional[str]) -> str:
+    """Directorio local del operador (respuestas crudas y cuenta de anomalias), siempre fuera del repositorio del feed."""
     directory = os.path.realpath(raw_dir or os.path.join(feed, RAW_DIR_RELATIVE))
     root = os.path.realpath(feed)
     if directory == root or directory.startswith(root + os.sep):
         raise ToolError("la respuesta cruda no puede guardarse dentro del repositorio del feed")
+    return directory
+
+
+def save_raw(feed: str, raw_dir: Optional[str], phase: str, number: int, fetched_at: str, body: bytes) -> str:
+    """Guarda la respuesta cruda solo fuera del repositorio del feed (nunca versionada)."""
+    directory = raw_directory(feed, raw_dir)
     os.makedirs(directory, exist_ok=True)
     path = os.path.join(directory, "%s-%02d-%s.json" % (phase, number, fetched_at.replace(":", "")))
     with open(path, "wb") as handle:
@@ -504,6 +547,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], Transport], sl
         record(body)
         matches = check(body)
     else:
+        rfef_switch.ensure_enabled(args.feed)
         transport = transport_factory()
         source = BASE_URL + ENDPOINT_PATH
         first_body = download(transport, args.phase, args.round, year, sleep)
@@ -521,7 +565,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], Transport], sl
     unmatched = resolve_teams(matches, aliases)
     if unmatched:
         raise ToolError("\n".join(unmatched))
-    plan = build_plan(matches, round_data, aliases)
+    plan = build_plan(matches, round_data, aliases, later_rounds(season, args.phase, args.round))
 
     text = csv_text(plan.rows)
     readable = pretty_lines(plan.rows, round_data, season) if args.pretty else []
@@ -552,6 +596,15 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def disable_after_block(feed: str, error: BlockedError) -> str:
+    """La RFEF bloquea o veta la ruta: desactiva el interruptor (solo el humano lo reactiva). Devuelve la linea informativa."""
+    try:
+        rfef_switch.disable(feed, str(error))
+    except rfef_switch.SwitchError as failure:
+        return "AVISO: %s" % failure
+    return "Interruptor: enabled puesto a false en %s; solo el humano lo reactiva." % rfef_switch.CONFIG_PATH
+
+
 def main(argv: List[str], transport_factory: Callable[[], Transport] = Transport, sleep: Callable[[float], None] = time.sleep,
          now: Callable[[], datetime.datetime] = lambda: datetime.datetime.now(datetime.timezone.utc),
          stdout: Any = None, stderr: Any = None) -> int:
@@ -565,10 +618,15 @@ def main(argv: List[str], transport_factory: Callable[[], Transport] = Transport
         for line in error.anomalies:
             print("  " + line, file=err)
         return EXIT_ANOMALY
+    except rfef_switch.DisabledError as error:
+        print("DESHABILITADA: %s" % error, file=err)
+        return EXIT_DISABLED
     except StoppedError as error:
         print("PARADA: %s" % error, file=err)
+        if isinstance(error, BlockedError):
+            print(disable_after_block(args.feed, error), file=err)
         return EXIT_STOPPED
-    except ToolError as error:
+    except (ToolError, rfef_switch.SwitchError) as error:
         print("FALLO: %s" % error, file=err)
         return EXIT_ERROR
     except OSError as error:
