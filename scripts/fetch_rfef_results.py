@@ -6,7 +6,9 @@ Solo biblioteca estandar, Python 3.9. Una lectura de `POST /futsal_xhr/get_match
   - Diferencias de fecha, hora o estado respecto al feed: solo se informan.
   - Respeto: robots.txt antes, User-Agent no personal, sin cookies ni reintentos, parada ante 403/429/5xx.
   - La respuesta cruda se guarda solo fuera del repositorio (../local-data/rfef/).
-La doble lectura, la clasificacion y el interruptor son de US-035..US-037.
+Doble lectura (US-037): dos POST separados >= 15 min que deben coincidir en par, estado, goles, fecha y hora; la segunda es la base.
+Presupuesto: robots.txt + 2 lecturas de partidos (la de la tabla es de US-036), >= 10 s entre peticiones, sin reintentos.
+Con --from-file solo hay una lectura (sin peticiones ni espera). La clasificacion y el interruptor son de US-035/US-036.
 
 Codigos de salida: 0 correcto; 2 error (uso, parseo, equipo o partido sin casar, red); 3 anomalia; 4 parada por la RFEF.
 """
@@ -38,6 +40,7 @@ ROBOTS_PATH = "/robots.txt"
 CATEGORY = "25"
 USER_AGENT = "myfutsal-feed-tool/1.0 (offline results tool; non-personal)"
 REQUEST_INTERVAL_SECONDS = 10
+READ_SEPARATION_SECONDS = 15 * 60  # separacion minima entre las dos lecturas de partidos (ADR-012 §3)
 TIMEOUT_SECONDS = 30
 STOP_STATUSES = (403, 429)
 ALIASES_PATH = os.path.join("scripts", "rfef", "aliases.json")
@@ -301,6 +304,38 @@ def add_differences(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, sc
 
 
 # --------------------------------------------------------------------------
+# Estabilidad entre lecturas (US-037)
+# --------------------------------------------------------------------------
+
+def relevant_fields(match: RfefMatch) -> Dict[str, str]:
+    """Campos normalizados que deben coincidir entre lecturas; el orden de la lista y el resto de campos no cuentan."""
+    score, _ = parse_goals(match)
+    return {"estado": match.status_text,
+            "marcador": "%d-%d" % score if score else "sin marcador (%s-%s)" % (clean(match.raw["r_local"]),
+                                                                              clean(match.raw["r_visit"])),
+            "fecha": match.day, "hora": match.hour or NO_TIME}
+
+
+def stability_anomalies(first: List[RfefMatch], second: List[RfefMatch]) -> List[str]:
+    """Una anomalia por cada partido que aparece, desaparece o cambia un campo relevante entre las dos lecturas."""
+    before = {(m.home_datateam, m.away_datateam): m for m in first}
+    after = {(m.home_datateam, m.away_datateam): m for m in second}
+    found = []  # type: List[str]
+    for pair in sorted(set(before) | set(after)):
+        old, new = before.get(pair), after.get(pair)
+        if old is None or new is None:
+            present = new or old
+            found.append(anomaly("lecturas-distintas", present.label, "presente en ambas lecturas",
+                                 "solo en la %s" % ("segunda" if old is None else "primera")))
+            continue
+        old_fields, new_fields = relevant_fields(old), relevant_fields(new)
+        for field in old_fields:
+            if old_fields[field] != new_fields[field]:
+                found.append(anomaly("lecturas-distintas", "%s, %s" % (new.label, field), old_fields[field], new_fields[field]))
+    return found
+
+
+# --------------------------------------------------------------------------
 # Salida
 # --------------------------------------------------------------------------
 
@@ -328,11 +363,15 @@ def pretty_lines(rows: List[Tuple[str, int, int]], round_data: Dict[str, Any], s
     return lines
 
 
-def report_lines(plan: Plan, phase: str, number: int, source: str, fetched_at: str, digest: str) -> List[str]:
+def report_lines(plan: Plan, phase: str, number: int, source: str, reads: List[Tuple[str, str]]) -> List[str]:
+    """`reads`: (instante UTC, SHA-256) de cada lectura, en orden; la ultima es la base del CSV."""
     lines = ["informe fetch-rfef-results: %s jornada %d" % (phase, number),
-             "fuente: %s" % source,
-             "instante UTC: %s" % fetched_at,
-             "SHA-256: %s" % digest,
+             "fuente: %s" % source]
+    for position, (fetched_at, digest) in enumerate(reads, start=1):
+        prefix = "lectura %d " % position if len(reads) > 1 else ""
+        lines.append("%sinstante UTC: %s" % (prefix, fetched_at))
+        lines.append("%sSHA-256: %s" % (prefix, digest))
+    lines += [
              "finalizados a aplicar: %d; ya publicados iguales: %d; pendientes: %d" % (
                  len(plan.rows), plan.already_published, plan.pending)]
     lines.extend("aviso: " + warning for warning in plan.warnings)
@@ -395,12 +434,28 @@ def request_body(phase: str, number: int, year: str) -> bytes:
     return urllib.parse.urlencode(fields).encode("ascii")
 
 
-def download(transport: Transport, phase: str, number: int, year: str, sleep: Callable[[float], None]) -> bytes:
-    ensure_robots_allow(transport)
-    sleep(REQUEST_INTERVAL_SECONDS)
+def post_round(transport: Transport, phase: str, number: int, year: str) -> bytes:
     status, body = transport.request("POST", BASE_URL + ENDPOINT_PATH, request_body(phase, number, year))
     check_status(status, ENDPOINT_PATH)
     return body
+
+
+def download(transport: Transport, phase: str, number: int, year: str, sleep: Callable[[float], None]) -> bytes:
+    """Primera lectura: robots.txt, pausa y un POST."""
+    ensure_robots_allow(transport)
+    sleep(REQUEST_INTERVAL_SECONDS)
+    return post_round(transport, phase, number, year)
+
+
+def download_again(transport: Transport, phase: str, number: int, year: str, sleep: Callable[[float], None],
+                   now: Callable[[], datetime.datetime], first_read_at: datetime.datetime) -> bytes:
+    """Segunda lectura: espera hasta cumplir la separacion minima y, si el reloj no la confirma, se niega (nunca lee antes)."""
+    remaining = READ_SEPARATION_SECONDS - (now() - first_read_at).total_seconds()
+    if remaining > 0:
+        sleep(remaining)
+        if (now() - first_read_at).total_seconds() < READ_SEPARATION_SECONDS:
+            raise ToolError("no han pasado %d min desde la primera lectura: no se hace la segunda" % (READ_SEPARATION_SECONDS // 60))
+    return post_round(transport, phase, number, year)
 
 
 def save_raw(feed: str, raw_dir: Optional[str], phase: str, number: int, fetched_at: str, body: bytes) -> str:
@@ -428,21 +483,40 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], Transport], sl
     today = datetime.date.fromisoformat(args.today) if args.today else now().astimezone(TIMEZONE).date()
     round_data = feed_round(season, args.phase, args.round)
 
-    fetched_at = now().astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    reads = []  # type: List[Tuple[str, str]]
+
+    def record(body: bytes) -> datetime.datetime:
+        instant = now()
+        reads.append((instant.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), hashlib.sha256(body).hexdigest()))
+        return instant
+
+    def check(body: bytes) -> List[RfefMatch]:
+        parsed, resting = parse_response(body)
+        found = sanity_anomalies(parsed, resting, league, group, args.round, year, today)
+        if found:
+            raise AnomalyError(found)
+        return parsed
+
     if args.from_file:
         with open(args.from_file, "rb") as handle:
             body = handle.read()
         source = "fichero local %s (sin peticiones)" % os.path.basename(args.from_file)
+        record(body)
+        matches = check(body)
     else:
-        body = download(transport_factory(), args.phase, args.round, year, sleep)
+        transport = transport_factory()
         source = BASE_URL + ENDPOINT_PATH
-        save_raw(args.feed, args.raw_dir, args.phase, args.round, fetched_at, body)
-    digest = hashlib.sha256(body).hexdigest()
-
-    matches, resting = parse_response(body)
-    found = sanity_anomalies(matches, resting, league, group, args.round, year, today)
-    if found:
-        raise AnomalyError(found)
+        first_body = download(transport, args.phase, args.round, year, sleep)
+        first_read_at = record(first_body)
+        save_raw(args.feed, args.raw_dir, args.phase, args.round, reads[0][0], first_body)
+        first_matches = check(first_body)  # una primera lectura invalida no justifica esperar ni pedir la segunda
+        body = download_again(transport, args.phase, args.round, year, sleep, now, first_read_at)
+        record(body)
+        save_raw(args.feed, args.raw_dir, args.phase, args.round, reads[1][0], body)
+        matches = check(body)
+        unstable = stability_anomalies(first_matches, matches)
+        if unstable:
+            raise AnomalyError(unstable)
     aliases = load_aliases(args.feed)
     unmatched = resolve_teams(matches, aliases)
     if unmatched:
@@ -458,7 +532,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], Transport], sl
         stdout.write(text)
     for line in readable:
         print(line, file=stdout)
-    for line in report_lines(plan, args.phase, args.round, source, fetched_at, digest):
+    for line in report_lines(plan, args.phase, args.round, source, reads):
         print(line, file=stderr)
     return EXIT_OK
 

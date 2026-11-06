@@ -1,4 +1,4 @@
-"""US-034: CLI fetch-rfef-results. Fixtures sinteticos escritos a mano (nunca JSON ni HTML reales de la RFEF), sin red."""
+"""US-034 y US-037: CLI fetch-rfef-results. Fixtures sinteticos escritos a mano (nunca JSON ni HTML reales de la RFEF), sin red."""
 from __future__ import annotations
 
 import copy
@@ -60,13 +60,39 @@ def standard_matches() -> List[Dict[str, Any]]:
 
 
 class FakeTransport:
-    def __init__(self, robots: Tuple[int, bytes] = (200, ROBOTS_ALLOWING), data: Tuple[int, bytes] = (200, b"{}")) -> None:
-        self.responses = {tool.ROBOTS_PATH: robots, tool.ENDPOINT_PATH: data}
+    """`data`: una respuesta (se repite en cada lectura) o una lista, una por lectura (la ultima se repite)."""
+
+    def __init__(self, robots: Tuple[int, bytes] = (200, ROBOTS_ALLOWING), data: Any = (200, b"{}"),
+                 clock: Optional["Clock"] = None) -> None:
+        self.robots = robots
+        self.data = data if isinstance(data, list) else [data]
         self.calls = []  # type: List[Tuple[str, str, Optional[bytes]]]
+        self.call_times = []  # type: List[datetime.datetime]
+        self.clock = clock
 
     def request(self, method: str, url: str, data: Optional[bytes]) -> Tuple[int, bytes]:
         self.calls.append((method, url, data))
-        return self.responses[url[len(tool.BASE_URL):]]
+        if self.clock:
+            self.call_times.append(self.clock.current)
+        if url.endswith(tool.ROBOTS_PATH):
+            return self.robots
+        posts = sum(1 for call in self.calls if call[0] == "POST")
+        return self.data[min(posts, len(self.data)) - 1]
+
+
+class Clock:
+    """Reloj simulado: `sleep` lo adelanta, sin esperas reales."""
+
+    def __init__(self, start: datetime.datetime = NOW) -> None:
+        self.current = start
+        self.sleeps = []  # type: List[float]
+
+    def now(self) -> datetime.datetime:
+        return self.current
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.current += datetime.timedelta(seconds=seconds)
 
 
 class FetchTestCase(TempDirTestCase):
@@ -91,7 +117,8 @@ class FetchTestCase(TempDirTestCase):
         """Ejecuta main sobre una respuesta local (--from-file)."""
         return self.invoke(["--from-file", self.write_response(document)] + list(extra), transport)
 
-    def invoke(self, extra: List[str], transport: Optional[FakeTransport] = None) -> Any:
+    def invoke(self, extra: List[str], transport: Optional[FakeTransport] = None, clock: Optional[Clock] = None) -> Any:
+        clock = clock or (transport.clock if transport and transport.clock else Clock())
         out, err = io.StringIO(), io.StringIO()
 
         def no_network() -> Any:
@@ -99,7 +126,7 @@ class FetchTestCase(TempDirTestCase):
 
         argv = ["--feed", self.feed, "--phase", "apertura", "--round", "1", "--today", TODAY, "--raw-dir", self.raw_dir] + extra
         code = tool.main(argv, transport_factory=(lambda: transport) if transport else no_network,
-                         sleep=lambda seconds: None, now=lambda: NOW, stdout=out, stderr=err)
+                         sleep=clock.sleep, now=clock.now, stdout=out, stderr=err)
         return support.InProcessResult(code, out.getvalue(), err.getvalue())
 
 
@@ -353,12 +380,12 @@ class NetworkTests(FetchTestCase):
     def good_transport(self) -> FakeTransport:
         return FakeTransport(data=(200, json.dumps(rfef_doc(standard_matches())).encode("utf-8")))
 
-    def test_US034_robots_is_read_first_then_one_post_with_the_expected_form(self) -> None:
+    def test_US034_robots_is_read_first_then_two_posts_with_the_expected_form(self) -> None:
         transport = self.good_transport()
         result = self.invoke([], transport)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual([(m, u[len(tool.BASE_URL):]) for m, u, _ in transport.calls],
-                         [("GET", tool.ROBOTS_PATH), ("POST", tool.ENDPOINT_PATH)])
+                         [("GET", tool.ROBOTS_PATH), ("POST", tool.ENDPOINT_PATH), ("POST", tool.ENDPOINT_PATH)])
         self.assertEqual(transport.calls[1][2], b"category=25&league=1297&round=1&action=competicion&year=2027&group=1")
         self.assertEqual(result.stdout.splitlines()[0], "id,home,away")
 
@@ -380,7 +407,7 @@ class NetworkTests(FetchTestCase):
             result = self.invoke([], transport)
             self.assertEqual(result.returncode, tool.EXIT_STOPPED, status)
             self.assertEqual(result.stdout, "")
-            self.assertEqual(len(transport.calls), 2, "sin reintentos")
+            self.assertEqual(len(transport.calls), 2, "sin reintentos ni segunda lectura")
         blocked_robots = FakeTransport(robots=(429, b""))
         self.assertEqual(self.invoke([], blocked_robots).returncode, tool.EXIT_STOPPED)
         self.assertEqual(len(blocked_robots.calls), 1)
@@ -407,7 +434,7 @@ class FromFileTests(FetchTestCase):
         offline = self.fetch(document)  # el transporte de esta ruta falla si se abre
         self.assertEqual(offline.returncode, 0, offline.stderr)
         self.assertEqual(online.stdout, offline.stdout)
-        self.assertEqual(len(os.listdir(self.raw_dir)), 1, "--from-file no guarda copia cruda")
+        self.assertEqual(len(os.listdir(self.raw_dir)), 2, "solo las 2 lecturas en linea guardan copia; --from-file no")
 
 
 class TraceabilityTests(FetchTestCase):
@@ -415,16 +442,17 @@ class TraceabilityTests(FetchTestCase):
         body = json.dumps(rfef_doc(standard_matches())).encode("utf-8")
         result = self.invoke([], FakeTransport(data=(200, body)))
         self.assertIn("fuente: https://futsal.rfef.es/futsal_xhr/get_matchs_round", result.stderr)
-        self.assertIn("instante UTC: 2026-10-20T09:30:00Z", result.stderr)
+        self.assertIn("instante UTC: 2026-10-20T09:30:10Z", result.stderr)
         self.assertIn("SHA-256: " + hashlib.sha256(body).hexdigest(), result.stderr)
 
     def test_US034_raw_response_is_saved_outside_the_repo_only(self) -> None:
         body = json.dumps(rfef_doc(standard_matches())).encode("utf-8")
         self.invoke([], FakeTransport(data=(200, body)))
         saved = os.listdir(self.raw_dir)
-        self.assertEqual(len(saved), 1)
-        with open(os.path.join(self.raw_dir, saved[0]), "rb") as handle:
-            self.assertEqual(handle.read(), body)
+        self.assertEqual(len(saved), 2, "una copia por lectura")
+        for name in saved:
+            with open(os.path.join(self.raw_dir, name), "rb") as handle:
+                self.assertEqual(handle.read(), body)
         self.assertEqual(os.listdir(self.feed).count("local-data"), 0)
 
     def test_US034_default_raw_dir_is_outside_the_feed_repository(self) -> None:
@@ -437,6 +465,150 @@ class TraceabilityTests(FetchTestCase):
         self.assertEqual(result.returncode, tool.EXIT_ERROR)
         self.assertEqual(result.stdout, "")
         self.assertFalse(os.path.exists(os.path.join(self.feed, "raw")))
+
+
+def body_of(matches: List[Dict[str, Any]], **kwargs: Any) -> bytes:
+    return json.dumps(rfef_doc(matches, **kwargs)).encode("utf-8")
+
+
+class DoubleReadTests(FetchTestCase):
+    """US-037: dos lecturas separadas >= 15 min que deben coincidir."""
+
+    def run_pair(self, first: bytes, second: bytes) -> Tuple[Any, FakeTransport]:
+        clock = Clock()
+        transport = FakeTransport(data=[(200, first), (200, second)], clock=clock)
+        return self.invoke([], transport), transport
+
+    def changed(self, mutate: Any) -> Tuple[Any, FakeTransport]:
+        altered = standard_matches()
+        mutate(altered)
+        return self.run_pair(body_of(standard_matches()), body_of(altered))
+
+    def assert_unstable(self, result: Any, expected: str, obtained: str) -> None:
+        self.assertEqual(result.returncode, tool.EXIT_ANOMALY, result.stderr)
+        self.assertEqual(result.stdout, "", "no se genera CSV")
+        self.assertIn("lecturas-distintas", result.stderr)
+        self.assertIn("esperado=%s obtenido=%s" % (expected, obtained), result.stderr)
+
+    def test_US037_identical_reads_continue_with_the_second_as_base(self) -> None:
+        first = body_of(standard_matches())
+        second = json.dumps(rfef_doc(standard_matches()), indent=2).encode("utf-8")  # otros bytes, mismos campos
+        result, _ = self.run_pair(first, second)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(result.stdout.splitlines()), 4)
+
+    def test_US037_changed_score_names_the_match_and_both_values(self) -> None:
+        result, _ = self.changed(lambda m: m.__setitem__(0, rfef_match(1, ("3", "3"))))
+        self.assert_unstable(result, "3-2", "3-3")
+        self.assertIn("Local t01 - Visit t02", result.stderr)
+
+    def test_US037_changed_status_is_an_anomaly(self) -> None:
+        result, _ = self.changed(lambda m: m.__setitem__(4, rfef_match(5, None, "Aplazado")))
+        self.assert_unstable(result, "Sin comenzar", "Aplazado")
+
+    def test_US037_changed_date_is_an_anomaly(self) -> None:
+        first, second = standard_matches(), standard_matches()
+        document = rfef_doc(second[:7], day="2026-10-17")
+        document.update(rfef_doc(second[7:], day="2026-10-18"))
+        result, _ = self.run_pair(body_of(first), json.dumps(document).encode("utf-8"))
+        self.assert_unstable(result, "2026-10-17", "2026-10-18")
+
+    def test_US037_changed_time_is_an_anomaly(self) -> None:
+        result, _ = self.changed(lambda m: m.__setitem__(0, rfef_match(1, ("3", "2"), day_hour="14:00")))
+        self.assert_unstable(result, "13:00", "14:00")
+
+    def test_US037_changed_pair_is_an_anomaly(self) -> None:
+        def swap(matches: List[Dict[str, Any]]) -> None:
+            home, away = PAIRS[0]
+            matches[0] = rfef_match(1, ("3", "2"), team_local="Visit %s" % away, datateam1=DATATEAM[away],
+                                    team_visit="Local %s" % home, datateam2=DATATEAM[home])
+        result, _ = self.changed(swap)
+        self.assertEqual(result.returncode, tool.EXIT_ANOMALY, result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr.count("solo en la"), 2)
+
+    def test_US037_list_order_and_irrelevant_fields_are_not_an_anomaly(self) -> None:
+        reordered = list(reversed(standard_matches()))
+        for raw in reordered:
+            raw["id"] = "x" + raw["id"]
+            raw["status"] = "otro"
+        result, _ = self.run_pair(body_of(standard_matches()), body_of(reordered))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("lecturas-distintas", result.stderr)
+
+    def test_US037_dict_indexed_and_list_forms_count_as_equal(self) -> None:
+        indexed = {"2026-10-17": {"date": "Sabado", "descansa": [], "matches": {str(n): m for n, m in enumerate(standard_matches())}}}
+        result, _ = self.run_pair(body_of(standard_matches()), json.dumps(indexed).encode("utf-8"))
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_US037_second_read_waits_at_least_15_minutes(self) -> None:
+        body = body_of(standard_matches())
+        clock = Clock()
+        transport = FakeTransport(data=(200, body), clock=clock)
+        self.assertEqual(self.invoke([], transport).returncode, 0)
+        posts = [t for call, t in zip(transport.calls, transport.call_times) if call[0] == "POST"]
+        self.assertGreaterEqual((posts[1] - posts[0]).total_seconds(), 15 * 60)
+        self.assertEqual(clock.sleeps[0], tool.REQUEST_INTERVAL_SECONDS)
+        self.assertEqual(clock.sleeps[1], 15 * 60)
+
+    def test_US037_second_read_is_refused_when_the_clock_does_not_confirm_the_gap(self) -> None:
+        body = body_of(standard_matches())
+        clock = Clock()
+        clock.sleep = lambda seconds: None  # type: ignore[assignment]  # la espera no avanza el reloj
+        transport = FakeTransport(data=(200, body), clock=clock)
+        result = self.invoke([], transport)
+        self.assertEqual(result.returncode, tool.EXIT_ERROR)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(sum(1 for call in transport.calls if call[0] == "POST"), 1, "nunca lee antes")
+
+    def test_US037_no_wait_is_needed_if_enough_time_already_passed(self) -> None:
+        clock = Clock()
+        first_at = clock.current - datetime.timedelta(minutes=20)
+        transport = FakeTransport(data=(200, body_of(standard_matches())), clock=clock)
+        tool.download_again(transport, "apertura", 1, "2027", clock.sleep, clock.now, first_at)
+        self.assertEqual(clock.sleeps, [])
+        self.assertEqual(len(transport.calls), 1)
+
+    def test_US037_budget_is_robots_plus_two_posts_and_spaced_by_10_seconds(self) -> None:
+        clock = Clock()
+        transport = FakeTransport(data=(200, body_of(standard_matches())), clock=clock)
+        self.assertEqual(self.invoke([], transport).returncode, 0)
+        self.assertEqual([c[0] for c in transport.calls], ["GET", "POST", "POST"])
+        gaps = [(b - a).total_seconds() for a, b in zip(transport.call_times, transport.call_times[1:])]
+        self.assertTrue(all(gap >= 10 for gap in gaps), gaps)
+
+    def test_US037_stops_on_403_429_5xx_in_the_second_read_without_retry_or_csv(self) -> None:
+        good = (200, body_of(standard_matches()))
+        for status in (403, 429, 500, 503):
+            transport = FakeTransport(data=[good, (status, b"")], clock=Clock())
+            result = self.invoke([], transport)
+            self.assertEqual(result.returncode, tool.EXIT_STOPPED, status)
+            self.assertEqual(result.stdout, "")
+            self.assertEqual(len(transport.calls), 3, "sin reintentos")
+
+    def test_US037_invalid_first_read_skips_the_wait_and_the_second_request(self) -> None:
+        clock = Clock()
+        transport = FakeTransport(data=(200, b"no es json"), clock=clock)
+        result = self.invoke([], transport)
+        self.assertEqual(result.returncode, tool.EXIT_ERROR)
+        self.assertEqual(clock.sleeps, [tool.REQUEST_INTERVAL_SECONDS])
+        self.assertEqual(len(transport.calls), 2)
+
+    def test_US037_report_has_instant_and_sha256_of_each_read_even_if_bytes_differ(self) -> None:
+        first = body_of(standard_matches())
+        second = json.dumps(rfef_doc(standard_matches()), indent=1).encode("utf-8")
+        result, _ = self.run_pair(first, second)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("lectura 1 instante UTC: 2026-10-20T09:30:10Z", result.stderr)
+        self.assertIn("lectura 1 SHA-256: " + hashlib.sha256(first).hexdigest(), result.stderr)
+        self.assertIn("lectura 2 instante UTC: 2026-10-20T09:45:10Z", result.stderr)
+        self.assertIn("lectura 2 SHA-256: " + hashlib.sha256(second).hexdigest(), result.stderr)
+        self.assertNotEqual(hashlib.sha256(first).hexdigest(), hashlib.sha256(second).hexdigest())
+
+    def test_US037_stability_check_does_not_apply_to_from_file(self) -> None:
+        result = self.fetch(rfef_doc(standard_matches()))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("lectura 2", result.stderr)
 
 
 class AliasTableTests(support.TempDirTestCase):
