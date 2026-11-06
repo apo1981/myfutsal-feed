@@ -129,6 +129,85 @@ class FinishedAndPendingTests(FetchTestCase):
         self.assertEqual(result.stdout, "id,home,away\na01-01,3,2\na01-02,0,0\na01-03,5,1\n")
 
 
+class PrettyTests(FetchTestCase):
+    LINES = ["a01-01  Alfa 3-2 Beta", "a01-02  Gamma 0-0 Delta", "a01-03  Epsilon 5-1 Zeta"]
+
+    def named_feed(self, drop: Optional[str] = None) -> None:
+        season = feed_season([feed_match(i) for i in range(1, 9)])
+        names = ["Alfa", "Beta", "Gamma", "Delta", "Epsilon", "Zeta"]
+        for team, name in zip(season["teams"], names):
+            team["name"] = name
+        if drop:
+            season["teams"] = [t for t in season["teams"] if t["id"] != drop]
+        support.build_public(self.feed, season)
+
+    def test_US039_one_readable_line_per_finished_match_with_feed_names(self) -> None:
+        self.named_feed()
+        result = self.fetch(rfef_doc(standard_matches()), "--pretty")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), self.LINES)
+        self.assertNotIn("Local", result.stdout)
+
+    def test_US039_lists_the_same_matches_as_the_csv_in_the_same_order(self) -> None:
+        self.named_feed()
+        matches = list(reversed(standard_matches()))
+        csv_rows = [line.split(",")[0] for line in self.fetch(rfef_doc(matches)).stdout.splitlines()[1:]]
+        pretty = self.fetch(rfef_doc(matches), "--pretty").stdout.splitlines()
+        self.assertEqual([line.split("  ")[0] for line in pretty], csv_rows)
+        self.assertEqual(len(pretty), 3)
+
+    def test_US039_default_output_is_still_the_csv(self) -> None:
+        self.assertEqual(self.fetch(rfef_doc(standard_matches())).stdout, "id,home,away\na01-01,3,2\na01-02,0,0\na01-03,5,1\n")
+
+    def test_US039_with_out_the_file_has_the_csv_and_stdout_only_the_lines(self) -> None:
+        self.named_feed()
+        target = os.path.join(self.tmp, "out.csv")
+        result = self.fetch(rfef_doc(standard_matches()), "--pretty", "--out", target)
+        with open(target, encoding="utf-8") as handle:
+            self.assertEqual(handle.read(), "id,home,away\na01-01,3,2\na01-02,0,0\na01-03,5,1\n")
+        self.assertEqual(result.stdout.splitlines(), self.LINES)
+
+    def test_US039_report_stays_on_stderr_and_exit_code_is_the_same(self) -> None:
+        self.named_feed()
+        plain = self.fetch(rfef_doc(standard_matches()))
+        pretty = self.fetch(rfef_doc(standard_matches()), "--pretty")
+        self.assertEqual(pretty.returncode, plain.returncode)
+        self.assertIn("pendientes: 5", pretty.stderr)
+        self.assertNotIn("informe", pretty.stdout)
+
+    def test_US039_anomaly_unknown_alias_and_missing_match_fail_like_without_pretty(self) -> None:
+        anomalous = standard_matches()
+        anomalous[0] = rfef_match(1, ("26", "1"))
+        unaliased = standard_matches()
+        unaliased[0] = rfef_match(1, ("3", "2"), datateam1="999")
+        for matches in (anomalous, unaliased):
+            plain = self.fetch(rfef_doc(matches))
+            pretty = self.fetch(rfef_doc(matches), "--pretty")
+            self.assertNotEqual(plain.returncode, 0)
+            self.assertEqual(pretty.returncode, plain.returncode)
+            self.assertEqual(pretty.stdout, "")
+        self.write_feed([feed_match(i) for i in range(2, 9)])
+        plain = self.fetch(rfef_doc(standard_matches()))
+        pretty = self.fetch(rfef_doc(standard_matches()), "--pretty")
+        self.assertEqual((pretty.returncode, pretty.stdout), (plain.returncode, ""))
+        self.assertEqual(pretty.returncode, tool.EXIT_ERROR)
+
+    def test_US039_team_missing_from_the_feed_names_the_team_id_and_prints_nothing(self) -> None:
+        self.named_feed(drop="t02")
+        result = self.fetch(rfef_doc(standard_matches()), "--pretty")
+        self.assertEqual(result.returncode, tool.EXIT_ERROR)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("t02", result.stderr)
+
+    def test_US039_from_file_makes_no_request_and_gives_the_same_lines(self) -> None:
+        self.named_feed()
+        document = rfef_doc(standard_matches())
+        online = self.invoke(["--pretty"], FakeTransport(data=(200, json.dumps(document).encode("utf-8"))))
+        offline = self.fetch(document, "--pretty")  # el transporte de esta ruta falla si se abre
+        self.assertEqual(online.stdout, offline.stdout)
+        self.assertEqual(offline.stdout.splitlines(), self.LINES)
+
+
 class NeverInventsScoreTests(FetchTestCase):
     def blank_cases(self) -> List[Dict[str, Any]]:
         return [rfef_match(4, None, "Aplazado"), rfef_match(5, None, "Suspendido"), rfef_match(6, ("1", ""), "Finalizado"),

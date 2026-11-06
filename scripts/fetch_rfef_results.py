@@ -313,6 +313,21 @@ def csv_text(rows: List[Tuple[str, int, int]]) -> str:
     return out.getvalue()
 
 
+def pretty_lines(rows: List[Tuple[str, int, int]], round_data: Dict[str, Any], season: Dict[str, Any]) -> List[str]:
+    """Una linea 'id  Local G-G Visitante' por fila del CSV, con teams[].name del feed (US-039)."""
+    names = {team["id"]: team["name"] for team in season["teams"]}
+    by_id = {m["id"]: m for m in round_data["matches"]}
+    lines = []  # type: List[str]
+    for identifier, home, away in rows:
+        feed_match = by_id[identifier]
+        for team_id in (feed_match["homeTeamId"], feed_match["awayTeamId"]):
+            if team_id not in names:
+                raise ToolError("el equipo %s del partido %s no figura en teams[] del feed" % (team_id, identifier))
+        lines.append("%s  %s %d-%d %s" % (identifier, names[feed_match["homeTeamId"]], home, away,
+                                          names[feed_match["awayTeamId"]]))
+    return lines
+
+
 def report_lines(plan: Plan, phase: str, number: int, source: str, fetched_at: str, digest: str) -> List[str]:
     lines = ["informe fetch-rfef-results: %s jornada %d" % (phase, number),
              "fuente: %s" % source,
@@ -435,11 +450,14 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], Transport], sl
     plan = build_plan(matches, round_data, aliases)
 
     text = csv_text(plan.rows)
+    readable = pretty_lines(plan.rows, round_data, season) if args.pretty else []
     if args.out:
         with open(args.out, "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
-    else:
+    elif not args.pretty:
         stdout.write(text)
+    for line in readable:
+        print(line, file=stdout)
     for line in report_lines(plan, args.phase, args.round, source, fetched_at, digest):
         print(line, file=stderr)
     return EXIT_OK
@@ -451,6 +469,9 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument("--phase", required=True, choices=sorted(PHASES))
     parser.add_argument("--round", required=True, type=int, choices=range(1, ROUNDS_PER_PHASE + 1), metavar="N")
     parser.add_argument("--out", help="fichero CSV (por defecto, salida estandar)")
+    parser.add_argument("--pretty", action="store_true",
+                        help="una linea 'id  Local G-G Visitante' por partido en la salida estandar en vez del CSV; "
+                             "con --out el CSV va al fichero y la salida estandar solo lleva las lineas legibles")
     parser.add_argument("--from-file", dest="from_file", help="respuesta local: no hace ninguna peticion")
     parser.add_argument("--raw-dir", dest="raw_dir", help="directorio de la respuesta cruda (fuera del repo; por defecto ../local-data/rfef)")
     parser.add_argument("--today", help="fecha de hoy AAAA-MM-DD en Madrid (pruebas)")
