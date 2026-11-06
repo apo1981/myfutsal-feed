@@ -98,6 +98,8 @@ unit 7d-extraccion-rfef-pruebas test_fetch_rfef.py
 
 unit 7e-verificacion-cruzada-pruebas test_cross_check.py
 
+unit 7f-aplicacion-autonoma-pruebas test_auto_apply.py
+
 run 8-runbook "$FEED/scripts/check-runbook"
 unit 8-runbook-pruebas test_runbook.py
 
