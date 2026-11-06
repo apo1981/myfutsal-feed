@@ -162,26 +162,27 @@ def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Rea
     with open(absolute, "rb") as handle:
         original = handle.read()
     stamp = instant.astimezone(datetime.timezone.utc).strftime(UPDATED_AT_FORMAT)
-    with tempfile.TemporaryDirectory(prefix="auto-apply.") as directory:
-        csv_path = os.path.join(directory, "batch.csv")
-        with open(csv_path, "w", encoding="utf-8", newline="") as handle:
-            handle.write(fetch.csv_text(plan.rows))
-        captured = io.StringIO()
-        with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
-            code = apply_results.main(["--feed", feed, csv_path, "--today", today.isoformat(), "--now", stamp, "--updated-at", stamp])
-    if code != 0:
+    try:  # cualquier salida sin commit (incluida una excepcion o KeyboardInterrupt) deja el JSON como estaba
+        with tempfile.TemporaryDirectory(prefix="auto-apply.") as directory:
+            csv_path = os.path.join(directory, "batch.csv")
+            with open(csv_path, "w", encoding="utf-8", newline="") as handle:
+                handle.write(fetch.csv_text(plan.rows))
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+                code = apply_results.main(["--feed", feed, csv_path, "--today", today.isoformat(), "--now", stamp, "--updated-at", stamp])
+        if code != 0:
+            raise fetch.ToolError("apply-results ha fallado; se ha restaurado el JSON anterior:\n" + captured.getvalue().strip())
+        passed, output = verify_runner(feed)
+        if not passed:
+            raise fetch.ToolError("verify no ha pasado tras aplicar; se ha restaurado el JSON anterior, sin commit:\n" + output.strip())
+        if git(feed, "diff", "--quiet", "--", season_path).returncode == 0:
+            raise fetch.ToolError("apply-results no ha cambiado el JSON; no hay nada que commitear")
+        result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", season_path)
+        if result.returncode != 0:
+            raise fetch.ToolError("git commit ha fallado; se ha restaurado el JSON anterior: %s" % result.stderr.strip())
+    except BaseException:
         restore(absolute, original)
-        raise fetch.ToolError("apply-results ha fallado; se ha restaurado el JSON anterior:\n" + captured.getvalue().strip())
-    passed, output = verify_runner(feed)
-    if not passed:
-        restore(absolute, original)
-        raise fetch.ToolError("verify no ha pasado tras aplicar; se ha restaurado el JSON anterior, sin commit:\n" + output.strip())
-    if git(feed, "diff", "--quiet", "--", season_path).returncode == 0:
-        raise fetch.ToolError("apply-results no ha cambiado el JSON; no hay nada que commitear")
-    result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", season_path)
-    if result.returncode != 0:
-        restore(absolute, original)
-        raise fetch.ToolError("git commit ha fallado; se ha restaurado el JSON anterior: %s" % result.stderr.strip())
+        raise
     return git(feed, "rev-parse", "--short", "HEAD").stdout.strip()
 
 
@@ -191,7 +192,7 @@ def restore(path: str, original: bytes) -> None:
 
 
 def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]) -> str:
-    lines = ["data: apply %s round %d results from RFEF" % (args.phase, args.round), "",
+    lines = ["feat: apply %s round %d results from RFEF" % (args.phase, args.round), "",
              "Matches: %s" % ", ".join(row[0] for row in plan.rows), ""]
     for label, (url, fetched_at, digest) in zip(("Read 1 (matches)", "Read 2 (matches)", "Table"), reads):
         lines.append("%s: %s %s sha256=%s" % (label, url, fetched_at, digest))
@@ -225,7 +226,7 @@ def main(argv: List[str], transport_factory: Callable[[], fetch.Transport] = fet
         print("PARADA: %s" % error, file=err)
         return fetch.EXIT_STOPPED
     except (fetch.ToolError, OSError, KeyError, ValueError) as error:
-        print("FALLO: %s. No se ha modificado nada ni hay commit." % error, file=err)
+        print("FALLO: %s. El JSON queda como estaba y no hay commit." % error, file=err)
         return fetch.EXIT_ERROR
 
 

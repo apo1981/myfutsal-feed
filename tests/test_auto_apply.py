@@ -249,6 +249,25 @@ class VerifyFailureTests(AutoApplyTestCase):
         self.assert_untouched(1)
 
 
+class ExceptionSafetyTests(AutoApplyTestCase):
+    def test_US036_exception_in_verify_runner_restores_the_json_and_propagates(self) -> None:
+        def exploding(feed: str) -> Tuple[bool, str]:
+            raise KeyboardInterrupt()
+        body = self.doc_bytes()
+        with self.assertRaises(KeyboardInterrupt):
+            self.launch([(200, body), (200, body), (200, self.table())], verify=exploding)
+        self.assert_untouched(1)
+
+    def test_US036_unexpected_error_in_verify_runner_restores_the_json(self) -> None:
+        def broken(feed: str) -> Tuple[bool, str]:
+            raise OSError("verify no se pudo ejecutar")
+        body = self.doc_bytes()
+        result, _, _ = self.launch([(200, body), (200, body), (200, self.table())], verify=broken)
+        self.assertEqual(result.returncode, fetch.EXIT_ERROR)
+        self.assertIn("queda como estaba", result.stderr)
+        self.assert_untouched(1)
+
+
 class GuardTests(AutoApplyTestCase):
     def test_US036_non_noreply_identity_refuses_before_any_request(self) -> None:
         self.git("config", "user.email", "persona@example.com")
