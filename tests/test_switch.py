@@ -127,7 +127,7 @@ class BlockTests(SwitchTestCase):
 
     def run_auto(self, transport: FakeTransport, clock: base.Clock) -> Any:
         import io
-        import auto_apply_results as auto
+        import auto_apply_rfef as auto
         out, err = io.StringIO(), io.StringIO()
         code = auto.main(["--feed", self.feed, "--phase", "apertura", "--round", "1", "--today", base.TODAY, "--raw-dir", self.raw_dir],
                          transport_factory=lambda: transport, sleep=clock.sleep, now=clock.now, stdout=out, stderr=err,

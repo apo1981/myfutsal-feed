@@ -2,7 +2,7 @@
 # Orquesta una jornada de la RFEF sin revision humana si todo cuadra (US-036, ADR-012 §5): dos lecturas de partidos (>= 15 min),
 # una de la tabla, cordura, verificacion cruzada, apply-results, verify y un commit local con trazabilidad. NO hace push.
 # Ante cualquier anomalia no modifica nada. Tarda >= 15 min (la espera entre lecturas). Se lanza a mano, sin cron.
-# Uso: scripts/auto-apply-results --phase apertura|clausura --round N [--raw-dir DIR]
+# Uso: scripts/auto-apply-rfef --phase apertura|clausura --round N [--raw-dir DIR]
 set -eu
 . "$(dirname "$0")/_env.sh"
-run_python "$FEED/scripts/auto_apply_results.py" --feed "$FEED" "$@"
+run_python "$FEED/scripts/auto_apply_rfef.py" --feed "$FEED" "$@"

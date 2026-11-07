@@ -473,7 +473,7 @@ def report_lines(plan: Plan, phase: str, number: int, source: str, reads: List[T
                  len(plan.rows), plan.already_published, plan.pending)]
     lines.extend("aviso: " + warning for warning in plan.warnings)
     if plan.schedule_notes:
-        lines.append("horarios a aplicar (auto-apply-results): %d" % len(plan.schedule_notes))
+        lines.append("horarios a aplicar (auto-apply-rfef): %d" % len(plan.schedule_notes))
         lines.extend("  " + note for note in plan.schedule_notes)
     if plan.differences:
         lines.append("diferencias con el feed (solo informativas, no se aplican):")

@@ -38,7 +38,7 @@ REQUIRED_FILES = [
     os.path.join("scripts", "check-updated-at"),
     os.path.join("scripts", "convert-csv"),
     os.path.join("scripts", "fetch-rfef-results"),
-    os.path.join("scripts", "auto-apply-results"),
+    os.path.join("scripts", "auto-apply-rfef"),
     os.path.join("scripts", "rfef", "aliases.json"),
     os.path.join("scripts", "rfef", "config.json"),
     os.path.join("scripts", "check-initial-load"),

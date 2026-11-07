@@ -2,7 +2,7 @@
 # Aplica en bloque un CSV `id,date,time` (hora de Madrid; vacia = por confirmar) y verifica el resultado (US-042, ADR-013).
 # Uso: scripts/apply-schedule <fichero.csv> [--updated-at AAAA-MM-DDTHH:MM:SSZ]
 # Si `verify` falla, restaura la temporada tal como estaba (el feed queda sin cambios).
-# No hace commit ni push. Lo usa tambien auto-apply-results (en el mismo commit que los resultados).
+# No hace commit ni push. Lo usa tambien auto-apply-rfef (en el mismo commit que los resultados).
 set -eu
 . "$(dirname "$0")/_env.sh"
 SEASONS="$FEED/public/v1/seasons"

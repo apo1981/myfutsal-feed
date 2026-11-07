@@ -1,4 +1,4 @@
-"""US-042: horario automatico (fecha y hora) desde la RFEF en auto-apply-results y apply-schedule. Sintetico, sin red."""
+"""US-042: horario automatico (fecha y hora) desde la RFEF en auto-apply-rfef y apply-schedule. Sintetico, sin red."""
 from __future__ import annotations
 
 import json

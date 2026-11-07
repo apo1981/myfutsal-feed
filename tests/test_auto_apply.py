@@ -1,4 +1,4 @@
-"""US-036: orquestador auto-apply-results. Respuestas sinteticas, red y reloj simulados, repo git temporal; sin red real."""
+"""US-036: orquestador auto-apply-rfef. Respuestas sinteticas, red y reloj simulados, repo git temporal; sin red real."""
 from __future__ import annotations
 
 import copy
@@ -11,7 +11,7 @@ import subprocess
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import support  # debe ir antes que los modulos de scripts: anade scripts/ al sys.path
-import auto_apply_results as tool
+import auto_apply_rfef as tool
 import cross_check
 import fetch_rfef_results as fetch
 import test_fetch_rfef as base

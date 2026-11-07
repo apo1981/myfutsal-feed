@@ -246,7 +246,7 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 
 **Comando** (necesita red, identidad `noreply` y la temporada sin cambios sin commitear; tarda al menos 15 min por la espera entre lecturas):
 ```
-scripts/auto-apply-results --phase apertura --round 3
+scripts/auto-apply-rfef --phase apertura --round 3
 ```
 (`--phase clausura` para la segunda vuelta). Lee dos veces los partidos de la jornada (separadas ≥ 15 min) y una vez la clasificación, comprueba cordura, estabilidad y que la clasificación cuadra con el lote, aplica con `apply-results` y `apply-schedule`, ejecuta `scripts/verify` y hace **un commit local** con la URL, el instante UTC y el SHA-256 de las tres respuestas. Nunca hace push. Las respuestas crudas van a `../local-data/rfef/` (fuera del repositorio).
 
@@ -435,7 +435,7 @@ git log --grep='tiempo:' --format='%ad %s' --date=short
 | `scripts/round-sheet` | Hoja de una jornada (`--round N`) y lista de pendientes (`--pending`, `--csv`); solo lectura |
 | `scripts/apply-results` | Aplica en bloque un CSV `id,home,away` rellenado por el operador y ejecuta `verify` |
 | `scripts/fetch-rfef-results` | Lee una jornada de la RFEF (dos lecturas) y genera el CSV; informa de diferencias; respeta el interruptor |
-| `scripts/auto-apply-results` | Lee, verifica, aplica, ejecuta `verify` y hace un commit local; respeta el interruptor; sin push |
+| `scripts/auto-apply-rfef` | Lee, verifica, aplica, ejecuta `verify` y hace un commit local; respeta el interruptor; sin push |
 | `scripts/check-allowlist` | Solo `v1/index.json`, `privacy.html` y `v1/seasons/AAAA-AA.json` dentro de `public/` |
 | `scripts/check-workflow` | Comprobación estática del workflow |
 | `scripts/smoke-check` | Comprobación posterior al despliegue (feed y `privacy.html`) |
