@@ -102,6 +102,8 @@ unit 7f-aplicacion-autonoma-pruebas test_auto_apply.py
 
 unit 7g-interruptor-e-informe-pruebas test_switch.py
 
+unit 7h-canal-de-tv-pruebas test_broadcasters.py
+
 run 8-runbook "$FEED/scripts/check-runbook"
 unit 8-runbook-pruebas test_runbook.py
 

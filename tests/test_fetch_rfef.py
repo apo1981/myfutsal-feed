@@ -7,6 +7,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -105,6 +106,7 @@ class FetchTestCase(TempDirTestCase):
         aliases = {"version": 1, "aliases": {DATATEAM[t]: t for t in TEAM_IDS}}
         support.write_json(os.path.join(self.feed, tool.ALIASES_PATH), aliases)
         support.write_json(os.path.join(self.feed, rfef_switch.CONFIG_PATH), {"enabled": True})
+        shutil.copy(os.path.join(FEED, tool.BROADCASTERS_PATH), os.path.join(self.feed, tool.BROADCASTERS_PATH))  # lista blanca real
 
     def enable_switch(self) -> None:
         """Un bloqueo (403/429) desactiva el interruptor; las pruebas que repiten estados lo reactivan como lo haria el humano."""

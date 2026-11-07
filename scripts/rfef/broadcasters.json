@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "note": "Lista blanca: id de canal de la RFEF (tvs[].id) -> nombre que se publica en broadcasters. Solo ids observados; un id nuevo se informa y no se aplica hasta anadirlo aqui. Nunca URLs.",
+  "broadcasters": {
+    "3": "Teledeporte",
+    "160": "DAZN España",
+    "162": "TDP Play"
+  }
+}

@@ -47,6 +47,7 @@ READ_SEPARATION_SECONDS = 15 * 60  # separacion minima entre las dos lecturas de
 TIMEOUT_SECONDS = 30
 STOP_STATUSES = (403, 429)
 ALIASES_PATH = os.path.join("scripts", "rfef", "aliases.json")
+BROADCASTERS_PATH = os.path.join("scripts", "rfef", "broadcasters.json")
 RAW_DIR_RELATIVE = os.path.join("..", "local-data", "rfef")
 # fase -> (league_id, group_code) de la RFEF
 PHASES = {"apertura": ("1297", "1"), "clausura": ("1298", "2")}
@@ -118,10 +119,25 @@ class RfefMatch:
         self.away_name = clean(raw["team_visit"])
         self.status_text = clean(raw["status_txt"])
         self.hour = None if str(raw["no_hour"]).strip() == "1" else (clean(raw["hour"]) or None)
+        self.tv_ids = parse_tv_ids(raw.get("tvs"))
 
     @property
     def label(self) -> str:
         return "%s - %s (%s)" % (self.home_name, self.away_name, self.day)
+
+
+def parse_tv_ids(tvs: Any) -> Optional[List[str]]:
+    """Ids de canal de `tvs` en orden y sin repetir; None si la RFEF no trae el campo (no se toca nada). Solo se lee `id`, nunca `url`."""
+    if tvs is None:
+        return None
+    if not isinstance(tvs, list) or not all(isinstance(tv, dict) and str(tv.get("id", "")).strip() for tv in tvs):
+        raise ParseError("'tvs' de un partido no es una lista de objetos con id")
+    ids = []  # type: List[str]
+    for tv in tvs:
+        identifier = str(tv["id"]).strip()
+        if identifier not in ids:
+            ids.append(identifier)
+    return ids
 
 
 def parse_response(body: bytes) -> Tuple[List[RfefMatch], List[Tuple[str, Any]]]:
@@ -246,6 +262,12 @@ def load_aliases(feed: str) -> Dict[str, str]:
         return dict(json.load(handle)["aliases"])
 
 
+def load_broadcasters(feed: str) -> Dict[str, str]:
+    """Lista blanca id RFEF -> nombre publicable (US-045)."""
+    with open(os.path.join(feed, BROADCASTERS_PATH), "r", encoding="utf-8") as handle:
+        return dict(json.load(handle)["broadcasters"])
+
+
 def resolve_teams(matches: List[RfefMatch], aliases: Dict[str, str]) -> List[str]:
     """Errores de equipos sin casar (uno por equipo, con su nombre RFEF)."""
     missing = {}  # type: Dict[str, str]
@@ -292,10 +314,13 @@ class Plan:
         self.differences = []  # type: List[str]
         self.warnings = []  # type: List[str]
         self.schedule_notes = []  # type: List[str]
+        self.broadcasters = []  # type: List[Tuple[str, List[str]]]  # (id, nombres; [] = vaciar)
+        self.broadcaster_notes = []  # type: List[str]
 
 
 def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Dict[str, str],
-               later: Optional[List[Dict[str, Any]]] = None) -> Plan:
+               later: Optional[List[Dict[str, Any]]] = None, broadcasters: Optional[Dict[str, str]] = None,
+               today: Optional[datetime.date] = None) -> Plan:
     """Casa por par local-visitante (nunca por posicion). Lanza ToolError (partido ausente) o AnomalyError (marcador distinto).
 
     Un par que el feed tiene en una jornada posterior (`later`) es un partido adelantado: se informa y no se aplica."""
@@ -324,6 +349,8 @@ def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Di
         if scheduled:
             plan.schedule.append(scheduled)
         add_differences(plan, feed_match, match, score, scheduled is not None)
+        if broadcasters is not None and today is not None:
+            plan_broadcasters(plan, feed_match, match, broadcasters, today)
         if score is None:
             plan.pending += 1
         elif feed_match["status"] == "finished":
@@ -345,6 +372,7 @@ def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Di
         raise AnomalyError(conflicts)
     plan.rows.sort()
     plan.schedule.sort()
+    plan.broadcasters.sort()
     return plan
 
 
@@ -370,6 +398,27 @@ def schedule_row(feed_match: Dict[str, Any], match: RfefMatch) -> Optional[Tuple
     if kickoff.get("date") == match.day and madrid_time(kickoff) == match.hour:
         return None
     return feed_match["id"], match.day, match.hour or ""
+
+
+def plan_broadcasters(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, whitelist: Dict[str, str], today: datetime.date) -> None:
+    """Canal de TV (ADR-013 decision 4): solo partidos 'Sin comenzar' con fecha futura y que el feed no da por finished, cancelled,
+    postponed ni suspended. Solo nombres de la lista blanca; un id desconocido se informa y no se aplica (el resto sigue). `tvs` vacio
+    vacia el valor. Si todos los ids son desconocidos no se toca nada (no se vacia por no reconocer)."""
+    if match.tv_ids is None or match.status_text != NOT_STARTED_LABEL or feed_match["status"] in AUTO_UNTOUCHED_STATUSES:
+        return
+    if datetime.datetime.strptime(match.day, round_sheet.DATE_FORMAT).date() <= today:
+        return
+    unknown = [identifier for identifier in match.tv_ids if identifier not in whitelist]
+    for identifier in unknown:
+        plan.warnings.append("%s: canal de TV con id %s no esta en la lista blanca (%s); no se aplica ese canal" % (
+            feed_match["id"], identifier, BROADCASTERS_PATH))
+    names = [whitelist[identifier] for identifier in match.tv_ids if identifier in whitelist]
+    if match.tv_ids and not names:
+        return
+    current = feed_match.get("broadcasters") or []
+    if names != current:
+        plan.broadcasters.append((feed_match["id"], names))
+        plan.broadcaster_notes.append("%s: canales %s -> %s" % (feed_match["id"], ", ".join(current) or "ninguno", ", ".join(names) or "ninguno"))
 
 
 def add_differences(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, score: Optional[Tuple[int, int]],
@@ -401,7 +450,8 @@ def relevant_fields(match: RfefMatch) -> Dict[str, str]:
     return {"estado": match.status_text,
             "marcador": "%d-%d" % score if score else "sin marcador (%s-%s)" % (clean(match.raw["r_local"]),
                                                                               clean(match.raw["r_visit"])),
-            "fecha": match.day, "hora": match.hour or NO_TIME}
+            "fecha": match.day, "hora": match.hour or NO_TIME,
+            "canales": "no informado" if match.tv_ids is None else ",".join(match.tv_ids) or "ninguno"}
 
 
 def stability_anomalies(first: List[RfefMatch], second: List[RfefMatch]) -> List[str]:
@@ -445,6 +495,19 @@ def schedule_csv_text(rows: List[Tuple[str, str, str]]) -> str:
     return out.getvalue()
 
 
+BROADCASTERS_CSV_COLUMNS = ["id", "broadcasters"]
+BROADCASTERS_SEPARATOR = "|"
+
+
+def broadcasters_csv_text(rows: List[Tuple[str, List[str]]]) -> str:
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(BROADCASTERS_CSV_COLUMNS)
+    for identifier, names in rows:
+        writer.writerow([identifier, BROADCASTERS_SEPARATOR.join(names)])
+    return out.getvalue()
+
+
 def pretty_lines(rows: List[Tuple[str, int, int]], round_data: Dict[str, Any], season: Dict[str, Any]) -> List[str]:
     """Una linea 'id  Local G-G Visitante' por fila del CSV, con teams[].name del feed (US-039)."""
     names = {team["id"]: team["name"] for team in season["teams"]}
@@ -475,6 +538,9 @@ def report_lines(plan: Plan, phase: str, number: int, source: str, reads: List[T
     if plan.schedule_notes:
         lines.append("horarios a aplicar (auto-apply-rfef): %d" % len(plan.schedule_notes))
         lines.extend("  " + note for note in plan.schedule_notes)
+    if plan.broadcaster_notes:
+        lines.append("canales de TV a aplicar (auto-apply-rfef): %d" % len(plan.broadcaster_notes))
+        lines.extend("  " + note for note in plan.broadcaster_notes)
     if plan.differences:
         lines.append("diferencias con el feed (solo informativas, no se aplican):")
         lines.extend("  " + difference for difference in plan.differences)
@@ -633,7 +699,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], Transport], sl
     unmatched = resolve_teams(matches, aliases)
     if unmatched:
         raise ToolError("\n".join(unmatched))
-    plan = build_plan(matches, round_data, aliases, later_rounds(season, args.phase, args.round))
+    plan = build_plan(matches, round_data, aliases, later_rounds(season, args.phase, args.round), load_broadcasters(args.feed), today)
 
     text = csv_text(plan.rows)
     readable = pretty_lines(plan.rows, round_data, season) if args.pretty else []

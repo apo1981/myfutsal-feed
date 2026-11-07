@@ -11,6 +11,7 @@ Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura), US-03
   - El commit exige identidad git `noreply`, solo incluye el JSON de la temporada y lleva URL, instante UTC y SHA-256 de las
     tres respuestas. Nunca hace push.
 Interruptor (US-038): `enabled` false = sin peticiones (salida 5); 403/429, robots que veta o 2 anomalias seguidas lo ponen a false.
+Canal de TV (US-045, ADR-013 decision 4): ver plan_broadcasters; solo partidos futuros, lista blanca y doble lectura.
 Horario (US-042, ADR-013): aplica fecha y hora de los partidos 'Sin comenzar' no finished ni cancelled en el mismo commit; sin marcadores
 nuevos no pide la tabla. Informe: lista las diferencias no aplicadas (estado, aplazados, adelantados) en la salida de error.
 Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, tabla no disponible, verify, red); 3 anomalia; 4 parada de la RFEF; 5 deshabilitada.
@@ -29,6 +30,7 @@ import tempfile
 import time
 from typing import Any, Callable, List, Optional, Tuple
 
+import apply_broadcasters
 import apply_results
 import apply_schedule
 import cross_check
@@ -162,14 +164,15 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     unmatched = fetch.resolve_teams(matches, aliases)
     if unmatched:
         raise fetch.ToolError("\n".join(unmatched))
-    plan = fetch.build_plan(matches, round_data, aliases, fetch.later_rounds(season, args.phase, args.round))
+    plan = fetch.build_plan(matches, round_data, aliases, fetch.later_rounds(season, args.phase, args.round),
+                            fetch.load_broadcasters(feed), today)
     report = fetch.report_lines(plan, args.phase, args.round, matches_url, [(read[1], read[2]) for read in reads[:2]])
 
-    if not plan.rows and not plan.schedule:
+    if not plan.rows and not plan.schedule and not plan.broadcasters:
         # Sin cambios: no hace falta la tabla ni el commit (idempotencia y jornada sin partidos nuevos ni horarios distintos).
         print("Sin cambios: %s. El JSON no se ha tocado y no hay commit." % (
             "el lote ya estaba aplicado (%d partidos publicados iguales)" % plan.already_published if plan.already_published
-            else "no hay partidos finalizados nuevos ni horarios distintos"), file=stderr)
+            else "no hay partidos finalizados nuevos ni horarios o canales distintos"), file=stderr)
         print_report(report, stderr)
         return fetch.EXIT_OK
 
@@ -179,8 +182,8 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     progress(stderr, "aplicar y verify")
     commit = apply_and_commit(args, plan, reads, now(), today, season_path, verify_runner, stderr)
     print_report(report, stderr)
-    print("Aplicados %d resultados y %d horarios de %s jornada %d; commit %s (sin push)" % (
-        len(plan.rows), len(plan.schedule), args.phase, args.round, commit), file=stdout)
+    print("Aplicados %d resultados, %d horarios y %d canales de TV de %s jornada %d; commit %s (sin push)" % (
+        len(plan.rows), len(plan.schedule), len(plan.broadcasters), args.phase, args.round, commit), file=stdout)
     return fetch.EXIT_OK
 
 
@@ -230,14 +233,18 @@ def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Rea
                     same = ["--same-commit"] if plan.rows else []  # los resultados ya pusieron el updatedAt de este commit
                     code = apply_batch_file(directory, "schedule.csv", fetch.schedule_csv_text(plan.schedule), lambda path:
                                             apply_schedule.main(["--feed", feed, path, "--now", stamp, "--updated-at", stamp] + same))
+                if code == 0 and plan.broadcasters:
+                    same = ["--same-commit"] if plan.rows or plan.schedule else []  # un lote anterior ya puso el updatedAt
+                    code = apply_batch_file(directory, "broadcasters.csv", fetch.broadcasters_csv_text(plan.broadcasters), lambda path:
+                                            apply_broadcasters.main(["--feed", feed, path, "--now", stamp, "--updated-at", stamp] + same))
         if code != 0:
-            raise fetch.ToolError("apply-results o apply-schedule han fallado; se ha restaurado el JSON anterior:\n" + captured.getvalue().strip())
+            raise fetch.ToolError("apply-results, apply-schedule o apply-broadcasters han fallado; se ha restaurado el JSON anterior:\n" + captured.getvalue().strip())
         passed, output = verify_runner(feed)
         if not passed:
             raise fetch.ToolError("verify no ha pasado tras aplicar; se ha restaurado el JSON anterior, sin commit:\n" + output.strip())
         progress(stderr, "commit")
         if git(feed, "diff", "--quiet", "--", season_path).returncode == 0:
-            raise fetch.ToolError("apply-results y apply-schedule no han cambiado el JSON; no hay nada que commitear")
+            raise fetch.ToolError("los lotes aplicados no han cambiado el JSON; no hay nada que commitear")
         result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", season_path)
         if result.returncode != 0:
             raise fetch.ToolError("git commit ha fallado; se ha restaurado el JSON anterior: %s" % result.stderr.strip())
@@ -260,12 +267,15 @@ def restore(path: str, original: bytes) -> None:
 
 
 def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]) -> str:
-    what = "results and schedule" if plan.rows and plan.schedule else "results" if plan.rows else "schedule"
+    what = " and ".join(label for label, applied in (("results", plan.rows), ("schedule", plan.schedule), ("broadcasters", plan.broadcasters))
+                        if applied)
     lines = ["feat: apply %s round %d %s from RFEF" % (args.phase, args.round, what), ""]
     if plan.rows:
         lines.append("Matches: %s" % ", ".join(row[0] for row in plan.rows))
     if plan.schedule:
         lines.append("Schedule: %s" % ", ".join(row[0] for row in plan.schedule))
+    if plan.broadcasters:
+        lines.append("Broadcasters: %s" % ", ".join(row[0] for row in plan.broadcasters))
     lines.append("")
     for label, (url, fetched_at, digest) in zip(("Read 1 (matches)", "Read 2 (matches)", "Table"), reads):
         lines.append("%s: %s %s sha256=%s" % (label, url, fetched_at, digest))
