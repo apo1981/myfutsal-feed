@@ -485,11 +485,14 @@ def download(transport: Transport, phase: str, number: int, year: str, sleep: Ca
 
 
 def download_again(transport: Transport, phase: str, number: int, year: str, sleep: Callable[[float], None],
-                   now: Callable[[], datetime.datetime], first_read_at: datetime.datetime) -> bytes:
-    """Segunda lectura: espera hasta cumplir la separacion minima y, si el reloj no la confirma, se niega (nunca lee antes)."""
+                   now: Callable[[], datetime.datetime], first_read_at: datetime.datetime,
+                   wait: Optional[Callable[[float], None]] = None) -> bytes:
+    """Segunda lectura: espera hasta cumplir la separacion minima y, si el reloj no la confirma, se niega (nunca lee antes).
+
+    `wait` sustituye a `sleep` solo para la espera larga (p. ej. con cuenta atras); la pausa corta sigue usando `sleep`."""
     remaining = READ_SEPARATION_SECONDS - (now() - first_read_at).total_seconds()
     if remaining > 0:
-        sleep(remaining)
+        (wait or sleep)(remaining)
         if (now() - first_read_at).total_seconds() < READ_SEPARATION_SECONDS:
             raise ToolError("no han pasado %d min desde la primera lectura: no se hace la segunda" % (READ_SEPARATION_SECONDS // 60))
     return post_round(transport, phase, number, year)

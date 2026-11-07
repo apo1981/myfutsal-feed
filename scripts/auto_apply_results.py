@@ -37,6 +37,8 @@ import structure
 
 TABLE_ENDPOINT_PATH = "/futsal_xhr/get_table_round"
 UPDATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+PROGRESS_PREFIX = "[progreso] "
+COUNTDOWN_INTERVAL_SECONDS = 60
 TABLE_ANOMALY_NOTE = ("nota: hay anomalias de tabla; revisar aplazados y Clausura (semantica de la clasificacion sin verificar, "
                       "disparador 1 de ADR-012)")
 
@@ -88,10 +90,34 @@ def read_table(transport: fetch.Transport, year: str, round_number: int) -> byte
     return body
 
 
+def progress(stderr: Any, message: str) -> None:
+    """Linea de progreso (solo stderr, prefijo fijo)."""
+    print(PROGRESS_PREFIX + message, file=stderr)
+
+
+def countdown_wait(seconds: float, sleep: Callable[[float], None], now: Callable[[], datetime.datetime], stderr: Any,
+                   interval: float = COUNTDOWN_INTERVAL_SECONDS) -> None:
+    """Espera `seconds` anunciando la hora prevista (Madrid) y, como mucho, una linea de tiempo restante por intervalo."""
+    due = (now() + datetime.timedelta(seconds=seconds)).astimezone(fetch.TIMEZONE)
+    progress(stderr, "hora prevista de la 2a lectura: %s (espera de %d min %02d s)" % (due.strftime("%H:%M"), seconds // 60, seconds % 60))
+    left = seconds
+    while left > 0:
+        step = min(interval, left)
+        sleep(step)
+        left -= step
+        if left > 0:
+            progress(stderr, "quedan %d min %02d s para la 2a lectura" % (left // 60, left % 60))
+
+
 def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transport], sleep: Callable[[float], None],
         now: Callable[[], datetime.datetime], stdout: Any, stderr: Any, verify_runner: VerifyRunner = default_verify) -> int:
     feed = args.feed
-    rfef_switch.ensure_enabled(feed)  # antes de cualquier otra cosa: deshabilitada = ninguna peticion
+    progress(stderr, "comprobaciones iniciales e interruptor")
+    try:
+        rfef_switch.ensure_enabled(feed)  # antes de cualquier otra cosa: deshabilitada = ninguna peticion
+    except rfef_switch.DisabledError:
+        progress(stderr, "herramienta deshabilitada: sin peticiones")
+        raise
     require_noreply_identity(feed)
     season = round_sheet.load_season(feed)
     season_path = os.path.join(round_sheet.SEASON_PATH, round_sheet.current_season_id(feed) + ".json")
@@ -119,10 +145,13 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
 
     transport = transport_factory()
     matches_url = fetch.BASE_URL + fetch.ENDPOINT_PATH
+    progress(stderr, "1a lectura")
     first_body = fetch.download(transport, args.phase, args.round, year, sleep)
     first_at = record(matches_url, first_body)
     first = check(first_body)  # una primera lectura invalida no justifica esperar ni pedir mas
-    second_body = fetch.download_again(transport, args.phase, args.round, year, sleep, now, first_at)
+    progress(stderr, "2a lectura")
+    second_body = fetch.download_again(transport, args.phase, args.round, year, sleep, now, first_at,
+                                       wait=lambda seconds: countdown_wait(seconds, sleep, now, stderr))
     record(matches_url, second_body)
     matches = check(second_body)
     unstable = fetch.stability_anomalies(first, matches)
@@ -142,10 +171,12 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
         print_report(report, stderr)
         return fetch.EXIT_OK
 
+    progress(stderr, "tabla")
     sleep(fetch.REQUEST_INTERVAL_SECONDS)
     table_body = read_table(transport, year, args.round)
     record(fetch.BASE_URL + TABLE_ENDPOINT_PATH, table_body)
 
+    progress(stderr, "cruce con la tabla")
     rfef_pairs = [(aliases[m.home_datateam], aliases[m.away_datateam]) for m in matches]  # jornada N: validada por la cordura
     try:
         found = cross_check.verify(cross_check.apply_batch(season, plan.rows), args.phase, args.round, league, table_body, aliases, rfef_pairs)
@@ -156,6 +187,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
             found.append(TABLE_ANOMALY_NOTE)
         raise fetch.AnomalyError(found)
 
+    progress(stderr, "aplicar y verify")
     commit = apply_and_commit(args, plan, reads, now(), today, season_path, verify_runner, stderr)
     print_report(report, stderr)
     print("Aplicados %d resultados de %s jornada %d; commit %s (sin push)" % (len(plan.rows), args.phase, args.round, commit), file=stdout)
@@ -188,6 +220,7 @@ def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Rea
         passed, output = verify_runner(feed)
         if not passed:
             raise fetch.ToolError("verify no ha pasado tras aplicar; se ha restaurado el JSON anterior, sin commit:\n" + output.strip())
+        progress(stderr, "commit")
         if git(feed, "diff", "--quiet", "--", season_path).returncode == 0:
             raise fetch.ToolError("apply-results no ha cambiado el JSON; no hay nada que commitear")
         result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", season_path)
