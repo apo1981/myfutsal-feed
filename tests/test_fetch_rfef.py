@@ -317,8 +317,9 @@ class SanityTests(FetchTestCase):
     def test_US034_non_empty_descansa(self) -> None:
         self.assert_anomaly(rfef_doc(standard_matches(), resting=["Club X"]), "descansa", "vacio", '["Club X"]')
 
-    def test_US034_future_dated_match(self) -> None:
+    def test_US034_US042_future_dated_match_with_goals_is_an_anomaly(self) -> None:
         matches = standard_matches()
+        matches[7] = rfef_match(8, ("1", "0"), "Sin comenzar")
         document = rfef_doc(matches[:7], "2026-10-17")
         document["2026-10-25"] = {"date": "Domingo", "descansa": [], "matches": [matches[7]]}
         self.assert_anomaly(document, "fecha-futura", "<= " + TODAY, "2026-10-25")

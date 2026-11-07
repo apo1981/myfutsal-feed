@@ -227,7 +227,7 @@ class NoChangeTests(AutoApplyTestCase):
         self.assertEqual(sum(1 for call in transport.calls if call[0] == "POST"), 2)
 
     def test_US036_round_without_new_finished_matches_changes_nothing_and_says_so(self) -> None:
-        pending = [rfef_match(i, None, "Sin comenzar") for i in range(1, 9)]
+        pending = [rfef_match(i, None, "Sin comenzar", no_hour="1") for i in range(1, 9)]  # sin hora, como el feed
         body = self.doc_bytes(pending)
         result, _, _ = self.launch([(200, body), (200, body)])
         self.assertEqual(result.returncode, 0, result.stderr)

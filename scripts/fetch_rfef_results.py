@@ -32,6 +32,7 @@ import urllib.robotparser
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+import apply_schedule
 import rfef_switch
 import round_sheet
 
@@ -57,11 +58,13 @@ FINISHED_LABEL = "Finalizado"
 NOT_STARTED_LABEL = "Sin comenzar"
 FEED_FILLABLE_STATUSES = ("unknown", "scheduled", "live")
 NO_TIME = "sin hora"
+NO_DATE = "sin fecha"
 ROUND_PATTERN = re.compile(r"Jornada (\d+)\s*$")
 INTEGER_PATTERN = re.compile(r"^-?\d+$")
 REQUIRED_MATCH_KEYS = ("team_local", "team_visit", "datateam1", "datateam2", "status_txt", "r_local", "r_visit",
                        "hour", "no_hour", "league_id", "group_code", "category", "year")
 CSV_COLUMNS = ["id", "home", "away"]
+SCHEDULE_CSV_COLUMNS = ["id", "date", "time"]
 
 EXIT_OK, EXIT_ERROR, EXIT_ANOMALY, EXIT_STOPPED, EXIT_DISABLED = 0, 2, 3, 4, 5
 
@@ -178,6 +181,25 @@ def parse_goals(match: RfefMatch) -> Tuple[Optional[Tuple[int, int]], List[str]]
     return (values[0], values[1]), anomalies
 
 
+def has_goals(match: RfefMatch) -> bool:
+    """Alguna de las dos columnas de goles trae un entero (un partido futuro con marcador es una anomalia; ADR-013 decision 1)."""
+    return any(INTEGER_PATTERN.match(str(match.raw[column]).strip()) for column in ("r_local", "r_visit"))
+
+
+def schedule_anomalies(match: RfefMatch, end_year: int) -> List[str]:
+    """Fecha fuera de la temporada y, en un partido 'Sin comenzar' con hora confirmada, hora invalida (ADR-013 decision 2)."""
+    found = []  # type: List[str]
+    problem = apply_schedule.date_problem(match.day, end_year)
+    if problem:
+        found.append(anomaly("fecha-temporada", match.label, "dentro de la temporada", "%s (%s)" % (match.day, problem)))
+    if match.status_text == NOT_STARTED_LABEL and str(match.raw["no_hour"]).strip() != "1":
+        problem = apply_schedule.time_problem(match.hour or "")
+        if problem:
+            found.append(anomaly("hora", match.label, "HH:MM entre %s y %s" % (apply_schedule.EARLIEST_TIME, apply_schedule.LATEST_TIME),
+                                 "%r (%s)" % (match.hour or "", problem)))
+    return found
+
+
 def sanity_anomalies(matches: List[RfefMatch], resting: List[Tuple[str, Any]], league_id: str, group: str,
                      round_number: int, year: str, today: datetime.date) -> List[str]:
     found = []  # type: List[str]
@@ -190,8 +212,9 @@ def sanity_anomalies(matches: List[RfefMatch], resting: List[Tuple[str, Any]], l
         obtained = found_round.group(1) if found_round else clean(match.raw["category"])
         if obtained != str(round_number):
             found.append(anomaly("jornada", match.label, round_number, obtained))
-        if datetime.datetime.strptime(match.day, round_sheet.DATE_FORMAT).date() > today:
-            found.append(anomaly("fecha-futura", match.label, "<= %s" % today.isoformat(), match.day))
+        found.extend(schedule_anomalies(match, int(year)))
+        if has_goals(match) and datetime.datetime.strptime(match.day, round_sheet.DATE_FORMAT).date() > today:
+            found.append(anomaly("fecha-futura", match.label, "<= %s" % today.isoformat(), match.day))  # solo marcadores (ADR-013)
     teams = {team for match in matches for team in (match.home_datateam, match.away_datateam)}
     if len(teams) != TEAMS_PER_ROUND:
         found.append(anomaly("equipos", "jornada %d" % round_number, TEAMS_PER_ROUND, len(teams)))
@@ -260,10 +283,12 @@ class Plan:
 
     def __init__(self) -> None:
         self.rows = []  # type: List[Tuple[str, int, int]]
+        self.schedule = []  # type: List[Tuple[str, str, str]]  # (id, fecha, hora de Madrid o "" = por confirmar)
         self.pending = 0
         self.already_published = 0
         self.differences = []  # type: List[str]
         self.warnings = []  # type: List[str]
+        self.schedule_notes = []  # type: List[str]
 
 
 def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Dict[str, str],
@@ -292,7 +317,10 @@ def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Di
         score, _ = parse_goals(match)
         if match.status_text not in (FINISHED_LABEL, NOT_STARTED_LABEL):
             plan.warnings.append("%s: estado RFEF no reconocido %r, queda pendiente" % (feed_match["id"], match.status_text))
-        add_differences(plan, feed_match, match, score)
+        scheduled = schedule_row(feed_match, match)
+        if scheduled:
+            plan.schedule.append(scheduled)
+        add_differences(plan, feed_match, match, score, scheduled is not None)
         if score is None:
             plan.pending += 1
         elif feed_match["status"] == "finished":
@@ -313,6 +341,7 @@ def build_plan(matches: List[RfefMatch], round_data: Dict[str, Any], aliases: Di
     if conflicts:
         raise AnomalyError(conflicts)
     plan.rows.sort()
+    plan.schedule.sort()
     return plan
 
 
@@ -324,13 +353,30 @@ def find_advanced(later: List[Dict[str, Any]], pair: Tuple[str, str]) -> Optiona
     return None
 
 
-def add_differences(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, score: Optional[Tuple[int, int]]) -> None:
+def schedule_row(feed_match: Dict[str, Any], match: RfefMatch) -> Optional[Tuple[str, str, str]]:
+    """Fila (id, fecha, hora) si el partido 'Sin comenzar' no finished/cancelled cambia de fecha u hora; None si no hay nada que aplicar.
+
+    `no_hour == "1"` da hora vacia (por confirmar): nunca se inventa una (ADR-013 decision 2)."""
+    if match.status_text != NOT_STARTED_LABEL or feed_match["status"] in apply_schedule.UNTOUCHED_STATUSES:
+        return None
     kickoff = feed_match["kickoff"]
-    if kickoff.get("date") != match.day:
-        plan.differences.append("%s: fecha feed=%s, RFEF=%s" % (feed_match["id"], kickoff.get("date"), match.day))
-    if (madrid_time(kickoff) or None) != match.hour:
-        plan.differences.append("%s: hora feed=%s, RFEF=%s" % (feed_match["id"], madrid_time(kickoff) or NO_TIME,
-                                                               match.hour or NO_TIME))
+    if kickoff.get("date") == match.day and madrid_time(kickoff) == match.hour:
+        return None
+    return feed_match["id"], match.day, match.hour or ""
+
+
+def add_differences(plan: Plan, feed_match: Dict[str, Any], match: RfefMatch, score: Optional[Tuple[int, int]],
+                    schedule_applied: bool = False) -> None:
+    kickoff = feed_match["kickoff"]
+    if schedule_applied:
+        plan.schedule_notes.append("%s: fecha %s -> %s, hora %s -> %s" % (
+            feed_match["id"], kickoff.get("date") or NO_DATE, match.day, madrid_time(kickoff) or NO_TIME, match.hour or NO_TIME))
+    else:
+        if kickoff.get("date") != match.day:
+            plan.differences.append("%s: fecha feed=%s, RFEF=%s" % (feed_match["id"], kickoff.get("date"), match.day))
+        if (madrid_time(kickoff) or None) != match.hour:
+            plan.differences.append("%s: hora feed=%s, RFEF=%s" % (feed_match["id"], madrid_time(kickoff) or NO_TIME,
+                                                                   match.hour or NO_TIME))
     if feed_match["status"] in ("postponed", "suspended"):
         plan.differences.append("%s: estado feed=%s, RFEF=%s (%s %s); no se cambia" % (
             feed_match["id"], feed_match["status"], match.status_text, match.day, match.hour or NO_TIME))
@@ -383,6 +429,15 @@ def csv_text(rows: List[Tuple[str, int, int]]) -> str:
     return out.getvalue()
 
 
+def schedule_csv_text(rows: List[Tuple[str, str, str]]) -> str:
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(SCHEDULE_CSV_COLUMNS)
+    for row in rows:
+        writer.writerow(row)
+    return out.getvalue()
+
+
 def pretty_lines(rows: List[Tuple[str, int, int]], round_data: Dict[str, Any], season: Dict[str, Any]) -> List[str]:
     """Una linea 'id  Local G-G Visitante' por fila del CSV, con teams[].name del feed (US-039)."""
     names = {team["id"]: team["name"] for team in season["teams"]}
@@ -410,8 +465,11 @@ def report_lines(plan: Plan, phase: str, number: int, source: str, reads: List[T
              "finalizados a aplicar: %d; ya publicados iguales: %d; pendientes: %d" % (
                  len(plan.rows), plan.already_published, plan.pending)]
     lines.extend("aviso: " + warning for warning in plan.warnings)
+    if plan.schedule_notes:
+        lines.append("horarios a aplicar (auto-apply-results): %d" % len(plan.schedule_notes))
+        lines.extend("  " + note for note in plan.schedule_notes)
     if plan.differences:
-        lines.append("diferencias con el feed (solo informativas, no cambian el CSV):")
+        lines.append("diferencias con el feed (solo informativas, no se aplican):")
         lines.extend("  " + difference for difference in plan.differences)
     else:
         lines.append("sin diferencias de fecha, hora ni estado con el feed; partidos nuevos: %d" % len(plan.rows))

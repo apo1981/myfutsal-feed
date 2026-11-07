@@ -1,0 +1,17 @@
+#!/bin/sh
+# Aplica en bloque un CSV `id,date,time` (hora de Madrid; vacia = por confirmar) y verifica el resultado (US-042, ADR-013).
+# Uso: scripts/apply-schedule <fichero.csv> [--updated-at AAAA-MM-DDTHH:MM:SSZ]
+# Si `verify` falla, restaura la temporada tal como estaba (el feed queda sin cambios).
+# No hace commit ni push. Lo usa tambien auto-apply-results (en el mismo commit que los resultados).
+set -eu
+. "$(dirname "$0")/_env.sh"
+SEASONS="$FEED/public/v1/seasons"
+BACKUP=$(mktemp -d "${TMPDIR:-/tmp}/apply-schedule.XXXXXX")
+trap 'rm -rf "$BACKUP"' EXIT
+cp "$SEASONS"/*.json "$BACKUP"/
+run_python "$FEED/scripts/apply_schedule.py" --feed "$FEED" "$@"
+if ! "$FEED/scripts/verify"; then
+    cp "$BACKUP"/*.json "$SEASONS"/
+    echo "FALLO: verify no ha pasado. Se ha restaurado la temporada tal como estaba; no hagas commit y avisa al equipo." >&2
+    exit 1
+fi

@@ -73,17 +73,26 @@ def has_been_played_by(match: Dict[str, Any], today: datetime.date) -> bool:
     return bool(date) and datetime.datetime.strptime(date, round_sheet.DATE_FORMAT).date() < today
 
 
-def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated_at: str, today: datetime.date,
-               now: datetime.datetime) -> int:
-    """Modifica `season` en memoria. Lanza ApplyError sin haber cambiado nada si alguna fila no es aplicable."""
+def check_updated_at(season: Dict[str, Any], updated_at: str, now: datetime.datetime, same_batch: bool = False) -> None:
+    """`updatedAt` nuevo: no futuro y estrictamente posterior al actual (D-544). Con `same_batch` (el mismo lote ya lo puso) basta con igualarlo."""
     current = datetime.datetime.strptime(season["updatedAt"], UPDATED_AT_FORMAT)
     future = invariants.future_violation({"seasonId": season.get("seasonId"), "updatedAt": updated_at}, now)
     if future:
         raise ApplyError("%s" % future.detail)
+    if same_batch:
+        if updated_at != season["updatedAt"]:
+            raise ApplyError("el updatedAt %s no es el del lote ya aplicado (%s)" % (updated_at, season["updatedAt"]))
+        return
     if invariants.is_future(season["updatedAt"], now):
         print("AVISO: el updatedAt actual %s esta en el futuro; se corrige con %s" % (season["updatedAt"], updated_at), file=sys.stderr)
     elif datetime.datetime.strptime(updated_at, UPDATED_AT_FORMAT) <= current:
         raise ApplyError("el updatedAt nuevo %s no es posterior al actual %s" % (updated_at, season["updatedAt"]))
+
+
+def apply_rows(season: Dict[str, Any], rows: List[Tuple[str, int, int]], updated_at: str, today: datetime.date,
+               now: datetime.datetime) -> int:
+    """Modifica `season` en memoria. Lanza ApplyError sin haber cambiado nada si alguna fila no es aplicable."""
+    check_updated_at(season, updated_at, now)
     index = {match["id"]: (phase, match) for phase in season["phases"] for round_ in phase["rounds"] for match in round_["matches"]}
     changes = []
     for identifier, home, away in rows:

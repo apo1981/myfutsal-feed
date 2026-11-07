@@ -11,7 +11,8 @@ Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura), US-03
   - El commit exige identidad git `noreply`, solo incluye el JSON de la temporada y lleva URL, instante UTC y SHA-256 de las
     tres respuestas. Nunca hace push.
 Interruptor (US-038): `enabled` false = sin peticiones (salida 5); 403/429, robots que veta o 2 anomalias seguidas lo ponen a false.
-Informe: lista las diferencias no aplicadas (fecha, hora, estado, aplazados, adelantados) en la salida de error.
+Horario (US-042, ADR-013): aplica fecha y hora de los partidos 'Sin comenzar' no finished ni cancelled en el mismo commit; sin marcadores
+nuevos no pide la tabla. Informe: lista las diferencias no aplicadas (estado, aplazados, adelantados) en la salida de error.
 Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, tabla no disponible, verify, red); 3 anomalia; 4 parada de la RFEF; 5 deshabilitada.
 """
 from __future__ import annotations
@@ -29,6 +30,7 @@ import time
 from typing import Any, Callable, List, Optional, Tuple
 
 import apply_results
+import apply_schedule
 import cross_check
 import fetch_rfef_results as fetch
 import rfef_switch
@@ -163,14 +165,29 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     plan = fetch.build_plan(matches, round_data, aliases, fetch.later_rounds(season, args.phase, args.round))
     report = fetch.report_lines(plan, args.phase, args.round, matches_url, [(read[1], read[2]) for read in reads[:2]])
 
-    if not plan.rows:
-        # Sin cambios: no hace falta la tabla ni el commit (idempotencia y jornada sin partidos nuevos).
+    if not plan.rows and not plan.schedule:
+        # Sin cambios: no hace falta la tabla ni el commit (idempotencia y jornada sin partidos nuevos ni horarios distintos).
         print("Sin cambios: %s. El JSON no se ha tocado y no hay commit." % (
             "el lote ya estaba aplicado (%d partidos publicados iguales)" % plan.already_published if plan.already_published
-            else "no hay partidos finalizados nuevos"), file=stderr)
+            else "no hay partidos finalizados nuevos ni horarios distintos"), file=stderr)
         print_report(report, stderr)
         return fetch.EXIT_OK
 
+    if plan.rows:  # solo los marcadores nuevos piden la tabla; un cambio de horario solo se aplica con las dos lecturas (ADR-013)
+        verify_against_table(args, transport, sleep, season, plan, matches, aliases, league, year, record, stderr)
+
+    progress(stderr, "aplicar y verify")
+    commit = apply_and_commit(args, plan, reads, now(), today, season_path, verify_runner, stderr)
+    print_report(report, stderr)
+    print("Aplicados %d resultados y %d horarios de %s jornada %d; commit %s (sin push)" % (
+        len(plan.rows), len(plan.schedule), args.phase, args.round, commit), file=stdout)
+    return fetch.EXIT_OK
+
+
+def verify_against_table(args: argparse.Namespace, transport: fetch.Transport, sleep: Callable[[float], None], season: Any,
+                         plan: fetch.Plan, matches: List[fetch.RfefMatch], aliases: Any, league: str, year: str,
+                         record: Callable[[str, bytes], Any], stderr: Any) -> None:
+    """Tercera peticion y cruce de los marcadores nuevos con la clasificacion; lanza si no cuadra o no esta disponible."""
     progress(stderr, "tabla")
     sleep(fetch.REQUEST_INTERVAL_SECONDS)
     table_body = read_table(transport, year, args.round)
@@ -186,12 +203,6 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
         if any("[tabla" in line for line in found):
             found.append(TABLE_ANOMALY_NOTE)
         raise fetch.AnomalyError(found)
-
-    progress(stderr, "aplicar y verify")
-    commit = apply_and_commit(args, plan, reads, now(), today, season_path, verify_runner, stderr)
-    print_report(report, stderr)
-    print("Aplicados %d resultados de %s jornada %d; commit %s (sin push)" % (len(plan.rows), args.phase, args.round, commit), file=stdout)
-    return fetch.EXIT_OK
 
 
 def print_report(lines: List[str], stderr: Any) -> None:
@@ -209,20 +220,24 @@ def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Rea
     stamp = instant.astimezone(datetime.timezone.utc).strftime(UPDATED_AT_FORMAT)
     try:  # cualquier salida sin commit (incluida una excepcion o KeyboardInterrupt) deja el JSON como estaba
         with tempfile.TemporaryDirectory(prefix="auto-apply.") as directory:
-            csv_path = os.path.join(directory, "batch.csv")
-            with open(csv_path, "w", encoding="utf-8", newline="") as handle:
-                handle.write(fetch.csv_text(plan.rows))
             captured = io.StringIO()
+            code = 0
             with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
-                code = apply_results.main(["--feed", feed, csv_path, "--today", today.isoformat(), "--now", stamp, "--updated-at", stamp])
+                if plan.rows:
+                    code = apply_batch_file(directory, "results.csv", fetch.csv_text(plan.rows), lambda path: apply_results.main(
+                        ["--feed", feed, path, "--today", today.isoformat(), "--now", stamp, "--updated-at", stamp]))
+                if code == 0 and plan.schedule:
+                    same = ["--same-commit"] if plan.rows else []  # los resultados ya pusieron el updatedAt de este commit
+                    code = apply_batch_file(directory, "schedule.csv", fetch.schedule_csv_text(plan.schedule), lambda path:
+                                            apply_schedule.main(["--feed", feed, path, "--now", stamp, "--updated-at", stamp] + same))
         if code != 0:
-            raise fetch.ToolError("apply-results ha fallado; se ha restaurado el JSON anterior:\n" + captured.getvalue().strip())
+            raise fetch.ToolError("apply-results o apply-schedule han fallado; se ha restaurado el JSON anterior:\n" + captured.getvalue().strip())
         passed, output = verify_runner(feed)
         if not passed:
             raise fetch.ToolError("verify no ha pasado tras aplicar; se ha restaurado el JSON anterior, sin commit:\n" + output.strip())
         progress(stderr, "commit")
         if git(feed, "diff", "--quiet", "--", season_path).returncode == 0:
-            raise fetch.ToolError("apply-results no ha cambiado el JSON; no hay nada que commitear")
+            raise fetch.ToolError("apply-results y apply-schedule no han cambiado el JSON; no hay nada que commitear")
         result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", season_path)
         if result.returncode != 0:
             raise fetch.ToolError("git commit ha fallado; se ha restaurado el JSON anterior: %s" % result.stderr.strip())
@@ -232,14 +247,26 @@ def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Rea
     return git(feed, "rev-parse", "--short", "HEAD").stdout.strip()
 
 
+def apply_batch_file(directory: str, name: str, text: str, apply: Callable[[str], int]) -> int:
+    path = os.path.join(directory, name)
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        handle.write(text)
+    return apply(path)
+
+
 def restore(path: str, original: bytes) -> None:
     with open(path, "wb") as handle:
         handle.write(original)
 
 
 def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]) -> str:
-    lines = ["feat: apply %s round %d results from RFEF" % (args.phase, args.round), "",
-             "Matches: %s" % ", ".join(row[0] for row in plan.rows), ""]
+    what = "results and schedule" if plan.rows and plan.schedule else "results" if plan.rows else "schedule"
+    lines = ["feat: apply %s round %d %s from RFEF" % (args.phase, args.round, what), ""]
+    if plan.rows:
+        lines.append("Matches: %s" % ", ".join(row[0] for row in plan.rows))
+    if plan.schedule:
+        lines.append("Schedule: %s" % ", ".join(row[0] for row in plan.schedule))
+    lines.append("")
     for label, (url, fetched_at, digest) in zip(("Read 1 (matches)", "Read 2 (matches)", "Table"), reads):
         lines.append("%s: %s %s sha256=%s" % (label, url, fetched_at, digest))
     return "\n".join(lines) + "\n"
