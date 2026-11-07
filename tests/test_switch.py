@@ -38,6 +38,14 @@ class SwitchTestCase(AutoApplyTestCase):
 
 
 class DisabledTests(SwitchTestCase):
+    def test_US041_disabled_emits_only_initial_checks_and_disabled_lines(self) -> None:
+        self.set_enabled(False)
+        result, transport, _ = self.green()
+        self.assertEqual([l for l in result.stderr.splitlines() if l.startswith("[progreso] ")], ["[progreso] " + "comprobaciones iniciales e interruptor",
+                                                      "[progreso] " + "herramienta deshabilitada: sin peticiones"])
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(transport.calls, [])
+
     def test_US038_disabled_auto_apply_makes_no_request_and_says_so(self) -> None:
         self.set_enabled(False)
         result, transport, _ = self.green()

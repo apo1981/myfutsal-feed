@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import datetime
 import hashlib
 import io
 import json
@@ -116,7 +117,7 @@ class GreenTests(AutoApplyTestCase):
         _, transport, clock = self.green()
         posts = [call for call in transport.calls if call[0] == "POST"]
         self.assertEqual([call[1].rsplit("/", 1)[-1] for call in posts], ["get_matchs_round", "get_matchs_round", "get_table_round"])
-        self.assertIn(fetch.READ_SEPARATION_SECONDS, clock.sleeps)
+        self.assertGreaterEqual(sum(clock.sleeps), fetch.READ_SEPARATION_SECONDS)  # espera larga troceada por la cuenta atras (US-041)
         self.assertEqual(clock.sleeps[-1], fetch.REQUEST_INTERVAL_SECONDS)
         self.assertNotIn(b"league", posts[2][2])
 
@@ -285,3 +286,45 @@ class GuardTests(AutoApplyTestCase):
         self.assertEqual(result.returncode, fetch.EXIT_ERROR)
         self.assertEqual(transport.calls, [])
         self.assertEqual(self.commits(), 1)
+
+
+class ProgressTests(AutoApplyTestCase):
+    def progress_lines(self, result: Any) -> List[str]:
+        return [line for line in result.stderr.splitlines() if line.startswith(tool.PROGRESS_PREFIX)]
+
+    def test_US041_phases_are_announced_in_order_on_stderr_only(self) -> None:
+        result, _, _ = self.green()
+        text = " | ".join(self.progress_lines(result))
+        order = ["comprobaciones iniciales", "1a lectura", "2a lectura", "tabla", "cruce", "aplicar y verify", "commit"]
+        positions = [text.index(name) for name in order]
+        self.assertEqual(positions, sorted(positions))
+        self.assertNotIn(tool.PROGRESS_PREFIX, result.stdout)
+        self.assertEqual(result.stdout.count("\n"), 1)
+
+    def test_US041_long_wait_announces_madrid_time_and_at_most_one_line_per_interval(self) -> None:
+        result, _, clock = self.green()
+        lines = self.progress_lines(result)
+        self.assertTrue(any("hora prevista" in line and "espera de 15 min" in line for line in lines))
+        countdown = [line for line in lines if "quedan" in line]
+        self.assertEqual(len(countdown), fetch.READ_SEPARATION_SECONDS // tool.COUNTDOWN_INTERVAL_SECONDS - 1)
+        self.assertEqual(clock.sleeps.count(tool.COUNTDOWN_INTERVAL_SECONDS), len(countdown) + 1)
+
+    def test_US041_madrid_time_is_hh_mm_of_the_due_instant(self) -> None:
+        clock, err = base.Clock(), io.StringIO()
+        tool.countdown_wait(900, clock.sleep, clock.now, err)
+        due = (base.NOW + datetime.timedelta(seconds=900)).astimezone(fetch.TIMEZONE).strftime("%H:%M")
+        self.assertIn("hora prevista de la 2a lectura: " + due, err.getvalue())
+
+    def test_US041_short_pauses_write_no_line_and_no_extra_wait_line_after_the_wait(self) -> None:
+        result, _, _ = self.green()
+        lines = self.progress_lines(result)
+        self.assertEqual(len([line for line in lines if "hora prevista" in line]), 1)
+        last_countdown = max(i for i, line in enumerate(lines) if "quedan" in line)
+        self.assertFalse(any("espera" in line for line in lines[last_countdown + 1:]))
+        self.assertEqual(len(lines), 7 + 1 + 14)  # 7 fases + hora prevista + 14 cuentas atras: ninguna por pausa corta
+
+    def test_US041_failure_keeps_exit_code_and_last_progress_line_names_the_phase(self) -> None:
+        body = self.doc_bytes()
+        result, _, _ = self.launch([(200, body), (200, body), (500, b"")])
+        self.assertEqual(result.returncode, fetch.EXIT_STOPPED)
+        self.assertEqual(self.progress_lines(result)[-1], tool.PROGRESS_PREFIX + "tabla")
