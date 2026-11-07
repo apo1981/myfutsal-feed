@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 LOOPBACK = "127.0.0.1"
 JSON_TYPE = "application/json; charset=utf-8"
@@ -31,6 +31,8 @@ class FakePages:
         self.content_type = JSON_TYPE
         self.content_types = {}  # type: Dict[str, str]  # por ruta (relativa a la base); si falta, `content_type`
         self.redirect_to = None  # type: Optional[str]
+        self.faults = {}  # type: Dict[str, List[str]]  # por ruta completa; ver `fault`
+        self._forever = set()  # type: Set[str]
         self._lock = threading.Lock()
         self._server = HTTPServer((LOOPBACK, 0), self._handler())
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
@@ -53,6 +55,14 @@ class FakePages:
             self.content_types[path] = content_type
         self.versions[self.prefix + path] = list(versions)
         self.served[self.prefix + path] = 0
+
+    def fault(self, path: str, *kinds: str, forever: bool = False) -> None:
+        """Fallos transitorios simulados para `path` (relativo a la base), uno por peticion y en orden.
+        Tipos: `503`, `drop` (corta la conexion), `cond-same` y `cond-other` (solo ante `If-None-Match`: responde 200
+        con el mismo ETag o con otro). Con `forever` el ultimo se repite; si no, despues se sirve con normalidad."""
+        self.faults[self.prefix + path] = list(kinds) + ([kinds[-1]] if forever else [])
+        if forever:
+            self._forever.add(self.prefix + path)
 
     def start(self) -> None:
         self._thread.start()
@@ -80,6 +90,8 @@ class FakePages:
             headers = {key.lower(): value for key, value in handler.headers.items()}
             self.requests.append(("GET", handler.path, headers))
             versions = self.versions.get(handler.path)
+            if self._inject_fault(handler, versions, headers):
+                return
             if self.redirect_to:
                 handler.send_response(301)
                 handler.send_header("Location", self.redirect_to)
@@ -107,3 +119,30 @@ class FakePages:
             handler.send_header("Content-Length", str(len(body)))
             handler.end_headers()
             handler.wfile.write(body)
+
+    def _inject_fault(self, handler: BaseHTTPRequestHandler, versions: Optional[List[bytes]], headers: Dict[str, str]) -> bool:
+        pending = self.faults.get(handler.path)
+        if not pending or versions is None:
+            return False
+        kind = pending[0]
+        if kind.startswith("cond-") and "if-none-match" not in headers:
+            return False
+        if len(pending) > 1 or handler.path not in self._forever:
+            pending.pop(0)
+        if kind == "drop":
+            handler.close_connection = True
+            return True
+        if kind == "503":
+            handler.send_response(503)
+            handler.send_header("Content-Length", "0")
+            handler.end_headers()
+            return True
+        body = versions[min(self.served[handler.path], len(versions) - 1)]
+        etag = etag_of(body) if kind == "cond-same" else '"otro-etag"'
+        handler.send_response(200)
+        handler.send_header("Content-Type", self.content_types.get(handler.path[len(self.prefix):], self.content_type))
+        handler.send_header("ETag", etag)
+        handler.send_header("Content-Length", str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True

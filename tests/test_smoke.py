@@ -174,5 +174,109 @@ class Retries(SmokeTestCase):
         self.assertEqual(len(season_gets), 13)  # t = 0, 60, ..., 720
 
 
+SEASON_PATH = "/v1/seasons/%s.json" % SEASON_ID
+INDEX_PATH = "/v1/index.json"
+
+
+class TransientCdnErrors(SmokeTestCase):
+    """US-040: la CDN falla de forma transitoria; los tests usan reloj y espera falsos, sin plazo real."""
+
+    def run_fake_clock(self):
+        now = [0.0]
+        waits = []  # type: List[float]
+
+        def sleep(seconds: float) -> None:
+            waits.append(seconds)
+            now[0] += seconds
+
+        return self.in_process(interval=60, timeout=720, clock=lambda: now[0], sleep=sleep), waits
+
+    def failure_with_fake_clock(self) -> str:
+        with self.assertRaises(smoke_check.SmokeFailure) as caught:
+            self.run_fake_clock()
+        return str(caught.exception)
+
+    def test_us040_c1_503_on_first_request_is_retried_and_passes(self) -> None:
+        self.pages.fault(SEASON_PATH, "503")
+        elapsed, waits = self.run_fake_clock()
+        self.assertEqual(waits, [60])
+        self.assertEqual(elapsed, 60)
+
+    def test_us040_c1_503_through_the_script_exits_zero(self) -> None:
+        self.pages.fault(SEASON_PATH, "503")
+        result = self.smoke()
+        self.assertEqual(result.returncode, 0, output_of(result))
+        self.assertNotIn("FALLO", result.stderr)
+
+    def test_us040_c2_dropped_connection_is_retried_and_passes(self) -> None:
+        self.pages.fault(INDEX_PATH, "drop")
+        _elapsed, waits = self.run_fake_clock()
+        self.assertEqual(waits, [60])
+
+    def test_us040_c2_dropped_connection_through_the_script_exits_zero(self) -> None:
+        self.pages.fault(SEASON_PATH, "drop")
+        result = self.smoke()
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def test_us040_c2_connection_refused_is_transient_and_reported(self) -> None:
+        with mock.patch("urllib.request.OpenerDirector.open", side_effect=ConnectionRefusedError("rechazada")):
+            with self.assertRaises(smoke_check.TransientFailure):
+                smoke_check.fetch("http://127.0.0.1:1/x")
+
+    def test_us040_c2_request_timeout_is_transient(self) -> None:
+        with mock.patch("urllib.request.OpenerDirector.open", side_effect=TimeoutError("timed out")):
+            with self.assertRaises(smoke_check.TransientFailure):
+                smoke_check.fetch("http://127.0.0.1:1/x")
+
+    def test_us040_c3_conditional_200_with_same_etag_is_retried_and_passes(self) -> None:
+        self.pages.fault(INDEX_PATH, "cond-same")
+        _elapsed, waits = self.run_fake_clock()
+        self.assertEqual(waits, [60])
+
+    def test_us040_c4_conditional_200_with_different_etag_persistently_fails_with_that_reason(self) -> None:
+        self.pages.fault(INDEX_PATH, "cond-other", forever=True)
+        message = self.failure_with_fake_clock()
+        self.assertIn("respondio 200 y se esperaba 304", message)
+        self.assertIn("distinto", message)
+
+    def test_us040_c5_404_fails_at_the_first_attempt_without_waiting(self) -> None:
+        self.pages.versions.pop("/myfutsal-feed" + SEASON_PATH)
+        sleeps = []  # type: List[float]
+        with self.assertRaises(smoke_check.SmokeFailure) as caught:
+            self.in_process(interval=60, timeout=720, sleep=sleeps.append)
+        self.assertNotIsInstance(caught.exception, smoke_check.TransientFailure)
+        self.assertIn("404", str(caught.exception))
+        self.assertIn(SEASON_PATH, str(caught.exception))
+        self.assertEqual(sleeps, [])
+
+    def test_us040_c5_other_4xx_on_conditional_request_is_immediate(self) -> None:
+        with mock.patch("smoke_check.fetch", return_value=(403, {}, b"")):
+            with self.assertRaises(smoke_check.SmokeFailure) as caught:
+                smoke_check.check_revalidation("http://x/v1/index.json", '"a"')
+        self.assertNotIsInstance(caught.exception, smoke_check.TransientFailure)
+
+    def test_us040_c6_persistent_503_fails_with_the_last_reason(self) -> None:
+        self.pages.fault(SEASON_PATH, "503", forever=True)
+        message = self.failure_with_fake_clock()
+        self.assertIn("503 en", message)
+        self.assertIn(SEASON_PATH, message)
+
+    def test_us040_c6_persistent_dropped_connection_fails_with_the_last_reason(self) -> None:
+        self.pages.fault(INDEX_PATH, "drop", forever=True)
+        self.assertIn("no se pudo pedir", self.failure_with_fake_clock())
+
+    def test_us040_c6_persistent_conditional_200_with_same_etag_fails_with_the_last_reason(self) -> None:
+        self.pages.fault(INDEX_PATH, "cond-same", forever=True)
+        message = self.failure_with_fake_clock()
+        self.assertIn("If-None-Match", message)
+        self.assertIn("respondio 200", message)
+
+    def test_us040_c6_persistent_failure_makes_the_script_exit_nonzero(self) -> None:
+        self.pages.fault(SEASON_PATH, "503", forever=True)
+        result = self.smoke(["--interval", "0.05", "--timeout", "0.3"])
+        self.assertNotEqual(result.returncode, 0, output_of(result))
+        self.assertIn("503 en", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

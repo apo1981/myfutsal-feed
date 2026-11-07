@@ -3,12 +3,14 @@
 Pide `index.json` y la temporada vigente a la URL base y comprueba: 200, `Content-Type` JSON,
 `ETag`, `304` ante `If-None-Match` y que el `updatedAt` servido es el esperado (el de `public/`).
 Tambien pide `privacy.html` (US-008b, criterio b4): 200 sin redireccion, `text/html`, menciona GitHub e IP e
-identica byte a byte a la local. Se reintenta junto con `updatedAt`, porque la CDN puede servir la version anterior unos minutos;
-el resto de fallos son inmediatos. Solo biblioteca estandar, compatible con Python 3.9.
+identica byte a byte a la local. Se reintenta (mismo plazo e intervalo) `updatedAt`/politica desfasados, porque la CDN puede servir
+la version anterior unos minutos, y los fallos transitorios de la CDN (US-040): 5xx, error de conexion o tiempo agotado y una
+peticion condicional que responde 200 en vez de 304. El resto de fallos (4xx, redirecciones, contenido invalido) son inmediatos. Solo biblioteca estandar, compatible con Python 3.9.
 """
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 import re
@@ -33,6 +35,10 @@ class SmokeFailure(Exception):
     """Fallo de la comprobacion; el mensaje dice cual y por que."""
 
 
+class TransientFailure(SmokeFailure):
+    """Fallo que la CDN suele resolver sola (US-040): se reintenta hasta agotar el plazo."""
+
+
 Response = Tuple[int, Dict[str, str], bytes]
 
 
@@ -44,9 +50,15 @@ def fetch(url: str, headers: Optional[Dict[str, str]] = None) -> Response:
         with opener.open(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
             return response.status, lowercase(response.headers.items()), response.read()
     except urllib.error.HTTPError as error:
-        return error.code, lowercase(error.headers.items()), error.read()
-    except (urllib.error.URLError, OSError) as error:
-        raise SmokeFailure("no se pudo pedir %s: %s" % (url, error))
+        return raise_if_server_error(url, error.code), lowercase(error.headers.items()), error.read()
+    except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
+        raise TransientFailure("no se pudo pedir %s: %s" % (url, error))
+
+
+def raise_if_server_error(url: str, status: int) -> int:
+    if status >= 500:
+        raise TransientFailure("%d en %s" % (status, url))
+    return status
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -84,9 +96,17 @@ def fetch_json_document(url: str) -> Tuple[Dict[str, str], Any]:
 
 
 def check_revalidation(url: str, etag: str) -> None:
-    status, _headers, _body = fetch(url, {"If-None-Match": etag})
-    if status != 304:
-        raise SmokeFailure("%s: con If-None-Match %s respondio %d y se esperaba 304" % (url, etag, status))
+    """304 ante `If-None-Match`. Un 200 es transitorio (la CDN a veces no revalida a la primera); otro estado, inmediato."""
+    status, headers, _body = fetch(url, {"If-None-Match": etag})
+    if status == 304:
+        return
+    message = "%s: con If-None-Match %s respondio %d y se esperaba 304" % (url, etag, status)
+    if status == 200:
+        served_etag = headers.get("etag")
+        if served_etag != etag:
+            message += " (ETag %s distinto)" % served_etag
+        raise TransientFailure(message)
+    raise SmokeFailure(message)
 
 
 def fetch_privacy_page(base: str) -> bytes:
@@ -128,22 +148,32 @@ def run_smoke(base: str, season_id: str, expected: str, expected_privacy: bytes,
     attempt = 0
     while True:
         attempt += 1
-        index_headers, _index = fetch_json_document(index_url)
-        season_headers, season = fetch_json_document(season_url)
-        served = season.get("updatedAt") if isinstance(season, dict) else None
-        privacy_matches = fetch_privacy_page(base) == expected_privacy
-        if served == expected and privacy_matches:
-            break
+        try:
+            reason = check_once(base, index_url, season_url, expected, expected_privacy)
+        except TransientFailure as transient:
+            reason = str(transient)
+        if reason is None:
+            return clock() - started
         elapsed = clock() - started
-        log("intento %d: updatedAt servido %r, esperado %r; politica %s (%.0f s)"
-            % (attempt, served, expected, "igual" if privacy_matches else "distinta de la local", elapsed))
+        log("intento %d: %s (%.0f s)" % (attempt, reason, elapsed))
         if elapsed + interval > timeout:
-            raise SmokeFailure("updatedAt servido %r (esperado %r) o politica %s tras %.0f s"
-                               % (served, expected, "igual" if privacy_matches else "distinta de la local", elapsed))
+            raise SmokeFailure("%s tras %.0f s" % (reason, elapsed))
         sleep(interval)
+
+
+def check_once(base: str, index_url: str, season_url: str, expected: str, expected_privacy: bytes) -> Optional[str]:
+    """Un intento completo. Devuelve None si todo esta bien o el motivo de un desfase reintentable;
+    lanza TransientFailure ante un fallo transitorio y SmokeFailure ante uno definitivo."""
+    index_headers, _index = fetch_json_document(index_url)
+    season_headers, season = fetch_json_document(season_url)
+    served = season.get("updatedAt") if isinstance(season, dict) else None
+    privacy_matches = fetch_privacy_page(base) == expected_privacy
+    if served != expected or not privacy_matches:
+        return "updatedAt servido %r (esperado %r) o politica %s" % (
+            served, expected, "igual" if privacy_matches else "distinta de la local")
     check_revalidation(index_url, index_headers["etag"])
     check_revalidation(season_url, season_headers["etag"])
-    return clock() - started
+    return None
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
