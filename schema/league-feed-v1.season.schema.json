@@ -197,6 +197,16 @@
             "string",
             "null"
           ]
+        },
+        "broadcasters": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },

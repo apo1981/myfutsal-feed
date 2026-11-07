@@ -94,5 +94,13 @@
   "kit-unknown-key.json": {
     "path": "$.teams[0].kits",
     "contains": "Additional properties are not allowed"
+  },
+  "broadcasters-not-array.json": {
+    "path": "$.phases[0].rounds[0].matches[0].broadcasters",
+    "contains": "is not of type"
+  },
+  "broadcasters-non-string-item.json": {
+    "path": "$.phases[0].rounds[0].matches[0].broadcasters[1]",
+    "contains": "is not of type"
   }
 }
