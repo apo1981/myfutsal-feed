@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-11-07T10:01:35Z",
+  "updatedAt": "2026-11-07T11:45:01Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -1256,7 +1256,7 @@
               "status": "scheduled",
               "kickoff": {
                 "date": "2026-11-15",
-                "time": null
+                "time": "2026-11-15T12:00:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1269,7 +1269,7 @@
               "status": "scheduled",
               "kickoff": {
                 "date": "2026-11-15",
-                "time": null
+                "time": "2026-11-15T17:45:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1282,7 +1282,7 @@
               "status": "scheduled",
               "kickoff": {
                 "date": "2026-11-15",
-                "time": null
+                "time": "2026-11-15T16:00:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1294,8 +1294,8 @@
               "awayTeamId": "osasuna-magna",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-15",
-                "time": null
+                "date": "2026-11-14",
+                "time": "2026-11-14T16:00:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1307,8 +1307,8 @@
               "awayTeamId": "vina-albali-valdepenas",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-15",
-                "time": null
+                "date": "2026-11-14",
+                "time": "2026-11-14T17:45:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1320,8 +1320,8 @@
               "awayTeamId": "palma-futsal",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-15",
-                "time": null
+                "date": "2026-11-07",
+                "time": "2026-11-07T17:30:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1333,8 +1333,8 @@
               "awayTeamId": "servigroup-peniscola",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-15",
-                "time": null
+                "date": "2026-11-14",
+                "time": "2026-11-14T19:30:00Z"
               },
               "score": null,
               "decidedBy": null,
@@ -1346,8 +1346,8 @@
               "awayTeamId": "barca",
               "status": "scheduled",
               "kickoff": {
-                "date": "2026-11-15",
-                "time": null
+                "date": "2026-11-14",
+                "time": "2026-11-14T12:00:00Z"
               },
               "score": null,
               "decidedBy": null,
