@@ -205,7 +205,7 @@ class ReportTests(SwitchTestCase):
         self.assertIn("a01-01: estado feed=suspended, RFEF=Finalizado", result.stderr)
 
     def test_US038_US042_auto_apply_prints_the_report_and_never_touches_statuses(self) -> None:
-        # a01-04 aplazado en el feed: el informe lo lista y su estado no cambia; su horario si se actualiza (US-042, ADR-013).
+        # a01-04 aplazado en el feed: el informe lo lista y ni su estado ni su horario cambian (US-042, ADR-013).
         matches = [base.feed_match(i) for i in range(1, 9)]
         matches[3] = base.feed_match(4, status="postponed")
         self.write_feed_season(base.feed_season(matches))
@@ -216,7 +216,7 @@ class ReportTests(SwitchTestCase):
         self.assertIn("a01-04: estado feed=postponed", result.stderr)
         applied = {m["id"]: m for m in json.loads(self.season_bytes())["phases"][0]["rounds"][0]["matches"]}
         self.assertEqual(applied["a01-04"]["status"], "postponed")
-        self.assertEqual(applied["a01-04"]["kickoff"], {"date": "2026-10-17", "time": "2026-10-17T11:00:00Z"})
+        self.assertEqual(applied["a01-04"]["kickoff"], matches[3]["kickoff"])
         self.assertEqual(applied["a01-01"]["status"], "finished")
 
     def coherent_feed(self) -> None:

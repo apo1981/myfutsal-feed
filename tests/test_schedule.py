@@ -146,6 +146,28 @@ class UntouchedMatchesTests(ScheduleTestCase):
         self.assertEqual(applied["a01-02"]["kickoff"], {"date": "2026-10-11", "time": "2026-10-11T10:00:00Z"})
         self.assertEqual(applied["a01-03"]["kickoff"]["time"], "2026-10-17T18:30:00Z")
 
+    def test_US042_postponed_and_suspended_are_only_informative_and_keep_their_schedule(self) -> None:
+        matches = [base.feed_match(i, "scheduled") for i in range(1, 9)]
+        matches[0] = base.feed_match(1, "postponed", date="2026-10-10", time="2026-10-10T10:00:00Z")
+        matches[1] = base.feed_match(2, "suspended", date="2026-10-11", time="2026-10-11T10:00:00Z")
+        self.commit_feed(matches)
+        result, _, _ = self.run_pending(all_pending())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        applied = self.season_matches()
+        self.assertEqual(applied["a01-01"]["kickoff"], {"date": "2026-10-10", "time": "2026-10-10T10:00:00Z"})
+        self.assertEqual(applied["a01-02"]["kickoff"], {"date": "2026-10-11", "time": "2026-10-11T10:00:00Z"})
+        self.assertEqual(applied["a01-03"]["kickoff"]["time"], "2026-10-17T18:30:00Z")
+        self.assertIn("a01-01: estado feed=postponed", result.stderr)
+
+    def test_US042_no_hour_other_than_0_or_1_is_an_anomaly_and_nothing_is_applied(self) -> None:
+        for bad in ("2", "", "x"):
+            matches = all_pending()
+            matches[3] = pending(4, no_hour=bad)
+            result, _, _ = self.run_pending(matches)
+            self.assertEqual(result.returncode, fetch.EXIT_ANOMALY, repr(bad))
+            self.assertIn("[no_hour]", result.stderr)
+            self.assert_nothing_applied()
+
     def test_US042_advanced_match_of_another_round_is_only_reported(self) -> None:
         season = base.feed_season([base.feed_match(i) for i in range(1, 8)])
         later = base.feed_match(8, date="2026-10-14")

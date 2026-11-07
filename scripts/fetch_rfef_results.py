@@ -192,7 +192,10 @@ def schedule_anomalies(match: RfefMatch, end_year: int) -> List[str]:
     problem = apply_schedule.date_problem(match.day, end_year)
     if problem:
         found.append(anomaly("fecha-temporada", match.label, "dentro de la temporada", "%s (%s)" % (match.day, problem)))
-    if match.status_text == NOT_STARTED_LABEL and str(match.raw["no_hour"]).strip() != "1":
+    no_hour = str(match.raw["no_hour"]).strip()
+    if no_hour not in ("0", "1"):
+        found.append(anomaly("no_hour", match.label, "0 o 1", repr(no_hour)))
+    if match.status_text == NOT_STARTED_LABEL and no_hour != "1":
         problem = apply_schedule.time_problem(match.hour or "")
         if problem:
             found.append(anomaly("hora", match.label, "HH:MM entre %s y %s" % (apply_schedule.EARLIEST_TIME, apply_schedule.LATEST_TIME),
@@ -353,11 +356,15 @@ def find_advanced(later: List[Dict[str, Any]], pair: Tuple[str, str]) -> Optiona
     return None
 
 
+# El horario automatico no toca estos estados: finished/cancelled (como apply-schedule) y los informativos aplazado/suspendido.
+AUTO_UNTOUCHED_STATUSES = apply_schedule.UNTOUCHED_STATUSES + ("postponed", "suspended")
+
+
 def schedule_row(feed_match: Dict[str, Any], match: RfefMatch) -> Optional[Tuple[str, str, str]]:
-    """Fila (id, fecha, hora) si el partido 'Sin comenzar' no finished/cancelled cambia de fecha u hora; None si no hay nada que aplicar.
+    """Fila (id, fecha, hora) si el partido 'Sin comenzar' (ni finished, cancelled, postponed ni suspended) cambia de fecha u hora; None si no hay nada que aplicar.
 
     `no_hour == "1"` da hora vacia (por confirmar): nunca se inventa una (ADR-013 decision 2)."""
-    if match.status_text != NOT_STARTED_LABEL or feed_match["status"] in apply_schedule.UNTOUCHED_STATUSES:
+    if match.status_text != NOT_STARTED_LABEL or feed_match["status"] in AUTO_UNTOUCHED_STATUSES:
         return None
     kickoff = feed_match["kickoff"]
     if kickoff.get("date") == match.day and madrid_time(kickoff) == match.hour:
