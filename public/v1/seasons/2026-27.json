@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-11-07T13:33:23Z",
+  "updatedAt": "2026-11-08T10:55:14Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -1333,12 +1333,15 @@
               "id": "a08-06",
               "homeTeamId": "noia-portus-apostoli",
               "awayTeamId": "palma-futsal",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-07",
                 "time": "2026-11-07T17:30:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 6
+              },
               "decidedBy": null,
               "note": null
             },
