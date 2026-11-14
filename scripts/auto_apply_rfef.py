@@ -272,7 +272,7 @@ def apply_batch_file(directory: str, name: str, text: str, apply: Callable[[str]
 def restore(path: str, original: bytes) -> None:
     with open(path, "wb") as handle:
         handle.write(original)
-    catalog.sync_primera_mirror(path)
+    catalog.sync_primera_mirror(path, guard=False)
 
 
 def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]) -> str:

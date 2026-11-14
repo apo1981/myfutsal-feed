@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import subprocess
 import unittest
 from typing import Any, Callable, Dict
 
@@ -78,6 +79,29 @@ class MirrorOfPrimera(PublicCatalogTestCase):
         with open(self.path(LEGACY_SEASON_PATH), "a", encoding="utf-8") as handle:
             handle.write(" ")
         catalog.sync_primera_mirror(self.path(LEGACY_SEASON_PATH))
+        result = self.check()
+        self.assertEqual(result.returncode, 0, output_of(result))
+
+    def commit_everything(self) -> None:
+        for args in (["init", "-q"], ["add", "-A"],
+                     ["-c", "user.name=t", "-c", "user.email=t@users.noreply.github.com", "commit", "-q", "-m", "x"]):
+            subprocess.run(["git", "-C", self.tmp] + args, check=True, stdout=subprocess.DEVNULL)
+
+    def test_us064_c5_sync_refuses_when_only_the_new_file_was_edited(self) -> None:
+        self.commit_everything()
+        with open(self.path(MAIN_PATH), "a", encoding="utf-8") as handle:
+            handle.write(" ")
+        with self.assertRaises(catalog.MirrorEditedOnWrongSide) as raised:
+            catalog.sync_all(self.public)
+        self.assertIn(self.path(LEGACY_SEASON_PATH), str(raised.exception))
+        with open(self.path(MAIN_PATH), "rb") as handle:
+            self.assertTrue(handle.read().endswith(b" "))
+
+    def test_us064_c5_sync_copies_when_the_old_file_was_edited(self) -> None:
+        self.commit_everything()
+        with open(self.path(LEGACY_SEASON_PATH), "a", encoding="utf-8") as handle:
+            handle.write(" ")
+        catalog.sync_all(self.public)
         result = self.check()
         self.assertEqual(result.returncode, 0, output_of(result))
 

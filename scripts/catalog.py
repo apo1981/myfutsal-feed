@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
@@ -137,38 +138,80 @@ def primera_mirror_path(season_path: str) -> str:
     return os.path.join(v1_dir, expected_feed_url(LEGACY_COMPETITION_ID, season_id, None))
 
 
-def sync_primera_mirror(season_path: str) -> None:
+class MirrorEditedOnWrongSide(Exception):
+    """El fichero nuevo del espejo se edito y el antiguo no: copiar perderia la edicion."""
+
+
+def committed_bytes(path: str) -> Optional[bytes]:
+    """Contenido de `path` en HEAD, o None si no esta en un repo git o no esta versionado."""
+    try:
+        result = subprocess.run(["git", "-C", os.path.dirname(path), "show", "HEAD:./" + os.path.basename(path)],
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+    except OSError:
+        return None
+    return result.stdout if result.returncode == 0 else None
+
+
+def check_mirror_direction(legacy: str, canonical: str) -> None:
+    """Falla si `canonical` difiere de HEAD y `legacy` no: la edicion debe hacerse en `legacy`."""
+    legacy_head, canonical_head = committed_bytes(legacy), committed_bytes(canonical)
+    if legacy_head is None or canonical_head is None:
+        return
+    if read_bytes(canonical) != canonical_head and read_bytes(legacy) == legacy_head:
+        raise MirrorEditedOnWrongSide(
+            "se edito %s pero no %s; mientras dure el espejo se edita %s (no se copia nada)"
+            % (canonical, legacy, legacy))
+
+
+def mirror_pairs(v1_dir: str) -> List[Tuple[str, str]]:
+    """Pares (antiguo, nuevo) publicados: cada temporada de Primera y el indice."""
+    pairs = []  # type: List[Tuple[str, str]]
+    seasons = os.path.join(v1_dir, "seasons")
+    for name in sorted(os.listdir(seasons)) if os.path.isdir(seasons) else []:
+        path = os.path.join(seasons, name)
+        if name.endswith(".json") and os.path.isfile(primera_mirror_path(path)):
+            pairs.append((path, primera_mirror_path(path)))
+    mirror_index = os.path.join(v1_dir, COMPETITION_INDEX_URL % LEGACY_COMPETITION_ID)
+    if os.path.isfile(mirror_index):
+        pairs.append((os.path.join(v1_dir, LEGACY_INDEX), mirror_index))
+    return pairs
+
+
+def sync_pairs(pairs: List[Tuple[str, str]], guard: bool = True) -> None:
+    for legacy, canonical in pairs if guard else []:
+        check_mirror_direction(legacy, canonical)
+    for legacy, canonical in pairs:
+        shutil.copyfile(legacy, canonical)
+
+
+def sync_primera_mirror(season_path: str, guard: bool = True) -> None:
     """Tras escribir `v1/seasons/<id>.json`, copia el fichero a la ruta nueva de Primera si esta publicada.
 
     Los scripts `apply-*` editan el fichero antiguo; esta copia mantiene el espejo byte a byte (ADR-014 §1).
+    `guard=False` solo para restaurar un estado propio tras un fallo (el antiguo vuelve a HEAD, el nuevo hay que igualarlo).
     """
     canonical = primera_mirror_path(season_path)
     if os.path.isfile(canonical):
-        shutil.copyfile(season_path, canonical)
+        sync_pairs([(season_path, canonical)], guard)
 
 
 def sync_all(public_dir: str) -> List[str]:
     """Copia `v1/index.json` y cada `v1/seasons/<id>.json` a la ruta nueva de Primera. Devuelve lo copiado."""
     v1_dir = os.path.join(public_dir, "v1")
-    copied = []  # type: List[str]
-    seasons = os.path.join(v1_dir, "seasons")
-    for name in sorted(os.listdir(seasons)) if os.path.isdir(seasons) else []:
-        path = os.path.join(seasons, name)
-        if name.endswith(".json") and os.path.isfile(primera_mirror_path(path)):
-            sync_primera_mirror(path)
-            copied.append(os.path.relpath(primera_mirror_path(path), v1_dir))
-    mirror_index = os.path.join(v1_dir, COMPETITION_INDEX_URL % LEGACY_COMPETITION_ID)
-    if os.path.isfile(mirror_index):
-        shutil.copyfile(os.path.join(v1_dir, LEGACY_INDEX), mirror_index)
-        copied.append(os.path.relpath(mirror_index, v1_dir))
-    return copied
+    pairs = mirror_pairs(v1_dir)
+    sync_pairs(pairs)
+    return [os.path.relpath(canonical, v1_dir) for _, canonical in pairs]
 
 
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser(description="Sincroniza el espejo de Primera (US-064)")
     parser.add_argument("--feed", required=True)
     args = parser.parse_args(argv)
-    copied = sync_all(os.path.join(args.feed, "public"))
+    try:
+        copied = sync_all(os.path.join(args.feed, "public"))
+    except MirrorEditedOnWrongSide as error:
+        print("error: %s" % error, file=sys.stderr)
+        return 1
     print("espejo de Primera sincronizado: %s" % (", ".join(copied) or "nada que copiar"))
     return 0
 

@@ -5,7 +5,7 @@ Todo cambio en `main` pasa por la puerta de `.github/workflows/publish.yml`: `va
 
 Solo hay tres sitios donde editar: `public/v1/index.json`, `public/v1/seasons/<id>.json` y, en la carga inicial, los datos de la temporada (la política `public/privacy.html` se actualiza según «Actualizar la política»). El esquema (`schema/`) **no se edita aquí**: la copia canónica está en el repositorio de la app.
 
-**Espejo de Primera (ADR-014 §1).** `public/v1/index.json` y `public/v1/seasons/<id>.json` se siguen publicando para las instalaciones antiguas y deben ser idénticos, byte a byte, a `public/v1/competitions/primera/index.json` y `public/v1/competitions/primera/<id>/main.json`. Tras editar a mano cualquiera de los dos ficheros antiguos, ejecuta `scripts/sync-primera-mirror` y confirma también los ficheros nuevos; `verify` falla si difieren. Los scripts `apply-results`, `apply-schedule`, `apply-broadcasters` y `auto-apply-rfef` lo hacen solos.
+**Espejo de Primera (ADR-014 §1).** `public/v1/index.json` y `public/v1/seasons/<id>.json` se siguen publicando para las instalaciones antiguas y deben ser idénticos, byte a byte, a `public/v1/competitions/primera/index.json` y `public/v1/competitions/primera/<id>/main.json`. Tras editar a mano cualquiera de los dos ficheros antiguos, ejecuta `scripts/sync-primera-mirror` y confirma también los ficheros nuevos; `verify` falla si difieren. Los scripts `apply-results`, `apply-schedule`, `apply-broadcasters` y `auto-apply-rfef` lo hacen solos. Mientras dure el espejo, se edita siempre `public/v1/seasons/<id>.json` (y `public/v1/index.json`), nunca los ficheros de `competitions/primera/`: `scripts/sync-primera-mirror` se niega a copiar, nombrando el fichero que hay que editar, si solo cambió el nuevo.
 
 ## Primera vez
 
