@@ -148,13 +148,13 @@ class BrokenRunbooks(TempDirTestCase):
     def test_us007a_c8_rollback_without_git_add_before_the_commit_fails(self) -> None:
         # B-2 (ciclo 1): sin `git add` el commit se lleva el updatedAt antiguo.
         text = read(REAL_RUNBOOK)
-        self.assertIn("git add public/v1/seasons/<id>.json\n", text)
-        result = self.check(text.replace("git add public/v1/seasons/<id>.json\n", ""))
+        self.assertIn("git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json\n", text)
+        result = self.check(text.replace("git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json\n", ""))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no hace `git add`", result.stderr)
 
     def test_us007a_c8_rollback_with_commit_a_instead_of_git_add_is_accepted(self) -> None:
-        text = read(REAL_RUNBOOK).replace("git add public/v1/seasons/<id>.json\n", "").replace("git commit -m", "git commit -am")
+        text = read(REAL_RUNBOOK).replace("git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json\n", "").replace("git commit -m", "git commit -am")
         result = self.check(text)
         self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -165,7 +165,7 @@ class BrokenRunbooks(TempDirTestCase):
         end = text.index("## Cambiar hora")
         section = text[start:end]
         verify_block = "   ```\n   scripts/verify\n   ```\n"
-        commit_block = '   ```\n   git add public/v1/seasons/<id>.json\n   git commit -m "Jornada 7: resultados (tiempo: 12 min)"\n   git push origin main\n   ```\n'
+        commit_block = '   ```\n   git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json\n   git commit -m "Jornada 7: resultados (tiempo: 12 min)"\n   git push origin main\n   ```\n'
         self.assertIn(verify_block, section)
         self.assertIn(commit_block, section)
         self.assertLess(section.index(verify_block), section.index(commit_block))

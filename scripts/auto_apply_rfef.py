@@ -33,6 +33,7 @@ from typing import Any, Callable, List, Optional, Tuple
 import apply_broadcasters
 import apply_results
 import apply_schedule
+import catalog
 import cross_check
 import fetch_rfef_results as fetch
 import rfef_switch
@@ -74,8 +75,14 @@ def require_noreply_identity(feed: str) -> None:
                                   "no se crea ningun commit" % (email or "sin configurar"))
 
 
+def tracked_season_paths(feed: str, season_path: str) -> List[str]:
+    """La temporada y, si esta publicada, su espejo en la ruta nueva de Primera (ADR-014 §1), relativos al feed."""
+    mirror = catalog.primera_mirror_path(season_path)
+    return [season_path] + ([mirror] if os.path.isfile(os.path.join(feed, mirror)) else [])
+
+
 def require_clean_season(feed: str, season_path: str) -> None:
-    result = git(feed, "status", "--porcelain", "--", season_path)
+    result = git(feed, "status", "--porcelain", "--", *tracked_season_paths(feed, season_path))
     if result.returncode != 0:
         raise fetch.ToolError("el feed no es un repositorio git: %s" % result.stderr.strip())
     if result.stdout.strip():
@@ -243,9 +250,10 @@ def apply_and_commit(args: argparse.Namespace, plan: fetch.Plan, reads: List[Rea
         if not passed:
             raise fetch.ToolError("verify no ha pasado tras aplicar; se ha restaurado el JSON anterior, sin commit:\n" + output.strip())
         progress(stderr, "commit")
-        if git(feed, "diff", "--quiet", "--", season_path).returncode == 0:
+        tracked = tracked_season_paths(feed, season_path)
+        if git(feed, "diff", "--quiet", "--", *tracked).returncode == 0:
             raise fetch.ToolError("los lotes aplicados no han cambiado el JSON; no hay nada que commitear")
-        result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", season_path)
+        result = git(feed, "commit", "-m", commit_message(args, plan, reads), "--", *tracked)
         if result.returncode != 0:
             raise fetch.ToolError("git commit ha fallado; se ha restaurado el JSON anterior: %s" % result.stderr.strip())
     except BaseException:
@@ -264,6 +272,7 @@ def apply_batch_file(directory: str, name: str, text: str, apply: Callable[[str]
 def restore(path: str, original: bytes) -> None:
     with open(path, "wb") as handle:
         handle.write(original)
+    catalog.sync_primera_mirror(path)
 
 
 def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]) -> str:

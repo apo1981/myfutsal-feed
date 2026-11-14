@@ -9,7 +9,7 @@ import support  # debe ir antes que los modulos de scripts: anade scripts/ al sy
 import apply_schedule as schedule_tool
 import fetch_rfef_results as fetch
 import test_fetch_rfef as base
-from test_auto_apply import AutoApplyTestCase, SEASON_FILE
+from test_auto_apply import AutoApplyTestCase, MIRROR_FILE, SEASON_FILE
 from test_fetch_rfef import rfef_doc, rfef_match
 
 FUTURE_DAY = "2026-10-25"  # posterior a TODAY (2026-10-20)
@@ -56,7 +56,8 @@ class ConfirmedAndUnconfirmedTests(ScheduleTestCase):
         matches = self.season_matches()
         self.assertEqual(matches["a01-04"]["kickoff"], {"date": "2026-10-17", "time": "2026-10-17T18:30:00Z"})  # CEST, UTC+2
         self.assertEqual(self.commits(), 2)
-        self.assertEqual(self.git("diff", "--name-only", "HEAD~1", "HEAD").split(), [SEASON_FILE.replace(os.sep, "/")])
+        self.assertEqual(self.git("diff", "--name-only", "HEAD~1", "HEAD").split(),
+                         [MIRROR_FILE.replace(os.sep, "/"), SEASON_FILE.replace(os.sep, "/")])  # la temporada y su espejo de Primera
         self.assertIn("Schedule: a01-01", self.git("log", "-1", "--format=%B"))
 
     def test_US042_winter_hour_uses_utc_plus_one(self) -> None:

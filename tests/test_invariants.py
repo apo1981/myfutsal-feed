@@ -20,6 +20,8 @@ def load_json(path: str) -> Dict[str, Any]:
 
 # Fixtures canonicos del contrato con empates tolerados en eliminatoria; no se modifican (D-425).
 TOLERATED_TIES_FIXTURES = ("season-finished.json", "season-playoff.json")
+# Su coherencia con el catalogo la comprueba `scripts/check-contract` (catalog-min.json); aqui no hay catalogo de Segunda B.
+CATALOG_BOUND_FIXTURES = ("season-competition.json",)
 
 
 class InvariantsCliTestCase(TempDirTestCase):
@@ -52,7 +54,7 @@ class ValidFeed(InvariantsCliTestCase):
     def test_us007a_c4_all_contract_valid_fixtures_pass(self) -> None:
         valid_dir = os.path.join(support.FIXTURES, "valid")
         for name in sorted(os.listdir(valid_dir)):
-            if not name.startswith("season-"):
+            if not name.startswith("season-") or name in CATALOG_BOUND_FIXTURES:
                 continue
             season = load_json(os.path.join(valid_dir, name))
             index = {"schemaVersion": 1, "currentSeasonId": season["seasonId"],
@@ -60,6 +62,7 @@ class ValidFeed(InvariantsCliTestCase):
             public = os.path.join(self.tmp, name)
             write_json(os.path.join(public, "public", "v1", "index.json"), index)
             write_json(os.path.join(public, "public", "v1", "seasons", season["seasonId"] + ".json"), season)
+            support.write_primera_catalog(os.path.join(public, "public"), index, season)
             # Los fixtures del contrato llevan fechas de ejemplo futuras (2027): se fija un "ahora" posterior (D-544).
             result = support.run_main(invariants.main, ["--feed", self.tmp, "--public", os.path.join(public, "public"), "--now", "2030-01-01T00:00:00Z"])
             if name in TOLERATED_TIES_FIXTURES:

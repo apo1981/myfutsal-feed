@@ -10,7 +10,8 @@ import unittest
 import support
 from support import TempDirTestCase, output_of, run_script
 
-SCHEMA_FILES = ["league-feed-v1.season.schema.json", "league-feed-v1.index.schema.json"]
+SCHEMA_FILES = ["league-feed-v1.season.schema.json", "league-feed-v1.index.schema.json",
+                "league-feed-v1.catalog.schema.json"]
 
 
 class ShasumParity(TempDirTestCase):
@@ -44,7 +45,7 @@ class ShasumParity(TempDirTestCase):
         os.remove(os.path.join(self.schema, SCHEMA_FILES[0]))
         self.assertNotEqual(self.shasum().returncode, 0)
 
-    def test_us007a_c2_sha256sums_lists_exactly_the_two_schemas(self) -> None:
+    def test_us007a_c2_sha256sums_lists_exactly_the_three_schemas(self) -> None:
         with open(os.path.join(support.FEED, "schema", "SHA256SUMS"), encoding="utf-8") as handle:
             listed = sorted(line.split("  ", 1)[1].strip() for line in handle if line.strip())
         self.assertEqual(listed, sorted(SCHEMA_FILES))

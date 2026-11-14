@@ -19,6 +19,18 @@
     "seasonId": {
       "$ref": "#/$defs/id"
     },
+    "competitionId": {
+      "description": "Opcional (ADR-014 §1): competición del documento; debe coincidir con la entrada del catálogo.",
+      "$ref": "#/$defs/slug"
+    },
+    "groupId": {
+      "description": "Opcional (ADR-014 §1): grupo del documento; null o ausente si no hay grupos.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
     "competitionName": {
       "$ref": "#/$defs/text"
     },
@@ -44,6 +56,10 @@
     "id": {
       "type": "string",
       "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
     "text": {
       "type": "string",

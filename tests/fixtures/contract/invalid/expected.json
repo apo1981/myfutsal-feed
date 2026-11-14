@@ -102,5 +102,25 @@
   "broadcasters-non-string-item.json": {
     "path": "$.phases[0].rounds[0].matches[0].broadcasters[1]",
     "contains": "is not of type"
+  },
+  "catalog-unsafe-feed-id.json": {
+    "path": "$.competitions[0].seasons[0].feeds[0].feedId",
+    "contains": "does not match"
+  },
+  "catalog-missing-default-feed-id.json": {
+    "path": "$",
+    "contains": "'defaultFeedId' is a required property"
+  },
+  "catalog-unknown-kind.json": {
+    "path": "$.competitions[0].kind",
+    "contains": "is not one of"
+  },
+  "catalog-absolute-url.json": {
+    "path": "$.competitions[0].seasons[0].feeds[0].url",
+    "contains": "does not match"
+  },
+  "competition-id-unsafe.json": {
+    "path": "$.competitionId",
+    "contains": "does not match"
   }
 }

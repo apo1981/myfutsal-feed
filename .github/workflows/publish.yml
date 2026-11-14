@@ -56,7 +56,7 @@ jobs:
         run: scripts/check-allowlist
 
       - name: Validate against the schema
-        run: scripts/validate-schema public/v1/index.json public/v1/seasons/*.json
+        run: scripts/validate-schema public/v1/index.json public/v1/catalog.json public/v1/seasons/*.json public/v1/competitions/*/index.json public/v1/competitions/*/*/*.json
 
       - name: Invariants
         env:

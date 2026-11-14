@@ -9,6 +9,7 @@ import unittest
 from typing import Any, Dict, List
 
 import support  # debe ir antes que invariants y runbook_check: anade scripts/ al sys.path
+import catalog
 import invariants
 import runbook_check
 from support import TempDirTestCase, output_of, run_script
@@ -198,6 +199,8 @@ class TempGitFeed(TempDirTestCase):
         os.makedirs(os.path.join(self.repo, "public", "v1", "seasons"))
         self.git("init", "-q", "-b", "main")
         support.write_json(os.path.join(self.repo, "public", "v1", "index.json"), support.BASE_INDEX)
+        support.write_json(os.path.join(self.repo, "public", "v1", "catalog.json"), support.PRIMERA_CATALOG)
+        support.write_json(os.path.join(self.repo, "public", "v1", "competitions", "primera", "index.json"), support.BASE_INDEX)
         self.output = os.path.join(self.tmp, "github_output")
         self.runner_temp = os.path.join(self.tmp, "runner")
         os.makedirs(self.runner_temp)
@@ -215,7 +218,12 @@ class TempGitFeed(TempDirTestCase):
             season.update(updatedAt=updated_at)
             if postponed:
                 support.match_of(season, "m-02").update(status="postponed")
-        support.write_json(self.season_path(), support.season_with(mutate))
+        self.write_season_document(support.season_with(mutate))
+
+    def write_season_document(self, season: Dict[str, Any]) -> None:
+        """Escribe la temporada y su espejo de Primera (ADR-014 §1), como `scripts/sync-primera-mirror`."""
+        support.write_json(self.season_path(), season)
+        support.write_json(os.path.join(self.repo, "public", "v1", "competitions", "primera", support.SEASON_ID, "main.json"), season)
 
     def commit_season(self, updated_at: str, postponed: bool = False) -> str:
         self.write_season(updated_at, postponed)
@@ -333,6 +341,7 @@ class RollbackProcedure(TempGitFeed):
             season = json.load(handle)
         season["updatedAt"] = updated_at
         support.write_json(self.season_path(), season)
+        catalog.sync_primera_mirror(self.season_path())  # el paso `scripts/sync-primera-mirror` del runbook
 
     def follow_runbook(self, runbook_text: str, bad: str, new_updated_at: str) -> None:
         """Ejecuta literalmente cada comando `git` del runbook (salvo `push`, que no tiene remoto aqui)."""

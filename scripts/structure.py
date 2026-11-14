@@ -17,7 +17,9 @@ from typing import Dict, List, Optional
 
 SEASON_FILE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}\.json$")
 PRIVACY_PAGE = "privacy.html"
-ALLOWED_FILES = {os.path.join("v1", "index.json"), PRIVACY_PAGE}
+ALLOWED_FILES = {os.path.join("v1", "index.json"), os.path.join("v1", "catalog.json"), PRIVACY_PAGE}
+# ADR-014 §1: v1/competitions/<competitionId>/<seasonId>/<groupId|main>.json y el indice espejo de cada competicion.
+COMPETITION_FILE_PATTERN = re.compile(r"^v1/competitions/[a-z0-9]+(-[a-z0-9]+)*/([a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*|index)\.json$")
 SEASONS_DIR = os.path.join("v1", "seasons")
 EXAMPLE_TEAMS = os.path.join("examples", "initial-load", "equipos.csv")
 
@@ -26,6 +28,8 @@ REQUIRED_FILES = [
     os.path.join("public", PRIVACY_PAGE),
     os.path.join("schema", "league-feed-v1.season.schema.json"),
     os.path.join("schema", "league-feed-v1.index.schema.json"),
+    os.path.join("schema", "league-feed-v1.catalog.schema.json"),
+    os.path.join("public", "v1", "catalog.json"),
     os.path.join("schema", "SHA256SUMS"),
     EXAMPLE_TEAMS,
     os.path.join(".github", "workflows", "publish.yml"),
@@ -95,7 +99,9 @@ def allowlist_problems(public_dir: str) -> List[str]:
             continue
         if directory == SEASONS_DIR and SEASON_FILE_PATTERN.match(name):
             continue
-        problems.append("public/%s no esta en la lista permitida (solo v1/index.json, privacy.html y v1/seasons/AAAA-AA.json)" % relative)
+        if COMPETITION_FILE_PATTERN.match(relative.replace(os.sep, "/")):
+            continue
+        problems.append("public/%s no esta en la lista permitida (solo v1/index.json, v1/catalog.json, privacy.html, v1/seasons/AAAA-AA.json y v1/competitions/<competicion>/...)" % relative)
     return problems
 
 

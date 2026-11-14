@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 import apply_results
+import catalog
 import round_sheet
 
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -140,6 +141,7 @@ def main(argv: List[str]) -> int:
         return 0
     with open(season_path, "w", encoding="utf-8") as handle:
         handle.write(json.dumps(season, indent=2, ensure_ascii=False) + "\n")
+    catalog.sync_primera_mirror(season_path)
     print("Aplicados %d horarios; updatedAt = %s" % (applied, season["updatedAt"]))
     return 0
 

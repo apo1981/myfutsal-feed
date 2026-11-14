@@ -55,7 +55,10 @@ fingerprint() {
 
 schema_parity() { (cd "$FEED/schema" && shasum -a 256 -c SHA256SUMS); }
 app_parity() { (cd "$APP_ROOT" && scripts/check-contract --feed "$(basename "$FEED")"); }
-validate_public() { "$FEED/scripts/validate-schema" "$FEED/public/v1/index.json" "$FEED"/public/v1/seasons/*.json; }
+validate_public() {
+    "$FEED/scripts/validate-schema" "$FEED/public/v1/index.json" "$FEED/public/v1/catalog.json" "$FEED"/public/v1/seasons/*.json \
+        "$FEED"/public/v1/competitions/*/index.json "$FEED"/public/v1/competitions/*/*/*.json
+}
 
 BEFORE=$(fingerprint)
 
@@ -80,6 +83,7 @@ unit 3-fixtures-del-contrato test_fixtures.py
 run 4-invariantes-de-public "$FEED/scripts/check-invariants"
 run 4b-updated-at-frente-a-head "$FEED/scripts/check-updated-at"
 unit 4-invariantes-pruebas test_invariants.py
+unit 4c-catalogo-y-espejo-pruebas test_catalog.py
 
 run 5-workflow "$FEED/scripts/check-workflow"
 unit 5-workflow-pruebas test_workflow.py

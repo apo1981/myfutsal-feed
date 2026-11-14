@@ -20,6 +20,7 @@ import os
 import sys
 from typing import Any, Dict, List, Tuple
 
+import catalog
 import invariants
 import round_sheet
 
@@ -146,6 +147,7 @@ def main(argv: List[str]) -> int:
         return 0
     with open(season_path, "w", encoding="utf-8") as handle:
         handle.write(json.dumps(season, indent=2, ensure_ascii=False) + "\n")
+    catalog.sync_primera_mirror(season_path)
     print("Aplicados %d resultados; updatedAt = %s" % (applied, season["updatedAt"]))
     return 0
 

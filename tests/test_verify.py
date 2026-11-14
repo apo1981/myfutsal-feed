@@ -11,7 +11,8 @@ import subprocess
 import unittest
 from typing import Dict
 
-import support
+import support  # debe ir antes que catalog: anade scripts/ al sys.path
+import catalog
 from support import TempDirTestCase, output_of, run_script, tool_env
 
 REAL_VENV = os.path.normpath(os.path.join(support.FEED, "..", ".venv-tools"))
@@ -56,6 +57,7 @@ class UpdatedAtAgainstHead(CopiedFeed):
         with open(os.path.join(self.feed, SEASON_PATH), "w", encoding="utf-8") as handle:
             json.dump(season, handle, indent=2, ensure_ascii=False)
             handle.write("\n")
+        catalog.sync_primera_mirror(os.path.join(self.feed, SEASON_PATH))  # espejo de Primera (ADR-014 §1)
 
     def edit(self, updated_at: str = None, change_content: bool = True) -> None:
         season = self.season()

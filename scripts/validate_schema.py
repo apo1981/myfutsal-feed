@@ -14,12 +14,18 @@ from typing import Any, Dict, List
 
 SEASON_SCHEMA = "league-feed-v1.season.schema.json"
 INDEX_SCHEMA = "league-feed-v1.index.schema.json"
+CATALOG_SCHEMA = "league-feed-v1.catalog.schema.json"
 USAGE_ERROR = 2
 
 
 def is_index_document(path: str) -> bool:
     name = os.path.basename(path)
     return name == "index.json" or name.startswith("index-")
+
+
+def is_catalog_document(path: str) -> bool:
+    name = os.path.basename(path)
+    return name == "catalog.json" or name.startswith("catalog-")
 
 
 def run_tool(tool: str, schema: str, files: List[str]) -> Dict[str, Any]:
@@ -55,7 +61,8 @@ def main(argv: List[str]) -> int:
         return USAGE_ERROR
     groups = (
         (INDEX_SCHEMA, [f for f in args.files if is_index_document(f)]),
-        (SEASON_SCHEMA, [f for f in args.files if not is_index_document(f)]),
+        (CATALOG_SCHEMA, [f for f in args.files if is_catalog_document(f)]),
+        (SEASON_SCHEMA, [f for f in args.files if not is_index_document(f) and not is_catalog_document(f)]),
     )
     problems = []  # type: List[str]
     for schema, files in groups:

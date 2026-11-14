@@ -16,6 +16,8 @@ import subprocess
 import sys
 from typing import List, Optional
 
+import catalog
+
 BRANCH = "ensayo-puerta"
 MAIN_BRANCH = "main"
 INVALID_KIND = "legue"
@@ -93,10 +95,15 @@ def prepare(feed: str, recreate: bool, now: Optional[datetime.datetime] = None) 
             handle.write(changed)
         if not validate_fails(feed, relative):
             raise RehearsalError("el cambio preparado NO es invalido para el esquema; no se confirma")
+        catalog.sync_primera_mirror(path)  # solo debe fallar el esquema: el espejo de Primera acompana al cambio
         git_ok(feed, "add", relative)
+        if os.path.isfile(catalog.primera_mirror_path(path)):
+            git_ok(feed, "add", os.path.relpath(catalog.primera_mirror_path(path), feed))
         git_ok(feed, "commit", "-q", "-m", COMMIT_MESSAGE)
     except (RehearsalError, OSError):
         git(feed, "checkout", "--", relative)
+        if os.path.isfile(catalog.primera_mirror_path(path)):
+            git(feed, "checkout", "--", os.path.relpath(catalog.primera_mirror_path(path), feed))
         git(feed, "switch", MAIN_BRANCH)
         git(feed, "branch", "-D", BRANCH)
         raise

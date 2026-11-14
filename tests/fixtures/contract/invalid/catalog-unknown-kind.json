@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-14T00:00:00Z",
+  "defaultFeedId": "segunda-b.2026-27.grupo-1",
+  "competitions": [
+    {
+      "id": "segunda-b",
+      "displayName": "Segunda División B",
+      "kind": "tournament",
+      "seasons": [
+        {
+          "seasonId": "2026-27",
+          "current": true,
+          "feeds": [
+            {
+              "feedId": "segunda-b.2026-27.grupo-1",
+              "groupId": "grupo-1",
+              "displayName": "Segunda División B · Grupo 1",
+              "url": "competitions/segunda-b/2026-27/grupo-1.json",
+              "status": "active"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

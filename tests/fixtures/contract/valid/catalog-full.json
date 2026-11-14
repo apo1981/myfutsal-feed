@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-14T00:00:00Z",
+  "defaultFeedId": "primera.2026-27",
+  "competitions": [
+    {
+      "id": "primera",
+      "displayName": "Primera División",
+      "kind": "league",
+      "seasons": [
+        {
+          "seasonId": "2026-27",
+          "current": true,
+          "feeds": [
+            {
+              "feedId": "primera.2026-27",
+              "groupId": null,
+              "displayName": "Primera División",
+              "url": "competitions/primera/2026-27/main.json",
+              "status": "active"
+            }
+          ]
+        },
+        {
+          "seasonId": "2025-26",
+          "current": false,
+          "feeds": [
+            {
+              "feedId": "primera.2025-26",
+              "groupId": null,
+              "displayName": "Primera División",
+              "url": "competitions/primera/2025-26/main.json",
+              "status": "archived"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "segunda-b",
+      "displayName": "Segunda División B",
+      "kind": "league",
+      "seasons": [
+        {
+          "seasonId": "2026-27",
+          "current": true,
+          "feeds": [
+            {
+              "feedId": "segunda-b.2026-27.grupo-1",
+              "groupId": "grupo-1",
+              "displayName": "Segunda División B · Grupo 1",
+              "url": "competitions/segunda-b/2026-27/grupo-1.json",
+              "status": "active"
+            },
+            {
+              "feedId": "segunda-b.2026-27.grupo-2",
+              "groupId": "grupo-2",
+              "displayName": "Segunda División B · Grupo 2",
+              "url": "competitions/segunda-b/2026-27/grupo-2.json",
+              "status": "active"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "copa",
+      "displayName": "Copa de España",
+      "kind": "cup",
+      "seasons": [
+        {
+          "seasonId": "2026-27",
+          "current": true,
+          "feeds": [
+            {
+              "feedId": "copa.2026-27",
+              "groupId": null,
+              "displayName": "Copa de España",
+              "url": "competitions/copa/2026-27/main.json",
+              "status": "active"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

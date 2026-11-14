@@ -15,6 +15,8 @@ import os
 import sys
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+import catalog
+
 MAX_COMPRESSED_BYTES = 100 * 1024
 LIVE_OR_FINISHED = ("live", "finished")
 KNOCKOUT_KIND = "knockout"
@@ -370,6 +372,7 @@ def check_feed(public_dir: str, season_id: Optional[str], previous_path: Optiona
     found_size = size_violation(os.path.join(v1_dir, "index.json"))
     if found_size:
         found.append(found_size)
+    found.extend(Violation("catalogo", "v1/catalog.json", problem) for problem in catalog.check_catalog(v1_dir))
     target_id = season_id or index.get("currentSeasonId")
     paths = season_paths(v1_dir)
     if target_id not in [identifier for identifier, _ in paths]:

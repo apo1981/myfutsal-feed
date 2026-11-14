@@ -90,11 +90,29 @@ def match_of(season: Dict[str, Any], identifier: str) -> Dict[str, Any]:
 PRIVACY_PAGE = "<!DOCTYPE html>\n<html lang=\"es\"><head><title>Politica</title></head><body><p>GitHub puede ver tu IP.</p></body></html>\n"
 
 
+PRIMERA_CATALOG = {
+    "schemaVersion": 1, "updatedAt": "2026-10-01T10:00:00Z", "defaultFeedId": "primera.2026-27",
+    "competitions": [{"id": "primera", "displayName": "Primera División", "kind": "league", "seasons": [{
+        "seasonId": "2026-27", "current": True,
+        "feeds": [{"feedId": "primera.2026-27", "groupId": None, "displayName": "Primera División",
+                   "url": "competitions/primera/2026-27/main.json", "status": "active"}]}]}],
+}
+
+
+def write_primera_catalog(public: str, index: Dict[str, Any], season: Dict[str, Any]) -> None:
+    """Catalogo con Primera y su espejo byte a byte (ADR-014 §1), como lo publica el feed real."""
+    v1 = os.path.join(public, "v1")
+    write_json(os.path.join(v1, "catalog.json"), PRIMERA_CATALOG)
+    write_json(os.path.join(v1, "competitions", "primera", "index.json"), index)
+    write_json(os.path.join(v1, "competitions", "primera", SEASON_ID, "main.json"), season)
+
+
 def build_public(root: str, season: Optional[Dict[str, Any]] = None, index: Optional[Dict[str, Any]] = None) -> str:
     """Escribe `<root>/public/v1/...` con el indice y la temporada dados. Devuelve public/."""
     public = os.path.join(root, "public")
     write_json(os.path.join(public, "v1", "index.json"), index or BASE_INDEX)
     write_json(os.path.join(public, "v1", "seasons", SEASON_ID + ".json"), season or BASE_SEASON)
+    write_primera_catalog(public, index or BASE_INDEX, season or BASE_SEASON)
     with open(os.path.join(public, "privacy.html"), "w", encoding="utf-8") as handle:
         handle.write(PRIVACY_PAGE)
     return public

@@ -9,12 +9,14 @@ import subprocess
 import unittest
 
 import support
+import catalog
 import gate_rehearsal
 from support import TempDirTestCase, output_of, run_script, tool_env
 
 SKIPPED = shutil.ignore_patterns(".git", ".venv", "__pycache__")
 REAL_VENV = os.path.normpath(os.path.join(support.FEED, "..", ".venv-tools"))
 SEASON = os.path.join("public", "v1", "seasons", "2026-27.json")
+MIRROR = os.path.join("public", "v1", "competitions", "primera", "2026-27", "main.json")
 
 
 def git(directory: str, *args: str) -> str:
@@ -54,7 +56,8 @@ class Rehearsal(TempDirTestCase):
         self.assertEqual(git(self.feed, "branch", "--show-current"), "main")
         self.assertEqual(git(self.feed, "rev-parse", "HEAD"), self.main_tip, "main no debe cambiar")
         self.assertEqual(git(self.feed, "rev-list", "--count", "main..ensayo-puerta"), "1")
-        self.assertEqual(git(self.feed, "diff", "--name-only", "main", "ensayo-puerta"), SEASON.replace(os.sep, "/"))
+        self.assertEqual(git(self.feed, "diff", "--name-only", "main", "ensayo-puerta"),
+                         "\n".join(p.replace(os.sep, "/") for p in (MIRROR, SEASON)))
         self.assertEqual(git(self.feed, "status", "--porcelain"), "")
 
     def test_us007b1_c3_the_prepared_commit_fails_the_schema_and_main_passes_it(self) -> None:
@@ -70,10 +73,10 @@ class Rehearsal(TempDirTestCase):
         current = os.path.join(self.tmp, "current-public")
         with open(previous, "w", encoding="utf-8") as handle:
             handle.write(self.show("main"))
-        os.makedirs(os.path.join(current, "v1", "seasons"))
-        shutil.copyfile(os.path.join(self.feed, "public", "v1", "index.json"), os.path.join(current, "v1", "index.json"))
-        with open(os.path.join(current, "v1", "seasons", "2026-27.json"), "w", encoding="utf-8") as handle:
-            handle.write(self.show("ensayo-puerta"))
+        shutil.copytree(os.path.join(self.feed, "public", "v1"), os.path.join(current, "v1"))
+        for relative in (SEASON, MIRROR):  # el espejo de Primera acompana al cambio (ADR-014 §1)
+            with open(os.path.join(current, os.path.relpath(relative, "public")), "w", encoding="utf-8") as handle:
+                handle.write(self.show("ensayo-puerta"))
         result = run_script([os.path.join(self.feed, "scripts", "check-invariants"), "--public", current, "--previous", previous],
                             cwd=self.tmp, env=tool_env({"FEED_TOOLS_VENV": REAL_VENV}))
         self.assertEqual(result.returncode, 0, output_of(result))
@@ -141,7 +144,8 @@ class Rehearsal(TempDirTestCase):
             # Posterior al updatedAt del commit invalido (la hora actual) pero dentro de la tolerancia de D-544.
             soon = (datetime.datetime.utcnow() + datetime.timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
             handle.write(gate_rehearsal.UPDATED_AT_PATTERN.sub(r'\1"%s"' % soon, text, count=1))
-        git(self.feed, "add", SEASON)
+        catalog.sync_primera_mirror(path)  # paso `scripts/sync-primera-mirror` del runbook
+        git(self.feed, "add", SEASON, MIRROR)
         verify = run_script([os.path.join(self.feed, "scripts", "verify")], cwd=self.tmp,
                             env=tool_env({"GIT_CONFIG_GLOBAL": os.devnull, "FEED_VERIFY_NESTED": "1", "FEED_TOOLS_VENV": REAL_VENV}))
         self.assertEqual(verify.returncode, 0, output_of(verify))

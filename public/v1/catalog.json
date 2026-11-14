@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-14T00:00:00Z",
+  "defaultFeedId": "primera.2026-27",
+  "competitions": [
+    {
+      "id": "primera",
+      "displayName": "Primera División",
+      "kind": "league",
+      "seasons": [
+        {
+          "seasonId": "2026-27",
+          "current": true,
+          "feeds": [
+            {
+              "feedId": "primera.2026-27",
+              "groupId": null,
+              "displayName": "Primera División",
+              "url": "competitions/primera/2026-27/main.json",
+              "status": "active"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

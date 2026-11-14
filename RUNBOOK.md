@@ -5,6 +5,8 @@ Todo cambio en `main` pasa por la puerta de `.github/workflows/publish.yml`: `va
 
 Solo hay tres sitios donde editar: `public/v1/index.json`, `public/v1/seasons/<id>.json` y, en la carga inicial, los datos de la temporada (la política `public/privacy.html` se actualiza según «Actualizar la política»). El esquema (`schema/`) **no se edita aquí**: la copia canónica está en el repositorio de la app.
 
+**Espejo de Primera (ADR-014 §1).** `public/v1/index.json` y `public/v1/seasons/<id>.json` se siguen publicando para las instalaciones antiguas y deben ser idénticos, byte a byte, a `public/v1/competitions/primera/index.json` y `public/v1/competitions/primera/<id>/main.json`. Tras editar a mano cualquiera de los dos ficheros antiguos, ejecuta `scripts/sync-primera-mirror` y confirma también los ficheros nuevos; `verify` falla si difieren. Los scripts `apply-results`, `apply-schedule`, `apply-broadcasters` y `auto-apply-rfef` lo hacen solos.
+
 ## Primera vez
 
 Una sola vez, en este orden y antes del primer *push* (historia US-007b1). Los pasos 1 a 5, 7 y 8 los haces tú en tu cuenta de GitHub o en Terminal; el paso 6 lo hace el equipo cuando le pasas tu usuario y tu dirección `noreply`. **Nunca pegues el token en un fichero, en un chat ni en un commit**: solo en la pregunta de contraseña de `git`.
@@ -52,7 +54,7 @@ El historial anterior, con `feed@example.invalid`, no se reescribe.
    ```
 5. Confirma en `main` con un mensaje que incluya el tiempo dedicado (ver «Anotar el tiempo»). Si editas en la web de GitHub, no hay verificación local: la puerta del workflow es la que comprueba.
    ```
-   git add public/v1/seasons/<id>.json
+   git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json
    git commit -m "Jornada 7: resultados (tiempo: 12 min)"
    git push origin main
    ```
@@ -97,7 +99,7 @@ Forma del campo, dentro del equipo en `public/v1/seasons/<id>.json`:
    ```
 5. Confirma y publica con el tiempo dedicado en el mensaje (ver «Anotar el tiempo»):
    ```
-   git add public/v1/seasons/<id>.json
+   git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json
    git commit -m "Equipaciones: <equipo> (tiempo: 5 min)"
    git push origin main
    ```
@@ -121,13 +123,14 @@ Se hace una sola vez, con los datos de la temporada completa (US-007b2). Nunca s
 3. **Copia y valida**, en este orden (`convert-csv` → `check-initial-load` → `verify` sin confirmar → commit → push):
    ```
    cp /tmp/2026-27.json public/v1/seasons/2026-27.json
+   scripts/sync-primera-mirror
    scripts/check-initial-load --cutoff AAAA-MM-DD
    scripts/verify
    ```
    `check-initial-load` comprueba la carga (sin marcador `pendiente`, partidos anteriores al corte nunca `scheduled` ni `finished` después del corte) y lista los `unknown` que hay que poner al día. `verify` aplica el esquema, las invariantes y la comprobación de `updatedAt` frente a `HEAD`; va **antes** del commit porque esa última comprobación no está en `check-initial-load` (D-140).
 4. **Publica** solo después de que `verify` esté en verde. Añade únicamente la temporada (nunca `git add -A`), confirma con el tiempo dedicado en el mensaje y espera al workflow:
    ```
-   git add public/v1/seasons/2026-27.json
+   git add public/v1/seasons/2026-27.json public/v1/competitions/primera/2026-27/main.json
    git commit -m "Carga inicial de la temporada 2026-27 (tiempo: 30 min)"
    git push origin main
    ```
@@ -169,10 +172,11 @@ El historial de Git es el rollback. Localiza el commit malo con `git log --oneli
 git revert --no-commit <commit>
 ```
 
-Edita `public/v1/seasons/<id>.json` y pon `updatedAt` en el instante actual en UTC (`date -u +%Y-%m-%dT%H:%M:%SZ`). `git revert --no-commit` deja el contenido revertido en el índice y tu edición solo en el árbol de trabajo: **sin `git add` el commit se lleva el `updatedAt` antiguo** y la puerta lo rechaza aunque `scripts/verify` salga en verde en local. Después:
+Edita `public/v1/seasons/<id>.json`, pon `updatedAt` en el instante actual en UTC (`date -u +%Y-%m-%dT%H:%M:%SZ`) y ejecuta `scripts/sync-primera-mirror` (espejo de Primera, ver más arriba). `git revert --no-commit` deja el contenido revertido en el índice y tu edición solo en el árbol de trabajo: **sin `git add` el commit se lleva el `updatedAt` antiguo** y la puerta lo rechaza aunque `scripts/verify` salga en verde en local. Después:
 
 ```
-git add public/v1/seasons/<id>.json
+scripts/sync-primera-mirror
+git add public/v1/seasons/<id>.json public/v1/competitions/primera/<id>/main.json
 scripts/verify
 git commit -m "Revertir <commit> (tiempo: 5 min)"
 git push origin main
@@ -198,7 +202,8 @@ El commit cambia `phases[0].kind` de `league` a `legue` (un valor fuera del enum
    ```
    git revert --no-commit HEAD
    sed -i '' "s/\"updatedAt\": \".*\"/\"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" public/v1/seasons/2026-27.json
-   git add public/v1/seasons/2026-27.json
+   scripts/sync-primera-mirror
+   git add public/v1/seasons/2026-27.json public/v1/competitions/primera/2026-27/main.json
    scripts/verify
    git commit -m "Revertir el ensayo de la puerta (tiempo: 5 min)"
    git push origin main

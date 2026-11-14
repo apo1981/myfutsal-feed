@@ -19,6 +19,7 @@ from test_fetch_rfef import Clock, FakeTransport, rfef_doc, rfef_match, standard
 
 NOREPLY = "12345+operator@users.noreply.github.com"
 SEASON_FILE = os.path.join("public", "v1", "seasons", "2026-27.json")
+MIRROR_FILE = os.path.join("public", "v1", "competitions", "primera", "2026-27", "main.json")
 TABLE_URL = fetch.BASE_URL + tool.TABLE_ENDPOINT_PATH
 MATCHES_URL = fetch.BASE_URL + fetch.ENDPOINT_PATH
 
@@ -94,7 +95,8 @@ class GreenTests(AutoApplyTestCase):
         matches = {m["id"]: m for m in applied["phases"][0]["rounds"][0]["matches"]}
         self.assertEqual([matches[i]["status"] for i in ("a01-01", "a01-02", "a01-03", "a01-04")], ["finished"] * 3 + ["unknown"])
         self.assertEqual(matches["a01-03"]["score"], {"home": 5, "away": 1})
-        self.assertEqual(self.git("diff", "--name-only", "HEAD~1", "HEAD").split(), [SEASON_FILE.replace(os.sep, "/")])
+        self.assertEqual(self.git("diff", "--name-only", "HEAD~1", "HEAD").split(),
+                         [MIRROR_FILE.replace(os.sep, "/"), SEASON_FILE.replace(os.sep, "/")])  # la temporada y su espejo de Primera
 
     def test_US036_commit_message_has_url_utc_instant_and_sha256_of_the_three_responses(self) -> None:
         body, table = self.doc_bytes(), self.table()

@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "league-feed-v1: catálogo de competiciones (catalog.json)",
+  "description": "Esquema estricto del productor (ADR-014 §1). feeds[].url es relativa a <base>/v1/. La coherencia feedId/url/ids con el documento la comprueba check-contract, no el esquema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "updatedAt",
+    "defaultFeedId",
+    "competitions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/instant"
+    },
+    "defaultFeedId": {
+      "$ref": "#/$defs/feedId"
+    },
+    "competitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/competition"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "feedId": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+(\\.[a-z0-9-]+){1,2}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "instant": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"
+    },
+    "competition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "displayName",
+        "kind",
+        "seasons"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "displayName": {
+          "$ref": "#/$defs/text"
+        },
+        "kind": {
+          "enum": [
+            "league",
+            "cup"
+          ]
+        },
+        "seasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/season"
+          }
+        }
+      }
+    },
+    "season": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seasonId",
+        "current",
+        "feeds"
+      ],
+      "properties": {
+        "seasonId": {
+          "$ref": "#/$defs/slug"
+        },
+        "current": {
+          "type": "boolean"
+        },
+        "feeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/feed"
+          }
+        }
+      }
+    },
+    "feed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "feedId",
+        "groupId",
+        "displayName",
+        "url",
+        "status"
+      ],
+      "properties": {
+        "feedId": {
+          "$ref": "#/$defs/feedId"
+        },
+        "groupId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "displayName": {
+          "$ref": "#/$defs/text"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^competitions/[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*/[a-z0-9]+(-[a-z0-9]+)*\\.json$"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "archived"
+          ]
+        }
+      }
+    }
+  }
+}
