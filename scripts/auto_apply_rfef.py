@@ -29,6 +29,7 @@ import tempfile
 import time
 from typing import Any, Callable, List, Optional, Tuple
 
+import anomaly_report
 import apply_broadcasters
 import apply_results
 import apply_schedule
@@ -42,8 +43,8 @@ import structure
 TABLE_ENDPOINT_PATH = "/futsal_xhr/get_table_round"
 UPDATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 PROGRESS_PREFIX = "[progreso] "
-TABLE_ANOMALY_NOTE = ("nota: hay anomalias de tabla; revisar aplazados y Clausura (semantica de la clasificacion sin verificar, "
-                      "disparador 1 de ADR-012)")
+TABLE_ANOMALY_NOTE = ("nota: en Clausura o con aplazados la semantica de la clasificacion de la RFEF esta sin verificar (disparador 1 de ADR-012): "
+                      "una diferencia de tabla puede deberse a eso y no a un resultado erroneo")
 
 Read = Tuple[str, str, str]  # (URL, instante UTC, SHA-256)
 VerifyRunner = Callable[[str], Tuple[bool, str]]
@@ -292,8 +293,8 @@ def main(argv: List[str], transport_factory: Callable[[], fetch.Transport] = fet
         return fetch.EXIT_DISABLED
     except fetch.AnomalyError as error:
         print("ANOMALIA: no se ha modificado nada ni hay commit", file=err)
-        for line in error.anomalies:
-            print("  " + line, file=err)
+        for line in anomaly_report.explain(error.anomalies):
+            print(line, file=err)
         count_anomaly(args, err)
         return fetch.EXIT_ANOMALY
     except fetch.StoppedError as error:
