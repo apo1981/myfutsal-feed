@@ -552,15 +552,15 @@ class DoubleReadTests(FetchTestCase):
         result, _ = self.run_pair(body_of(standard_matches()), json.dumps(indexed).encode("utf-8"))
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_US037_second_read_waits_at_least_15_minutes(self) -> None:
+    def test_US037_second_read_waits_the_configured_gap(self) -> None:
         body = body_of(standard_matches())
         clock = Clock()
         transport = FakeTransport(data=(200, body), clock=clock)
         self.assertEqual(self.invoke([], transport).returncode, 0)
         posts = [t for call, t in zip(transport.calls, transport.call_times) if call[0] == "POST"]
-        self.assertGreaterEqual((posts[1] - posts[0]).total_seconds(), 15 * 60)
+        self.assertGreaterEqual((posts[1] - posts[0]).total_seconds(), tool.READ_SEPARATION_SECONDS)
         self.assertEqual(clock.sleeps[0], tool.REQUEST_INTERVAL_SECONDS)
-        self.assertEqual(clock.sleeps[1], 15 * 60)
+        self.assertEqual(clock.sleeps[1], tool.READ_SEPARATION_SECONDS)
 
     def test_US037_second_read_is_refused_when_the_clock_does_not_confirm_the_gap(self) -> None:
         body = body_of(standard_matches())
@@ -613,7 +613,7 @@ class DoubleReadTests(FetchTestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("lectura 1 instante UTC: 2026-10-20T09:30:10Z", result.stderr)
         self.assertIn("lectura 1 SHA-256: " + hashlib.sha256(first).hexdigest(), result.stderr)
-        self.assertIn("lectura 2 instante UTC: 2026-10-20T09:45:10Z", result.stderr)
+        self.assertIn("lectura 2 instante UTC: 2026-10-20T09:31:10Z", result.stderr)
         self.assertIn("lectura 2 SHA-256: " + hashlib.sha256(second).hexdigest(), result.stderr)
         self.assertNotEqual(hashlib.sha256(first).hexdigest(), hashlib.sha256(second).hexdigest())
 

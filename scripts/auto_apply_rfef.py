@@ -43,7 +43,7 @@ import structure
 TABLE_ENDPOINT_PATH = "/futsal_xhr/get_table_round"
 UPDATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 PROGRESS_PREFIX = "[progreso] "
-COUNTDOWN_INTERVAL_SECONDS = 60
+COUNTDOWN_INTERVAL_SECONDS = 15
 TABLE_ANOMALY_NOTE = ("nota: hay anomalias de tabla; revisar aplazados y Clausura (semantica de la clasificacion sin verificar, "
                       "disparador 1 de ADR-012)")
 

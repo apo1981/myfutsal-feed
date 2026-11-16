@@ -306,7 +306,7 @@ class ProgressTests(AutoApplyTestCase):
     def test_US041_long_wait_announces_madrid_time_and_at_most_one_line_per_interval(self) -> None:
         result, _, clock = self.green()
         lines = self.progress_lines(result)
-        self.assertTrue(any("hora prevista" in line and "espera de 15 min" in line for line in lines))
+        self.assertTrue(any("hora prevista" in line and "espera de 1 min 00 s" in line for line in lines))
         countdown = [line for line in lines if "quedan" in line]
         self.assertEqual(len(countdown), fetch.READ_SEPARATION_SECONDS // tool.COUNTDOWN_INTERVAL_SECONDS - 1)
         self.assertEqual(clock.sleeps.count(tool.COUNTDOWN_INTERVAL_SECONDS), len(countdown) + 1)
@@ -323,7 +323,7 @@ class ProgressTests(AutoApplyTestCase):
         self.assertEqual(len([line for line in lines if "hora prevista" in line]), 1)
         last_countdown = max(i for i, line in enumerate(lines) if "quedan" in line)
         self.assertFalse(any("espera" in line for line in lines[last_countdown + 1:]))
-        self.assertEqual(len(lines), 7 + 1 + 14)  # 7 fases + hora prevista + 14 cuentas atras: ninguna por pausa corta
+        self.assertEqual(len(lines), 7 + 1 + fetch.READ_SEPARATION_SECONDS // tool.COUNTDOWN_INTERVAL_SECONDS - 1)  # 7 fases + hora prevista + cuentas atras: ninguna por pausa corta
 
     def test_US041_failure_keeps_exit_code_and_last_progress_line_names_the_phase(self) -> None:
         body = self.doc_bytes()
