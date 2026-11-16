@@ -1,17 +1,16 @@
 """Aplicacion autonoma de una jornada con commit trazable y politica de anomalias (US-036; ADR-012 §5).
 
-Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura), US-037 (doble lectura estable) y US-035
-(tabla y pares); aplica con `apply_results` y comprueba con `scripts/verify`.
-  - Sin las tres comprobaciones no se aplica nada (no hay modo degradado). Todo el analisis es en memoria: ante cualquier
+Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura) y US-035 (tabla y pares); desde 2026-11-16 hay una sola lectura de partidos (sin doble lectura, US-037 no se usa aqui); aplica con `apply_results` y comprueba con `scripts/verify`.
+  - Sin las comprobaciones (cordura, tabla, cruce) no se aplica nada (no hay modo degradado). Todo el analisis es en memoria: ante cualquier
     anomalia o fallo de la tabla el JSON no se toca y no hay commit.
   - Los pares de la RFEF salen de las mismas respuestas ya validadas como la jornada N pedida (`jornada` de la cordura) y se
     comparan con la jornada N del feed.
   - Sin filas nuevas (ya aplicado o sin finalizados nuevos) no cambia nada ni hace commit.
   - Si `verify` falla tras aplicar, restaura el JSON anterior byte a byte.
   - El commit exige identidad git `noreply`, solo incluye el JSON de la temporada y lleva URL, instante UTC y SHA-256 de las
-    tres respuestas. Nunca hace push.
+    dos respuestas. Nunca hace push.
 Interruptor (US-038): `enabled` false = sin peticiones (salida 5); 403/429, robots que veta o 2 anomalias seguidas lo ponen a false.
-Canal de TV (US-045, ADR-013 decision 4): ver plan_broadcasters; solo partidos futuros, lista blanca y doble lectura.
+Canal de TV (US-045, ADR-013 decision 4): ver plan_broadcasters; solo partidos futuros, lista blanca.
 Horario (US-042, ADR-013): aplica fecha y hora de los partidos 'Sin comenzar' no finished ni cancelled en el mismo commit; sin marcadores
 nuevos no pide la tabla. Informe: lista las diferencias no aplicadas (estado, aplazados, adelantados) en la salida de error.
 Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, tabla no disponible, verify, red); 3 anomalia; 4 parada de la RFEF; 5 deshabilitada.
@@ -43,7 +42,6 @@ import structure
 TABLE_ENDPOINT_PATH = "/futsal_xhr/get_table_round"
 UPDATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 PROGRESS_PREFIX = "[progreso] "
-COUNTDOWN_INTERVAL_SECONDS = 15
 TABLE_ANOMALY_NOTE = ("nota: hay anomalias de tabla; revisar aplazados y Clausura (semantica de la clasificacion sin verificar, "
                       "disparador 1 de ADR-012)")
 
@@ -90,7 +88,7 @@ def require_clean_season(feed: str, season_path: str) -> None:
 
 
 def read_table(transport: fetch.Transport, year: str, round_number: int) -> bytes:
-    """Tercera peticion. 403/429/5xx paran la herramienta; cualquier otro fallo es tabla no disponible."""
+    """Segunda peticion. 403/429/5xx paran la herramienta; cualquier otro fallo es tabla no disponible."""
     try:
         status, body = transport.request("POST", fetch.BASE_URL + TABLE_ENDPOINT_PATH, cross_check.table_request_body(round_number, year))
         fetch.check_status(status, TABLE_ENDPOINT_PATH)
@@ -104,20 +102,6 @@ def read_table(transport: fetch.Transport, year: str, round_number: int) -> byte
 def progress(stderr: Any, message: str) -> None:
     """Linea de progreso (solo stderr, prefijo fijo)."""
     print(PROGRESS_PREFIX + message, file=stderr)
-
-
-def countdown_wait(seconds: float, sleep: Callable[[float], None], now: Callable[[], datetime.datetime], stderr: Any,
-                   interval: float = COUNTDOWN_INTERVAL_SECONDS) -> None:
-    """Espera `seconds` anunciando la hora prevista (Madrid) y, como mucho, una linea de tiempo restante por intervalo."""
-    due = (now() + datetime.timedelta(seconds=seconds)).astimezone(fetch.TIMEZONE)
-    progress(stderr, "hora prevista de la 2a lectura: %s (espera de %d min %02d s)" % (due.strftime("%H:%M"), seconds // 60, seconds % 60))
-    left = seconds
-    while left > 0:
-        step = min(interval, left)
-        sleep(step)
-        left -= step
-        if left > 0:
-            progress(stderr, "quedan %d min %02d s para la 2a lectura" % (left // 60, left % 60))
 
 
 def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transport], sleep: Callable[[float], None],
@@ -144,7 +128,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     def record(url: str, body: bytes) -> datetime.datetime:
         instant = now()
         reads.append((url, instant.astimezone(datetime.timezone.utc).strftime(UPDATED_AT_FORMAT), hashlib.sha256(body).hexdigest()))
-        fetch.save_raw(feed, args.raw_dir, args.phase if len(reads) < 3 else args.phase + "-tabla", args.round, reads[-1][1], body)
+        fetch.save_raw(feed, args.raw_dir, args.phase if len(reads) < 2 else args.phase + "-tabla", args.round, reads[-1][1], body)
         return instant
 
     def check(body: bytes) -> List[fetch.RfefMatch]:
@@ -156,24 +140,16 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
 
     transport = transport_factory()
     matches_url = fetch.BASE_URL + fetch.ENDPOINT_PATH
-    progress(stderr, "1a lectura")
+    progress(stderr, "lectura de partidos")
     first_body = fetch.download(transport, args.phase, args.round, year, sleep)
-    first_at = record(matches_url, first_body)
-    first = check(first_body)  # una primera lectura invalida no justifica esperar ni pedir mas
-    progress(stderr, "2a lectura")
-    second_body = fetch.download_again(transport, args.phase, args.round, year, sleep, now, first_at,
-                                       wait=lambda seconds: countdown_wait(seconds, sleep, now, stderr))
-    record(matches_url, second_body)
-    matches = check(second_body)
-    unstable = fetch.stability_anomalies(first, matches)
-    if unstable:
-        raise fetch.AnomalyError(unstable)
+    record(matches_url, first_body)
+    matches = check(first_body)  # una lectura invalida no justifica pedir la tabla
     unmatched = fetch.resolve_teams(matches, aliases)
     if unmatched:
         raise fetch.ToolError("\n".join(unmatched))
     plan = fetch.build_plan(matches, round_data, aliases, fetch.later_rounds(season, args.phase, args.round),
                             fetch.load_broadcasters(feed), today)
-    report = fetch.report_lines(plan, args.phase, args.round, matches_url, [(read[1], read[2]) for read in reads[:2]])
+    report = fetch.report_lines(plan, args.phase, args.round, matches_url, [(read[1], read[2]) for read in reads[:1]])
 
     if not plan.rows and not plan.schedule and not plan.broadcasters:
         # Sin cambios: no hace falta la tabla ni el commit (idempotencia y jornada sin partidos nuevos ni horarios distintos).
@@ -183,7 +159,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
         print_report(report, stderr)
         return fetch.EXIT_OK
 
-    if plan.rows:  # solo los marcadores nuevos piden la tabla; un cambio de horario solo se aplica con las dos lecturas (ADR-013)
+    if plan.rows:  # solo los marcadores nuevos piden la tabla; un cambio de horario se aplica con la lectura de partidos (ADR-013)
         verify_against_table(args, transport, sleep, season, plan, matches, aliases, league, year, record, stderr)
 
     progress(stderr, "aplicar y verify")
@@ -197,7 +173,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
 def verify_against_table(args: argparse.Namespace, transport: fetch.Transport, sleep: Callable[[float], None], season: Any,
                          plan: fetch.Plan, matches: List[fetch.RfefMatch], aliases: Any, league: str, year: str,
                          record: Callable[[str, bytes], Any], stderr: Any) -> None:
-    """Tercera peticion y cruce de los marcadores nuevos con la clasificacion; lanza si no cuadra o no esta disponible."""
+    """Segunda peticion y cruce de los marcadores nuevos con la clasificacion; lanza si no cuadra o no esta disponible."""
     progress(stderr, "tabla")
     sleep(fetch.REQUEST_INTERVAL_SECONDS)
     table_body = read_table(transport, year, args.round)
@@ -286,7 +262,7 @@ def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]
     if plan.broadcasters:
         lines.append("Broadcasters: %s" % ", ".join(row[0] for row in plan.broadcasters))
     lines.append("")
-    for label, (url, fetched_at, digest) in zip(("Read 1 (matches)", "Read 2 (matches)", "Table"), reads):
+    for label, (url, fetched_at, digest) in zip(("Read (matches)", "Table"), reads):
         lines.append("%s: %s %s sha256=%s" % (label, url, fetched_at, digest))
     return "\n".join(lines) + "\n"
 

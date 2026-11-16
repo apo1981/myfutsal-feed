@@ -125,28 +125,17 @@ class NotPublishableTests(BroadcastersTestCase):
         self.assertIsNone(self.broadcasters()["a01-01"])
         self.assertEqual(self.broadcasters()["a01-02"], ["DAZN España"])
 
-
-class DoubleReadTests(BroadcastersTestCase):
-    def test_US045_tvs_changing_between_reads_is_an_anomaly_and_applies_nothing(self) -> None:
-        first = json.dumps(future_doc({}, default=[DAZN])).encode("utf-8")
-        second = json.dumps(future_doc({3: [DAZN, TDP_PLAY]}, default=[DAZN])).encode("utf-8")
-        result, _, _ = self.launch([(200, first), (200, second)])
-        self.assertEqual(result.returncode, fetch.EXIT_ANOMALY)
-        self.assertIn("[lecturas-distintas]", result.stderr)
-        self.assertIn("canales", result.stderr)
-        self.assert_nothing_applied()
-
-    def test_US045_stable_tvs_in_both_reads_are_applied(self) -> None:
+    def test_US045_tvs_of_the_read_are_applied(self) -> None:
         result, transport, _ = self.run_pending([], doc=future_doc({}, default=[DAZN]))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.broadcasters()["a01-05"], ["DAZN España"])
 
 
 class NoExtraRequestsTests(BroadcastersTestCase):
-    def test_US045_no_requests_beyond_robots_and_the_two_reads(self) -> None:
+    def test_US045_no_requests_beyond_robots_and_the_read(self) -> None:
         result, transport, _ = self.run_pending([], doc=future_doc({}, default=[DAZN]))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(transport.calls), 3)  # robots + 2 lecturas; sin tabla porque no hay marcadores nuevos (NFR-019)
+        self.assertEqual(len(transport.calls), 2)  # robots + 1 lectura; sin tabla porque no hay marcadores nuevos (NFR-019)
 
 
 class ApplyBroadcastersToolTests(BroadcastersTestCase):

@@ -31,7 +31,7 @@ def all_pending(**changes: Any) -> List[Dict[str, Any]]:
 class ScheduleTestCase(AutoApplyTestCase):
     def run_pending(self, matches: List[Dict[str, Any]], day: str = "2026-10-17", doc: Optional[Dict[str, Any]] = None) -> Any:
         body = json.dumps(doc or rfef_doc(matches, day)).encode("utf-8")
-        return self.launch([(200, body), (200, body)])
+        return self.launch([(200, body)])
 
     def season_matches(self) -> Dict[str, Dict[str, Any]]:
         season = json.loads(self.season_bytes())
@@ -184,22 +184,11 @@ class UntouchedMatchesTests(ScheduleTestCase):
         self.assertEqual(round_two["kickoff"], {"date": "2026-10-14", "time": None})
 
 
-class StabilityTests(ScheduleTestCase):
-    def test_US042_hour_or_date_changing_between_reads_is_an_anomaly(self) -> None:
-        first, second = all_pending(), all_pending()
-        second[0] = pending(1, hour="21:00")
-        body_a, body_b = (json.dumps(rfef_doc(m)).encode("utf-8") for m in (first, second))
-        result, _, _ = self.launch([(200, body_a), (200, body_b)])
-        self.assertEqual(result.returncode, fetch.EXIT_ANOMALY)
-        self.assertIn("lecturas-distintas", result.stderr)
-        self.assert_untouched(1)
-
-
 class WithoutNewScoresTests(ScheduleTestCase):
     def test_US042_only_schedule_changes_skip_the_table_and_verify_passes(self) -> None:
         result, transport, _ = self.run_pending(all_pending())
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual([c[0] for c in transport.calls], ["GET", "POST", "POST"])  # robots.txt y 2 POST
+        self.assertEqual([c[0] for c in transport.calls], ["GET", "POST"])  # robots.txt y 1 POST
         self.assertNotIn("tabla", result.stderr.replace("tabla de alias", ""))
 
     def test_US042_applied_season_passes_the_kickoff_coherence_invariants(self) -> None:
@@ -220,7 +209,7 @@ class NoChangeTests(ScheduleTestCase):
 class VerifyFailureTests(ScheduleTestCase):
     def test_US042_failing_verify_restores_the_feed_and_does_not_commit(self) -> None:
         body = json.dumps(rfef_doc(all_pending())).encode("utf-8")
-        result, _, _ = self.launch([(200, body), (200, body)], verify=lambda feed: (False, "[FALLO] 4-invariantes"))
+        result, _, _ = self.launch([(200, body)], verify=lambda feed: (False, "[FALLO] 4-invariantes"))
         self.assertEqual(result.returncode, fetch.EXIT_ERROR)
         self.assertIn("restaurado", result.stderr)
         self.assert_untouched(1)
