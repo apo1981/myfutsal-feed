@@ -135,7 +135,7 @@ class NoExtraRequestsTests(BroadcastersTestCase):
     def test_US045_no_requests_beyond_robots_and_the_read(self) -> None:
         result, transport, _ = self.run_pending([], doc=future_doc({}, default=[DAZN]))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(transport.calls), 2)  # robots + 1 lectura; sin tabla porque no hay marcadores nuevos (NFR-019)
+        self.assertEqual(len(transport.calls), 2)  # robots + 1 lectura
 
 
 class ApplyBroadcastersToolTests(BroadcastersTestCase):

@@ -185,7 +185,7 @@ class UntouchedMatchesTests(ScheduleTestCase):
 
 
 class WithoutNewScoresTests(ScheduleTestCase):
-    def test_US042_only_schedule_changes_skip_the_table_and_verify_passes(self) -> None:
+    def test_US042_only_schedule_changes_and_verify_passes(self) -> None:
         result, transport, _ = self.run_pending(all_pending())
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual([c[0] for c in transport.calls], ["GET", "POST"])  # robots.txt y 1 POST

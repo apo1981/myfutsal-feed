@@ -99,9 +99,8 @@ class BlockTests(SwitchTestCase):
             self.assertIn(str(status), self.config()["disabledReason"])
             self.assertEqual(self.season_bytes(), self.original)
 
-    def test_US038_429_on_the_table_disables_the_switch_and_applies_nothing(self) -> None:
-        body = self.doc_bytes()
-        result, _, _ = self.launch([(200, body), (429, b"")])
+    def test_US038_429_on_the_read_disables_the_switch_and_applies_nothing(self) -> None:
+        result, _, _ = self.launch([(429, b"")])
         self.assertEqual(result.returncode, fetch.EXIT_STOPPED)
         self.assertFalse(self.config()["enabled"])
         self.assertEqual(self.season_bytes(), self.original)

@@ -12,7 +12,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import support  # debe ir antes que los modulos de scripts: anade scripts/ al sys.path
 import auto_apply_rfef as tool
-import cross_check
 import fetch_rfef_results as fetch
 import test_fetch_rfef as base
 from test_fetch_rfef import Clock, FakeTransport, rfef_doc, rfef_match, standard_matches
@@ -20,7 +19,6 @@ from test_fetch_rfef import Clock, FakeTransport, rfef_doc, rfef_match, standard
 NOREPLY = "12345+operator@users.noreply.github.com"
 SEASON_FILE = os.path.join("public", "v1", "seasons", "2026-27.json")
 MIRROR_FILE = os.path.join("public", "v1", "competitions", "primera", "2026-27", "main.json")
-TABLE_URL = fetch.BASE_URL + tool.TABLE_ENDPOINT_PATH
 MATCHES_URL = fetch.BASE_URL + fetch.ENDPOINT_PATH
 
 
@@ -49,20 +47,6 @@ class AutoApplyTestCase(base.FetchTestCase):
     def commits(self) -> int:
         return int(self.git("rev-list", "--count", "HEAD").strip())
 
-    def table(self, mutate: Optional[Callable[[List[Dict[str, Any]]], None]] = None, finished: int = 3) -> bytes:
-        """Tabla correcta para el lote estandar (3 finalizados) y la jornada 1, en el formato supuesto de la RFEF."""
-        season = json.loads(self.original)
-        batch = [("a01-01", 3, 2), ("a01-02", 0, 0), ("a01-03", 5, 1)][:finished]
-        computed = cross_check.compute_standings(cross_check.apply_batch(season, batch), "apertura", 1)
-        rows = []
-        for team in base.TEAM_IDS:
-            standing = computed.get(team) or cross_check._empty_standing()
-            rows.append({"id": base.DATATEAM[team], "pj": 1, "pt": standing["pt"], "home": dict(standing["home"]),
-                         "away": dict(standing["away"]), "total": {}})
-        if mutate:
-            mutate(rows)
-        return json.dumps({"table": {"1297": rows}}).encode("utf-8")
-
     def launch(self, data: List[Tuple[int, bytes]], verify: Callable[[str], Tuple[bool, str]] = always_ok,
                extra: Optional[List[str]] = None) -> Tuple[Any, FakeTransport, Clock]:
         clock = Clock()
@@ -76,8 +60,8 @@ class AutoApplyTestCase(base.FetchTestCase):
     def doc_bytes(self, matches: Optional[List[Dict[str, Any]]] = None) -> bytes:
         return json.dumps(rfef_doc(matches or standard_matches())).encode("utf-8")
 
-    def green(self, table: Optional[bytes] = None) -> Tuple[Any, FakeTransport, Clock]:
-        return self.launch([(200, self.doc_bytes()), (200, table or self.table())])
+    def green(self) -> Tuple[Any, FakeTransport, Clock]:
+        return self.launch([(200, self.doc_bytes())])
 
     def assert_untouched(self, commits: int) -> None:
         self.assertEqual(self.season_bytes(), self.original)
@@ -97,34 +81,28 @@ class GreenTests(AutoApplyTestCase):
         self.assertEqual(self.git("diff", "--name-only", "HEAD~1", "HEAD").split(),
                          [MIRROR_FILE.replace(os.sep, "/"), SEASON_FILE.replace(os.sep, "/")])  # la temporada y su espejo de Primera
 
-    def test_US036_commit_message_has_url_utc_instant_and_sha256_of_the_two_responses(self) -> None:
-        body, table = self.doc_bytes(), self.table()
-        self.launch([(200, body), (200, table)])
+    def test_US036_commit_message_has_url_utc_instant_and_sha256_of_the_response(self) -> None:
+        body = self.doc_bytes()
+        self.launch([(200, body)])
         message = self.git("log", "-1", "--format=%B")
         self.assertIn(MATCHES_URL, message)
-        self.assertIn(TABLE_URL, message)
-        for digest in (hashlib.sha256(body).hexdigest(), hashlib.sha256(table).hexdigest()):
-            self.assertIn("sha256=" + digest, message)
-        self.assertEqual(message.count("sha256="), 2)
+        self.assertIn("sha256=" + hashlib.sha256(body).hexdigest(), message)
+        self.assertEqual(message.count("sha256="), 1)
         self.assertRegex(message, r"Read \(matches\): \S+ 2026-10-20T09:\d\d:\d\dZ sha256=")
-        self.assertRegex(message, r"Table: \S+ 2026-10-20T09:\d\d:\d\dZ sha256=")
 
     def test_US036_commit_uses_the_noreply_identity_and_never_pushes(self) -> None:
         self.green()
         self.assertEqual(self.git("log", "-1", "--format=%ae|%ce").strip(), "%s|%s" % (NOREPLY, NOREPLY))
         self.assertEqual(self.git("remote").strip(), "")  # sin remoto no hay push posible
 
-    def test_US036_two_reads_one_of_matches_and_one_of_the_table(self) -> None:
-        _, transport, clock = self.green()
+    def test_US036_a_single_request_of_matches_and_nothing_else(self) -> None:
+        _, transport, _ = self.green()
         posts = [call for call in transport.calls if call[0] == "POST"]
-        self.assertEqual([call[1].rsplit("/", 1)[-1] for call in posts], ["get_matchs_round", "get_table_round"])
-        self.assertLess(sum(clock.sleeps), fetch.READ_SEPARATION_SECONDS)  # sin espera larga entre lecturas
-        self.assertEqual(clock.sleeps[-1], fetch.REQUEST_INTERVAL_SECONDS)
-        self.assertNotIn(b"league", posts[1][2])
+        self.assertEqual([call[1].rsplit("/", 1)[-1] for call in posts], ["get_matchs_round"])
 
     def test_US036_raw_responses_are_saved_outside_the_repo(self) -> None:
         self.green()
-        self.assertEqual(len(os.listdir(self.raw_dir)), 2)
+        self.assertEqual(len(os.listdir(self.raw_dir)), 1)
 
     def test_US036_verify_runs_after_apply_on_the_applied_json(self) -> None:
         seen = []  # type: List[bytes]
@@ -133,28 +111,12 @@ class GreenTests(AutoApplyTestCase):
             seen.append(self.season_bytes())
             return True, ""
         body = self.doc_bytes()
-        self.launch([(200, body), (200, self.table())], verify=spy)
+        self.launch([(200, body)], verify=spy)
         self.assertEqual(len(seen), 1)
         self.assertNotEqual(seen[0], self.original)
 
 
 class AnomalyTests(AutoApplyTestCase):
-    def test_US036_table_difference_changes_nothing_and_reports_rule_team_expected_and_obtained(self) -> None:
-        def mutate(rows: List[Dict[str, Any]]) -> None:
-            rows[0]["home"]["gf"] = 9  # t01 marco 3 en casa
-        result, _, _ = self.green(self.table(mutate))
-        self.assertEqual(result.returncode, fetch.EXIT_ANOMALY)
-        self.assert_untouched(1)
-        self.assertIn("anomalia [tabla] t01 casa gf: esperado=3 obtenido=9", result.stderr)
-        self.assertIn("disparador 1 de ADR-012", result.stderr)
-
-    def test_US036_crossed_home_away_mapping_is_an_anomaly(self) -> None:
-        def mutate(rows: List[Dict[str, Any]]) -> None:
-            rows[0]["home"], rows[0]["away"] = rows[0]["away"], rows[0]["home"]
-        result, _, _ = self.green(self.table(mutate))
-        self.assertEqual(result.returncode, fetch.EXIT_ANOMALY)
-        self.assert_untouched(1)
-
     def test_US036_sanity_failure_reports_it_and_changes_nothing(self) -> None:
         bad = standard_matches()
         bad[0] = rfef_match(1, ("30", "2"))
@@ -183,36 +145,13 @@ class AnomalyTests(AutoApplyTestCase):
         self.assert_untouched(2)
 
 
-class TableUnavailableTests(AutoApplyTestCase):
-    def test_US036_table_with_unexpected_json_applies_nothing_and_says_so(self) -> None:
-        for body in (b"no es json", json.dumps({"table": {"9999": []}}).encode("utf-8")):
-            result, _, _ = self.green(body)
-            self.assertEqual(result.returncode, fetch.EXIT_ERROR, result.stderr)
-            self.assertIn("tabla no disponible", result.stderr)
-            self.assert_untouched(1)
-
-    def test_US036_table_http_error_applies_nothing_and_says_so(self) -> None:
-        body = self.doc_bytes()
-        result, _, _ = self.launch([(200, body), (404, b"")])
-        self.assertEqual(result.returncode, fetch.EXIT_ERROR)
-        self.assertIn("tabla no disponible", result.stderr)
-        self.assert_untouched(1)
-
-    def test_US036_table_429_stops_the_tool(self) -> None:
-        body = self.doc_bytes()
-        result, _, _ = self.launch([(200, body), (429, b"")])
-        self.assertEqual(result.returncode, fetch.EXIT_STOPPED)
-        self.assertEqual(self.season_bytes(), self.original)  # el 429 desactiva el interruptor (US-038): config.json cambia
-        self.assertEqual(self.commits(), 1)
-
-
 class NoChangeTests(AutoApplyTestCase):
     def test_US036_rerunning_an_applied_round_changes_nothing_and_says_so(self) -> None:
         self.green()
         applied, commits = self.season_bytes(), self.commits()
         self.original = applied
         body = self.doc_bytes()
-        result, transport, _ = self.launch([(200, body), (200, self.table())])
+        result, transport, _ = self.launch([(200, body)])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("ya estaba aplicado", result.stderr)
         self.assert_untouched(commits)
@@ -235,7 +174,7 @@ class VerifyFailureTests(AutoApplyTestCase):
             seen.append(self.season_bytes() != self.original)  # el JSON estaba aplicado cuando verify corrio
             return False, "[FALLO] 4-invariantes"
         body = self.doc_bytes()
-        result, _, _ = self.launch([(200, body), (200, self.table())], verify=failing)
+        result, _, _ = self.launch([(200, body)], verify=failing)
         self.assertEqual(seen, [True])
         self.assertEqual(result.returncode, fetch.EXIT_ERROR)
         self.assertIn("restaurado", result.stderr)
@@ -249,14 +188,14 @@ class ExceptionSafetyTests(AutoApplyTestCase):
             raise KeyboardInterrupt()
         body = self.doc_bytes()
         with self.assertRaises(KeyboardInterrupt):
-            self.launch([(200, body), (200, self.table())], verify=exploding)
+            self.launch([(200, body)], verify=exploding)
         self.assert_untouched(1)
 
     def test_US036_unexpected_error_in_verify_runner_restores_the_json(self) -> None:
         def broken(feed: str) -> Tuple[bool, str]:
             raise OSError("verify no se pudo ejecutar")
         body = self.doc_bytes()
-        result, _, _ = self.launch([(200, body), (200, self.table())], verify=broken)
+        result, _, _ = self.launch([(200, body)], verify=broken)
         self.assertEqual(result.returncode, fetch.EXIT_ERROR)
         self.assertIn("queda como estaba", result.stderr)
         self.assert_untouched(1)
@@ -287,7 +226,7 @@ class ProgressTests(AutoApplyTestCase):
     def test_US041_phases_are_announced_in_order_on_stderr_only(self) -> None:
         result, _, _ = self.green()
         text = " | ".join(self.progress_lines(result))
-        order = ["comprobaciones iniciales", "lectura de partidos", "tabla", "cruce", "aplicar y verify", "commit"]
+        order = ["comprobaciones iniciales", "lectura de partidos", "aplicar y verify", "commit"]
         positions = [text.index(name) for name in order]
         self.assertEqual(positions, sorted(positions))
         self.assertNotIn(tool.PROGRESS_PREFIX, result.stdout)
@@ -295,6 +234,6 @@ class ProgressTests(AutoApplyTestCase):
 
     def test_US041_failure_keeps_exit_code_and_last_progress_line_names_the_phase(self) -> None:
         body = self.doc_bytes()
-        result, _, _ = self.launch([(200, body), (500, b"")])
+        result, _, _ = self.launch([(500, b"")])
         self.assertEqual(result.returncode, fetch.EXIT_STOPPED)
-        self.assertEqual(self.progress_lines(result)[-1], tool.PROGRESS_PREFIX + "tabla")
+        self.assertEqual(self.progress_lines(result)[-1], tool.PROGRESS_PREFIX + "lectura de partidos")

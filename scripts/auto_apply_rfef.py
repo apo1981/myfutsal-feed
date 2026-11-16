@@ -1,19 +1,17 @@
 """Aplicacion autonoma de una jornada con commit trazable y politica de anomalias (US-036; ADR-012 §5).
 
-Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura) y US-035 (tabla y pares); desde 2026-11-16 hay una sola lectura de partidos (sin doble lectura, US-037 no se usa aqui); aplica con `apply_results` y comprueba con `scripts/verify`.
-  - Sin las comprobaciones (cordura, tabla, cruce) no se aplica nada (no hay modo degradado). Todo el analisis es en memoria: ante cualquier
-    anomalia o fallo de la tabla el JSON no se toca y no hay commit.
-  - Los pares de la RFEF salen de las mismas respuestas ya validadas como la jornada N pedida (`jornada` de la cordura) y se
-    comparan con la jornada N del feed.
+Solo biblioteca estandar, Python 3.9. Orquesta US-034 (lectura y cordura); desde 2026-11-16 hay una sola lectura de partidos (sin doble lectura, US-037) y sin tabla ni cruce (US-035 no se usa aqui; ADR-012 §1-§3); aplica con `apply_results` y comprueba con `scripts/verify`.
+  - Sin la cordura no se aplica nada. Todo el analisis es en memoria: ante cualquier anomalia el JSON no se toca y no hay commit.
+  - Los partidos se casan con la jornada N del feed por par (local, visitante), nunca por posicion: un par que el feed no tiene es un error.
   - Sin filas nuevas (ya aplicado o sin finalizados nuevos) no cambia nada ni hace commit.
   - Si `verify` falla tras aplicar, restaura el JSON anterior byte a byte.
   - El commit exige identidad git `noreply`, solo incluye el JSON de la temporada y lleva URL, instante UTC y SHA-256 de las
-    dos respuestas. Nunca hace push.
+    respuesta. Nunca hace push.
 Interruptor (US-038): `enabled` false = sin peticiones (salida 5); 403/429, robots que veta o 2 anomalias seguidas lo ponen a false.
 Canal de TV (US-045, ADR-013 decision 4): ver plan_broadcasters; solo partidos futuros, lista blanca.
 Horario (US-042, ADR-013): aplica fecha y hora de los partidos 'Sin comenzar' no finished ni cancelled en el mismo commit; sin marcadores
-nuevos no pide la tabla. Informe: lista las diferencias no aplicadas (estado, aplazados, adelantados) en la salida de error.
-Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, tabla no disponible, verify, red); 3 anomalia; 4 parada de la RFEF; 5 deshabilitada.
+nuevos no cambia nada. Informe: lista las diferencias no aplicadas (estado, aplazados, adelantados) en la salida de error.
+Codigos de salida: 0 correcto (con o sin cambios); 2 error (identidad, verify, red); 3 anomalia; 4 parada de la RFEF; 5 deshabilitada.
 """
 from __future__ import annotations
 
@@ -34,24 +32,15 @@ import apply_broadcasters
 import apply_results
 import apply_schedule
 import catalog
-import cross_check
 import fetch_rfef_results as fetch
 import rfef_switch
 import round_sheet
 import structure
 
-TABLE_ENDPOINT_PATH = "/futsal_xhr/get_table_round"
 UPDATED_AT_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 PROGRESS_PREFIX = "[progreso] "
-TABLE_ANOMALY_NOTE = ("nota: en Clausura o con aplazados la semantica de la clasificacion de la RFEF esta sin verificar (disparador 1 de ADR-012): "
-                      "una diferencia de tabla puede deberse a eso y no a un resultado erroneo")
-
 Read = Tuple[str, str, str]  # (URL, instante UTC, SHA-256)
 VerifyRunner = Callable[[str], Tuple[bool, str]]
-
-
-class TableUnavailable(fetch.ToolError):
-    """La tabla no se pudo leer: no hay modo degradado, no se aplica nada."""
 
 
 def default_verify(feed: str) -> Tuple[bool, str]:
@@ -88,18 +77,6 @@ def require_clean_season(feed: str, season_path: str) -> None:
         raise fetch.ToolError("la temporada tiene cambios sin commitear; el commit mezclaria otro trabajo")
 
 
-def read_table(transport: fetch.Transport, year: str, round_number: int) -> bytes:
-    """Segunda peticion. 403/429/5xx paran la herramienta; cualquier otro fallo es tabla no disponible."""
-    try:
-        status, body = transport.request("POST", fetch.BASE_URL + TABLE_ENDPOINT_PATH, cross_check.table_request_body(round_number, year))
-        fetch.check_status(status, TABLE_ENDPOINT_PATH)
-    except fetch.StoppedError:
-        raise
-    except fetch.ToolError as error:
-        raise TableUnavailable("tabla no disponible: %s" % error)
-    return body
-
-
 def progress(stderr: Any, message: str) -> None:
     """Linea de progreso (solo stderr, prefijo fijo)."""
     print(PROGRESS_PREFIX + message, file=stderr)
@@ -129,7 +106,7 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     def record(url: str, body: bytes) -> datetime.datetime:
         instant = now()
         reads.append((url, instant.astimezone(datetime.timezone.utc).strftime(UPDATED_AT_FORMAT), hashlib.sha256(body).hexdigest()))
-        fetch.save_raw(feed, args.raw_dir, args.phase if len(reads) < 2 else args.phase + "-tabla", args.round, reads[-1][1], body)
+        fetch.save_raw(feed, args.raw_dir, args.phase, args.round, reads[-1][1], body)
         return instant
 
     def check(body: bytes) -> List[fetch.RfefMatch]:
@@ -142,9 +119,9 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     transport = transport_factory()
     matches_url = fetch.BASE_URL + fetch.ENDPOINT_PATH
     progress(stderr, "lectura de partidos")
-    first_body = fetch.download(transport, args.phase, args.round, year, sleep)
-    record(matches_url, first_body)
-    matches = check(first_body)  # una lectura invalida no justifica pedir la tabla
+    body = fetch.download(transport, args.phase, args.round, year, sleep)
+    record(matches_url, body)
+    matches = check(body)
     unmatched = fetch.resolve_teams(matches, aliases)
     if unmatched:
         raise fetch.ToolError("\n".join(unmatched))
@@ -153,15 +130,12 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     report = fetch.report_lines(plan, args.phase, args.round, matches_url, [(read[1], read[2]) for read in reads[:1]])
 
     if not plan.rows and not plan.schedule and not plan.broadcasters:
-        # Sin cambios: no hace falta la tabla ni el commit (idempotencia y jornada sin partidos nuevos ni horarios distintos).
+        # Sin cambios: no hay commit (idempotencia y jornada sin partidos nuevos ni horarios distintos).
         print("Sin cambios: %s. El JSON no se ha tocado y no hay commit." % (
             "el lote ya estaba aplicado (%d partidos publicados iguales)" % plan.already_published if plan.already_published
             else "no hay partidos finalizados nuevos ni horarios o canales distintos"), file=stderr)
         print_report(report, stderr)
         return fetch.EXIT_OK
-
-    if plan.rows:  # solo los marcadores nuevos piden la tabla; un cambio de horario se aplica con la lectura de partidos (ADR-013)
-        verify_against_table(args, transport, sleep, season, plan, matches, aliases, league, year, record, stderr)
 
     progress(stderr, "aplicar y verify")
     commit = apply_and_commit(args, plan, reads, now(), today, season_path, verify_runner, stderr)
@@ -169,27 +143,6 @@ def run(args: argparse.Namespace, transport_factory: Callable[[], fetch.Transpor
     print("Aplicados %d resultados, %d horarios y %d canales de TV de %s jornada %d; commit %s (sin push)" % (
         len(plan.rows), len(plan.schedule), len(plan.broadcasters), args.phase, args.round, commit), file=stdout)
     return fetch.EXIT_OK
-
-
-def verify_against_table(args: argparse.Namespace, transport: fetch.Transport, sleep: Callable[[float], None], season: Any,
-                         plan: fetch.Plan, matches: List[fetch.RfefMatch], aliases: Any, league: str, year: str,
-                         record: Callable[[str, bytes], Any], stderr: Any) -> None:
-    """Segunda peticion y cruce de los marcadores nuevos con la clasificacion; lanza si no cuadra o no esta disponible."""
-    progress(stderr, "tabla")
-    sleep(fetch.REQUEST_INTERVAL_SECONDS)
-    table_body = read_table(transport, year, args.round)
-    record(fetch.BASE_URL + TABLE_ENDPOINT_PATH, table_body)
-
-    progress(stderr, "cruce con la tabla")
-    rfef_pairs = [(aliases[m.home_datateam], aliases[m.away_datateam]) for m in matches]  # jornada N: validada por la cordura
-    try:
-        found = cross_check.verify(cross_check.apply_batch(season, plan.rows), args.phase, args.round, league, table_body, aliases, rfef_pairs)
-    except cross_check.TableUnavailableError as error:
-        raise TableUnavailable("tabla no disponible: %s" % error)
-    if found:
-        if any("[tabla" in line for line in found):
-            found.append(TABLE_ANOMALY_NOTE)
-        raise fetch.AnomalyError(found)
 
 
 def print_report(lines: List[str], stderr: Any) -> None:
@@ -263,7 +216,7 @@ def commit_message(args: argparse.Namespace, plan: fetch.Plan, reads: List[Read]
     if plan.broadcasters:
         lines.append("Broadcasters: %s" % ", ".join(row[0] for row in plan.broadcasters))
     lines.append("")
-    for label, (url, fetched_at, digest) in zip(("Read (matches)", "Table"), reads):
+    for label, (url, fetched_at, digest) in zip(("Read (matches)",), reads):
         lines.append("%s: %s %s sha256=%s" % (label, url, fetched_at, digest))
     return "\n".join(lines) + "\n"
 

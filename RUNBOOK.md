@@ -249,7 +249,7 @@ Tres tareas tuyas, en este orden o como te convenga: **A** publicar un resultado
 
 **Cuándo lanzar.** Dentro de las 12 h siguientes al final de cada partido (NFR-011), una jornada cada vez y a mano, sin cron. De la RFEF se aplican los marcadores de los partidos finalizados (lo que aún no tiene marcador final queda pendiente, nunca 0-0) y, desde US-042, la fecha y la hora de los partidos «Sin comenzar».
 
-**Comando** (necesita red, identidad `noreply` y la temporada sin cambios sin commitear; tarda unos segundos: lectura de partidos, 10 s de pausa y lectura de la tabla):
+**Comando** (necesita red, identidad `noreply` y la temporada sin cambios sin commitear; tarda unos segundos: una sola petición de partidos, sin tabla ni cruce):
 ```
 scripts/auto-apply-rfef --phase apertura --round 3
 ```
@@ -261,7 +261,7 @@ scripts/auto-apply-rfef --phase apertura --round 3
 
 **Informe de diferencias no aplicadas.** Al terminar escribe un informe en la salida de error. Lista los horarios aplicados (valor del feed y de la RFEF) y, solo informativas, las diferencias que no se aplican: aplazados o suspendidos en el feed y los adelantados de jornadas posteriores, que no se tocan y se cambian a mano con «Cambiar hora, aplazar o suspender un partido». Con una página coherente con el feed dice «sin diferencias» y el número de partidos nuevos. Solo la lectura sin aplicar es `scripts/fetch-rfef-results --phase apertura --round 3 --pretty` (esta sí hace dos lecturas de partidos; mismo interruptor).
 
-**Política de anomalías.** Ante cualquier anomalía (cordura, marcador distinto de uno ya publicado, clasificación que no cuadra) no se modifica nada, no hay commit y la salida lo detalla (código 3). No hay modo degradado: si falla la cordura, la tabla o el cruce no se aplica. Si el commit sale bien, revísalo (`git show --stat`) y sigue el flujo normal.
+**Política de anomalías.** Ante cualquier anomalía (cordura o marcador distinto de uno ya publicado) no se modifica nada, no hay commit y la salida lo detalla (código 3). Si falla la cordura no se aplica nada. Si el commit sale bien, revísalo (`git show --stat`) y sigue el flujo normal.
 
 **Push y vigilancia de Actions.** El push y la vigilancia son tuyos: `git push origin main` y espera a que `validate`, `deploy` y `smoke` terminen en verde (pasos 5 y 6 de «Publicar un resultado»; si `smoke` falla, «Revertir»). Después comprueba el iPhone («Verificación en el iPhone»).
 

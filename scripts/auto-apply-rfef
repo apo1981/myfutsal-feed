@@ -1,6 +1,6 @@
 #!/bin/sh
 # Orquesta una jornada de la RFEF sin revision humana si todo cuadra (US-036, ADR-012 §5): una lectura de partidos,
-# una de la tabla, cordura, verificacion cruzada, apply-results, verify y un commit local con trazabilidad. NO hace push.
+# cordura, apply-results, verify y un commit local con trazabilidad. NO hace push.
 # Ante cualquier anomalia no modifica nada. Se lanza a mano, sin cron.
 # Uso: scripts/auto-apply-rfef --phase apertura|clausura --round N [--raw-dir DIR]
 set -eu
