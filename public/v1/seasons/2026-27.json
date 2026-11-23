@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-11-16T12:09:38Z",
+  "updatedAt": "2026-11-23T09:17:44Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -1411,12 +1411,15 @@
               "id": "a09-01",
               "homeTeamId": "barca",
               "awayTeamId": "cordoba-patrimonio",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-18",
                 "time": "2026-11-18T19:45:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 5,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
@@ -1427,12 +1430,15 @@
               "id": "a09-02",
               "homeTeamId": "jimbee-cartagena",
               "awayTeamId": "jaen-paraiso-interior",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-22",
                 "time": "2026-11-22T19:30:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 1
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
@@ -1443,12 +1449,15 @@
               "id": "a09-03",
               "homeTeamId": "sur-seed-el-ejido",
               "awayTeamId": "fs-garcia",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-21",
                 "time": "2026-11-21T17:00:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 6,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
@@ -1459,12 +1468,15 @@
               "id": "a09-04",
               "homeTeamId": "osasuna-magna",
               "awayTeamId": "o-parrulo-ferrol",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-20",
                 "time": "2026-11-20T19:30:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
@@ -1491,12 +1503,15 @@
               "id": "a09-06",
               "homeTeamId": "servigroup-peniscola",
               "awayTeamId": "elpozo-murcia",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-17",
                 "time": "2026-11-17T19:30:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 4,
+                "away": 3
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
@@ -1507,12 +1522,15 @@
               "id": "a09-07",
               "homeTeamId": "vina-albali-valdepenas",
               "awayTeamId": "noia-portus-apostoli",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-21",
                 "time": "2026-11-21T12:00:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 4,
+                "away": 2
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
@@ -1525,12 +1543,15 @@
               "id": "a09-08",
               "homeTeamId": "wanapix-sala-10",
               "awayTeamId": "quesos-el-hidalgo-manzanares",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-21",
                 "time": "2026-11-21T19:00:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 2,
+                "away": 4
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
