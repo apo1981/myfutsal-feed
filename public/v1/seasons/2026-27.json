@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "seasonId": "2026-27",
   "competitionName": "Primera División de fútbol sala",
-  "updatedAt": "2026-11-23T10:58:49Z",
+  "updatedAt": "2026-11-24T16:05:15Z",
   "teams": [
     {
       "id": "jimbee-cartagena",
@@ -1487,12 +1487,15 @@
               "id": "a09-05",
               "homeTeamId": "palma-futsal",
               "awayTeamId": "inter-jp-financial",
-              "status": "scheduled",
+              "status": "finished",
               "kickoff": {
                 "date": "2026-11-23",
                 "time": "2026-11-23T19:30:00Z"
               },
-              "score": null,
+              "score": {
+                "home": 5,
+                "away": 2
+              },
               "decidedBy": null,
               "note": null,
               "broadcasters": [
